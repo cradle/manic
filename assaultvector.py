@@ -100,12 +100,12 @@ class GameWorld(Application):
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
             joint.attach(geom1.getBody(), geom2.getBody())
 
-class StaticObject():
-    def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0)):
+class StaticObject():    
+    def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), mesh = 'crate.mesh'):
         self._size = size
         self._geometry = ode.GeomBox(gameworld.space, self._size)
-        entity = gameworld.sceneManager.createEntity('static' + name, 'crate.mesh')
-        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('staticNode' + name)
+        entity = gameworld.sceneManager.createEntity('entity_' + name, mesh)
+        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
         self._node.attachObject(entity)
         self._node.setScale(0.1*size[0],0.1*size[1],0.1*size[2])
         self._updateDisplay()
@@ -130,7 +130,7 @@ class StaticObject():
 
 
 class DynamicObject(StaticObject):
-    maxMoveForce = 600
+    maxMoveForce = 2000
     maxMoveVelocity = 10
     maxSpinForce = 700
     maxSpinVelocity = 15
