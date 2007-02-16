@@ -28,10 +28,10 @@ class GameWorld():
         for contact in contacts:
             contact.setMode(ode.ContactSoftERP + ode.ContactSoftCFM + ode.ContactBounce)
             contact.setBounce(0.20)
-            contact.setBounceVel(5.0)
-            contact.setMu(5000)
-            contact.setSoftERP(0.4)
-            contact.setSoftCFM(0.00002)
+            contact.setBounceVel(10.0)
+            contact.setMu(9200.0)
+            contact.setSoftERP(0.3)
+            contact.setSoftCFM(0.0000125)
                             
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
             joint.attach(geom1.getBody(), geom2.getBody())
@@ -172,7 +172,7 @@ class TestGame():
 
     def test_move_left(self):
         static = StaticObject(world, size=(100.0, 100.0, 0.0))
-        dynamic.body.setPosition((0.0, 1.0, 0.0))
+        #dynamic.body.setPosition((0.0, 1.0, 0.0))
         for i in range(100):
             dynamic.moveLeft()
             world.go()
@@ -181,7 +181,7 @@ class TestGame():
 
     def test_move_right(self):
         static = StaticObject(world, size=(1000.0, 1.0, 1.0))
-        dynamic.body.setPosition((0.0, 1.0, 0.0))
+        #dynamic.body.setPosition((0.0, 1.0, 0.0))
         for i in range(100):
             dynamic.moveRight()
             world.go()
@@ -190,23 +190,20 @@ class TestGame():
 
     def test_slide_after_move(self):
         static = StaticObject(world, size=(1000.0, 1.0, 1.0))
-        dynamic.body.setPosition((0.0, 1.0, 0.0))
+        #dynamic.body.setPosition((0.0, 1.0, 0.0))
         i = 0
         for i in range(100):
             dynamic.moveRight()
             world.go()
-            print dynamic
             
         while (round(dynamic.body.getLinearVel()[1],2), \
                round(dynamic.body.getLinearVel()[2],2), \
                round(dynamic.body.getLinearVel()[0],2)) != (0,0,0):
             world.go()
-            i+=1
-            print i, dynamic
         
-        assert_equal( 0.0, round(dynamic.body.getPosition()[2],2))
-        assert_equal( 1.0, round(dynamic.body.getPosition()[1],2))
-        assert_equal( 13.0, round(dynamic.body.getPosition()[0],2))
+        assert_equal( 0.0, round(dynamic.body.getPosition()[2],4))
+        assert_equal( 1.0, round(dynamic.body.getPosition()[1],0))
+        assert_equal( 15.0, round(dynamic.body.getPosition()[0],0))
     
 t = TestGame()
 t.go()
