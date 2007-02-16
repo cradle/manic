@@ -204,6 +204,7 @@ class TestGame():
         assert_equal( 0.0, round(dynamic.body.getPosition()[2],4))
         assert_equal( 1.0, round(dynamic.body.getPosition()[1],0))
         assert_equal( 15.0, round(dynamic.body.getPosition()[0],0))
-    
-t = TestGame()
-t.go()
+
+if __name__ == '__main__':
+    t = TestGame()
+    t.go()

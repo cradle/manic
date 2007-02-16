@@ -23,7 +23,7 @@ class AssaultVectorFrameListener ( FrameListener ):
         self._demo.frameEnded(evt.timeSinceLastFrame, self.Keyboard, self.Mouse)
         return FrameListener.frameEnded(self, evt)
     
-class AssaultVector(Application, OgreOde.CollisionListener, OgreOde.StepListener):
+class AssaultVector(Application):
     def _createScene(self):
         sceneManager = self.sceneManager
         
@@ -65,50 +65,11 @@ class AssaultVector(Application, OgreOde.CollisionListener, OgreOde.StepListener
 
         node = sceneManager.getRootSceneNode().createChildSceneNode(entity.getName())
         node.attachObject(entity)
-        node.setPosition(ogre.Vector3(0,0.3,-5))
-        node.setOrientation(ogre.Quaternion(ogre.Radian(0.4),ogre.Vector3(1,0,0)))
         node.setScale(0.3,0.1,0.4)
-
-        ## Create the physical version (just static geometry, it can't move so
-        ## it doesn't need a body) and keep track of it
-        ei = OgreOde.EntityInformer(entity,ogre.Matrix4.getScale(node.getScale()))
-        geom = ei.createSingleStaticBox(self._world, self._world.getDefaultSpace())
         entity.setUserObject(geom)
-
-        self._stepper = OgreOde.ForwardFixedInterpolatedStepHandler(
-            self._world,
-            OgreOde.StepHandler.QuickStep, 
-	    0.01, # Step rate
-            1.0 / 60.0, # Frame rate
-            1.0 / 4.0, # Max Frame rate
-            1.7 # Time Scale
-        )
-
-        self._stepper.setAutomatic(OgreOde.StepHandler.AutoMode_PostFrame, self.root)
-
-        OgreOde.CollisionListener.__init__(self)
-        self._world.setCollisionListener(self)
-        OgreOde.StepListener.__init__(self)
         
     def frameEnded(self, time,  input,  mouse):
-        ## Tell the self.vehicle what digital inputs are being pressed left, right, power and brake
-        ## There are equivalent methods for analogue controls, current you can't change gear so
-        ## you can't reverse!
-
-
-        ## Update the self.vehicle, you need to do this every time step
-        pass
-
-
-    ##------------------------------------------------------------------------------------------------
-    ## Override the collision callback to set our own parameters
-    def collision(self,  contact):
-        
-        contact.setCoulombFriction( 9999999999 ) ### OgreOde.Utility.Infinity)
-
-        contact.setBouncyness(0.1)
-
-        return True
+        game.go(1, time)
 
     ## we need to register the framelistener
     def _createFrameListener(self):
