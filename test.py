@@ -4,8 +4,6 @@ class GameWorld():
     def __init__(self):
         self.world = ode.World()
         self.world.setGravity((0,-9.81,0))
-        self.world.setCFM(0.00001)
-        self.world.setERP(0.2)
         self.space = ode.Space()
         self.contactgroup = ode.JointGroup()
         self.objects = []
@@ -28,9 +26,13 @@ class GameWorld():
         contacts = ode.collide(geom1, geom2)
 
         for contact in contacts:
-            contact.setBounce(0.3)
-            contact.setBounceVel(15.0)
-            contact.setMu(3000)
+            contact.setMode(ode.ContactSoftERP + ode.ContactSoftCFM + ode.ContactBounce)
+            contact.setBounce(0.20)
+            contact.setBounceVel(5.0)
+            contact.setMu(5000)
+            contact.setSoftERP(0.4)
+            contact.setSoftCFM(0.00002)
+                            
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
             joint.attach(geom1.getBody(), geom2.getBody())
 
@@ -145,14 +147,20 @@ class TestGame():
         assert_equal( -9.8, dynamic.body.getLinearVel()[1] )
 
     def test_dynamic_hitting_static(self):
-        world.go(169)
-        assert_equal( 1.0, dynamic.body.getPosition()[1] )
+        world.go(200)
         assert_equal( 0.0, dynamic.body.getLinearVel()[1] )
+        assert_equal( 1.0, dynamic.body.getPosition()[1] )
 
-    def test_dynamic_rebounding_off_static(self):
-        assert_equal( 9.0, round(self.get_maximum_rebound_height(100),0))
-        assert_equal( 5.0, round(self.get_maximum_rebound_height(50),0))
+    def test_dynamic_rebounding_off_static_100(self):
+        assert_equal( 4.0, round(self.get_maximum_rebound_height(100),0))
+
+    def test_dynamic_rebounding_off_static_50(self):
+        assert_equal( 3.0, round(self.get_maximum_rebound_height(50),0))
+
+    def test_dynamic_rebounding_off_static_20(self):
         assert_equal( 2.0, round(self.get_maximum_rebound_height(20),0))
+
+    def test_dynamic_rebounding_off_static_10(self):
         assert_equal( 1.0, round(self.get_maximum_rebound_height(10),0))
 
     def test_does_not_move_on_z_axis(self):
@@ -198,7 +206,7 @@ class TestGame():
         
         assert_equal( 0.0, round(dynamic.body.getPosition()[2],2))
         assert_equal( 1.0, round(dynamic.body.getPosition()[1],2))
-        assert_equal( 10.0, round(dynamic.body.getPosition()[0],2))
+        assert_equal( 13.0, round(dynamic.body.getPosition()[0],2))
     
 t = TestGame()
 t.go()
