@@ -17,12 +17,29 @@ class GameFrameListener ( FrameListener ):
         self.game.frameEnded(evt.timeSinceLastFrame, self.Keyboard, self.Mouse)
         return FrameListener.frameEnded(self, evt)
     
-class GameWorld(Application):        
-    def _createScene(self):
-        self.sceneManager.setAmbientLight((0.25, 0.25, 0.25))
+class GameWorld(Application):
+    def _createCamera(self):
+        self.camera = self.sceneManager.createCamera("Player1Cam")
         self.camera.setPosition(0,0,20)
         self.camera.lookAt(0,0.5,0)
-        self.camera.setNearClipDistance(0.5)
+        self.camera.nearClipDistance = 5
+ 
+        self.camera2 = self.sceneManager.createCamera("Player2Cam") 
+        self.camera2.setPosition(0,0,-20)
+        self.camera2.lookAt(0,0.5,0)
+        self.camera2.nearClipDistance = 5
+    
+    def _createViewports(self):
+        viewPort = self.renderWindow.addViewport(self.camera,1)
+        viewPort.setDimensions(0.0, 0.0, 1.0, 0.5)
+        self.camera.aspectRatio = viewPort.actualWidth / viewPort.actualHeight
+        viewPort2 = self.renderWindow.addViewport(self.camera2,2)
+        viewPort2.setDimensions(0.0, 0.5, 1.0, 0.5)
+        viewPort2.setOverlaysEnabled(False)
+        self.camera2.aspectRatio = viewPort2.actualWidth / viewPort2.actualHeight
+    
+    def _createScene(self):
+        self.sceneManager.setAmbientLight((0.25, 0.25, 0.25))
         self.world = ode.World()
         self.world.setGravity((0,-9.81,0))
         self.space = ode.Space()
@@ -51,11 +68,16 @@ class GameWorld(Application):
         static = StaticObject(self, "%sr" % 6, size=(1,50,1))
         static.setPosition((25,25,0))
             
-        dynamic = DynamicObject(self, "d")
-        dynamic.setPosition((0.0,3.0,0.0))
+        dynamic = SphereObject(self, "p1")
+        dynamic.setPosition((-5.0,3.0,0.0))
         
         self.objects += [dynamic]
         self.player = dynamic
+        
+        dynamic = DynamicObject(self, "p2")
+        dynamic.setPosition((5.0,3.0,0.0))
+        self.objects += [dynamic]
+        self.player2 = dynamic
         
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
@@ -66,6 +88,8 @@ class GameWorld(Application):
         self.step(keyboard, 1, time)
         pos = self.player._geometry.getPosition()
         self.camera.setPosition(pos[0], pos[1], pos[2] + 20)
+        pos = self.player2._geometry.getPosition()
+        self.camera2.setPosition(pos[0], pos[1], pos[2] - 20)
 
         return not keyboard.isKeyDown(OIS.KC_ESCAPE)
 
@@ -101,13 +125,18 @@ class GameWorld(Application):
             joint.attach(geom1.getBody(), geom2.getBody())
 
 class StaticObject():    
-    def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), mesh = 'crate.mesh'):
+    def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
         self._size = size
-        self._geometry = ode.GeomBox(gameworld.space, self._size)
+        self._geometry = geomFunc(gameworld.space, self._size)
         entity = gameworld.sceneManager.createEntity('entity_' + name, mesh)
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
         self._node.attachObject(entity)
-        self._node.setScale(0.1*size[0],0.1*size[1],0.1*size[2])
+        
+        if hasattr(size, "__getitem__"):
+            self._node.setScale(scale[0]*size[0],scale[1]*size[1],scale[2]*size[2])
+        else:
+            self._node.setScale(scale[0]*size,scale[1]*size,scale[2]*size)
+            
         self._updateDisplay()
 
     def __str__(self):
@@ -135,12 +164,25 @@ class DynamicObject(StaticObject):
     maxSpinForce = 700
     maxSpinVelocity = 15
     
-    def __init__(self, gameworld, name, size = (1.0,1.0,1.0), weight = 50):
-        StaticObject.__init__(self, gameworld, name, size)
+    def __init__(self, gameworld, name, size = (1.0,1.0,1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox, weight = 50):
+        self.keys = {
+            'up':OIS.KC_I,
+            'down':OIS.KC_K,
+            'left':OIS.KC_J,
+            'right':OIS.KC_L,
+            'rotate-left':OIS.KC_U,
+            'rotate-right':OIS.KC_O}
+        
+        StaticObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc)
         
         self._body = ode.Body(gameworld.world)
         mass = ode.Mass()
-        mass.setBoxTotal(weight, size[0], size[1], size[2])
+        
+        if hasattr(size, "__getitem__"):
+            mass.setBoxTotal(weight, size[0], size[1], size[2])
+        else:
+            mass.setBoxTotal(weight, size, size, size)
+            
         self._body.setMass(mass)
         self._geometry.setBody(self._body)
         
@@ -148,15 +190,15 @@ class DynamicObject(StaticObject):
         self._motor.attach(self._body, ode.environment)
 
     def preStep(self, input):
-        if input.isKeyDown(OIS.KC_J):
+        if input.isKeyDown(self.keys['left']):
             self._moveLeft()
-        if input.isKeyDown(OIS.KC_L):
+        if input.isKeyDown(self.keys['right']):
             self._moveRight()
-        if input.isKeyDown(OIS.KC_U):
+        if input.isKeyDown(self.keys['rotate-left']):
             self._rotateLeft()
-        if input.isKeyDown(OIS.KC_O):
+        if input.isKeyDown(self.keys['rotate-right']):
             self._rotateRight()
-        if input.isKeyDown(OIS.KC_I):
+        if input.isKeyDown(self.keys['up']):
             self._jump()
 
     def postStep(self):
@@ -198,6 +240,17 @@ class DynamicObject(StaticObject):
         return StaticObject.__str__(self) + ", LV=(%2.2f, %2.2f, %2.2f), AV=(%2.2f, %2.2f, %2.2f)" % \
                (self._body.getLinearVel() + self._body.getAngularVel())
     
+class SphereObject(DynamicObject):
+    
+    def __init__(self, gameworld, name, size = 0.5, scale = (0.01, 0.01, 0.01), mesh = 'sphere.mesh', geomFunc = ode.GeomSphere, weight = 10):
+        DynamicObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc, weight)
+        self._body.getMass().setSphereTotal(weight, size)
+        self.keys = {'up':OIS.KC_8,
+                'down':OIS.KC_5,
+                'left':OIS.KC_4,
+                'right':OIS.KC_6,
+                'rotate-left':OIS.KC_7,
+                'rotate-right':OIS.KC_9}
 
 def assert_equal(expected, actual):
     assert round(expected,1) == round(actual,1), "Expected %0.1f, got %0.1f" % (expected, actual)
