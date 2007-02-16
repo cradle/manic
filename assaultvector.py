@@ -30,13 +30,25 @@ class GameWorld(Application):
         self.camera2.nearClipDistance = 5
     
     def _createViewports(self):
-        viewPort = self.renderWindow.addViewport(self.camera,1)
-        viewPort.setDimensions(0.0, 0.0, 1.0, 0.5)
-        self.camera.aspectRatio = viewPort.actualWidth / viewPort.actualHeight
-        viewPort2 = self.renderWindow.addViewport(self.camera2,2)
-        viewPort2.setDimensions(0.0, 0.5, 1.0, 0.5)
-        viewPort2.setOverlaysEnabled(False)
-        self.camera2.aspectRatio = viewPort2.actualWidth / viewPort2.actualHeight
+        self.viewPort = self.renderWindow.addViewport(self.camera,1)
+        self.viewPort.setDimensions(0.0, 0.0, 1.0, 0.5)
+        self.viewPort2 = self.renderWindow.addViewport(self.camera2,2)
+        self.viewPort2.setDimensions(0.0, 0.5, 1.0, 0.5)
+        self.viewPort2.setBackgroundColour((0.44,0.44,0.44))
+        self._updateViewports()
+ 
+    def _updateViewports(self):
+        if self.viewPort.actualWidth == 0:
+            self.camera2.aspectRatio = self.viewPort2.actualWidth / self.viewPort2.actualHeight
+            self.viewPort2.setOverlaysEnabled(True)
+        elif self.viewPort2.actualWidth == 0:
+            self.camera.aspectRatio = self.viewPort.actualWidth / self.viewPort.actualHeight
+            self.viewPort.setOverlaysEnabled(True)
+        else:
+            self.camera2.aspectRatio = self.viewPort2.actualWidth / self.viewPort2.actualHeight
+            self.camera.aspectRatio = self.viewPort.actualWidth / self.viewPort.actualHeight
+            self.viewPort2.setOverlaysEnabled(True)
+            self.viewPort.setOverlaysEnabled(False)
     
     def _createScene(self):
         self.sceneManager.setAmbientLight((0.25, 0.25, 0.25))
@@ -91,7 +103,18 @@ class GameWorld(Application):
         pos = self.player2._geometry.getPosition()
         self.camera2.setPosition(pos[0], pos[1], pos[2] - 20)
 
-        return not keyboard.isKeyDown(OIS.KC_ESCAPE)
+        if keyboard.isKeyDown(OIS.KC_1):
+            self.viewPort.setDimensions(0.0, 0.0, 1.0, 1.0)
+            self.viewPort2.setDimensions(0.0, 0.0, 0.0, 0.0)
+            self._updateViewports()
+        elif keyboard.isKeyDown(OIS.KC_2):
+            self.viewPort.setDimensions(0.0, 0.0, 0.0, 0.0)
+            self.viewPort2.setDimensions(0.0, 0.0, 1.0, 1.0)
+            self._updateViewports()
+        elif keyboard.isKeyDown(OIS.KC_3):
+            self.viewPort.setDimensions(0.0, 0.0, 1.0, 0.5)
+            self.viewPort2.setDimensions(0.0, 0.5, 1.0, 0.5)
+            self._updateViewports()
 
     def step(self, keyboard, steps = 1, stepSize = 0.01):
         if stepSize == 0.0:
