@@ -44,10 +44,9 @@ class GameWorld(Application):
             static.setPosition(((i-50.5),10,0))
             #self.objects += [static]
             
-        for i in range(70, 80):
-            static = StaticObject(self, "%s" % i)
-            static.setPosition(((-80.5+i),10,0))
-            #self.objects += [static]
+        static = StaticObject(self, "%sa" % i, size=(10,1,1))
+        static.setPosition(((-80.5+i),7.5,0))
+        static.setRotation((-0.84851580858230591,0,0,0.52916997671127319))
             
         for i in range(80, 90):
             static = StaticObject(self, "%s" % i)
@@ -114,11 +113,12 @@ class GameWorld(Application):
 
 class StaticObject():
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0)):
-        self._geometry = ode.GeomBox(gameworld.space, size)
+        self._size = size
+        self._geometry = ode.GeomBox(gameworld.space, self._size)
         entity = gameworld.sceneManager.createEntity('static' + name, 'crate.mesh')
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('staticNode' + name)
         self._node.attachObject(entity)
-        self._node.setScale(0.1,0.1,0.1)
+        self._node.setScale(0.1*size[0],0.1*size[1],0.1*size[2])
         self._updateDisplay()
 
     def __str__(self):
@@ -126,6 +126,10 @@ class StaticObject():
 
     def setPosition(self, position):
         self._geometry.setPosition(position)
+        self._updateDisplay()
+
+    def setRotation(self, quaternion):
+        self._geometry.setQuaternion(quaternion)
         self._updateDisplay()
 
     def _updateDisplay(self):
