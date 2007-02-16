@@ -168,10 +168,10 @@ class DynamicObject(StaticObject):
         self.keys = {
             'up':OIS.KC_I,
             'down':OIS.KC_K,
-            'left':OIS.KC_J,
-            'right':OIS.KC_L,
-            'rotate-left':OIS.KC_U,
-            'rotate-right':OIS.KC_O}
+            'left':OIS.KC_L,
+            'right':OIS.KC_J,
+            'rotate-left':OIS.KC_O,
+            'rotate-right':OIS.KC_U}
         
         StaticObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc)
         
@@ -245,12 +245,12 @@ class SphereObject(DynamicObject):
     def __init__(self, gameworld, name, size = 0.5, scale = (0.01, 0.01, 0.01), mesh = 'sphere.mesh', geomFunc = ode.GeomSphere, weight = 10):
         DynamicObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc, weight)
         self._body.getMass().setSphereTotal(weight, size)
-        self.keys = {'up':OIS.KC_8,
-                'down':OIS.KC_5,
-                'left':OIS.KC_4,
-                'right':OIS.KC_6,
-                'rotate-left':OIS.KC_7,
-                'rotate-right':OIS.KC_9}
+        self.keys = {'up':OIS.KC_NUMPAD8,
+                'down':OIS.KC_NUMPAD5,
+                'left':OIS.KC_NUMPAD4,
+                'right':OIS.KC_NUMPAD6,
+                'rotate-left':OIS.KC_NUMPAD7,
+                'rotate-right':OIS.KC_NUMPAD9}
 
 def assert_equal(expected, actual):
     assert round(expected,1) == round(actual,1), "Expected %0.1f, got %0.1f" % (expected, actual)
