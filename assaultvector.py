@@ -29,42 +29,31 @@ class GameWorld(Application):
         self.contactgroup = ode.JointGroup()
         self.objects = []
   
-        for i in range(50):
-            static = StaticObject(self, "%s" % i)
-            static.setPosition(((-25.5+i),0,0))
-            #self.objects += [static]
+        static = StaticObject(self, "bottom", size=(50,1,1))
+        static.setPosition((0,0,0))
             
-        for i in range(50, 60):
-            static = StaticObject(self, "%s" % i)
-            static.setPosition((i-50,5,0))
-            #self.objects += [static]
+        static = StaticObject(self, "%s" % 1, size=(10,1,1))
+        static.setPosition((10,5,0))
+        
+        static = StaticObject(self, "%s" % 2, size=(10,1,1))
+        static.setPosition((-10.5,10,0))
             
-        for i in range(60, 70):
-            static = StaticObject(self, "%s" % i)
-            static.setPosition(((i-50.5),10,0))
-            #self.objects += [static]
-            
-        static = StaticObject(self, "%sa" % i, size=(10,1,1))
-        static.setPosition(((-80.5+i),7.5,0))
+        static = StaticObject(self, "%sa" % 3, size=(10,1,1))
+        static.setPosition((20,7.5,0))
         static.setRotation((-0.84851580858230591,0,0,0.52916997671127319))
             
-        for i in range(80, 90):
-            static = StaticObject(self, "%s" % i)
-            static.setPosition(((-100+i),15,0))
-            #self.objects += [static]
-            
-        for i in range(30):
-            static = StaticObject(self, "%sl" % i)
-            static.setPosition((-25.5,i+1,0))
-            #self.objects += [static]
-            
-        for i in range(30):
-            static = StaticObject(self, "%sr" % i)
-            static.setPosition((+23.5,i+1,0))
-            #self.objects += [static]
+        static = StaticObject(self, "%s" % 4, size=(10,1,1))
+        static.setPosition((-15,15,0))
+        
+        static = StaticObject(self, "%sl" % 5, size=(1,50,1))
+        static.setPosition((-25,25,0))
+
+        static = StaticObject(self, "%sr" % 6, size=(1,50,1))
+        static.setPosition((25,25,0))
             
         dynamic = DynamicObject(self, "d")
         dynamic.setPosition((0.0,3.0,0.0))
+        
         self.objects += [dynamic]
         self.player = dynamic
         
@@ -141,8 +130,10 @@ class StaticObject():
 
 
 class DynamicObject(StaticObject):
-    maxMoveForce = 50000
+    maxMoveForce = 600
     maxMoveVelocity = 10
+    maxSpinForce = 700
+    maxSpinVelocity = 15
     
     def __init__(self, gameworld, name, size = (1.0,1.0,1.0), weight = 50):
         StaticObject.__init__(self, gameworld, name, size)
@@ -161,11 +152,18 @@ class DynamicObject(StaticObject):
             self._moveLeft()
         if input.isKeyDown(OIS.KC_L):
             self._moveRight()
+        if input.isKeyDown(OIS.KC_U):
+            self._rotateLeft()
+        if input.isKeyDown(OIS.KC_O):
+            self._rotateRight()
+        if input.isKeyDown(OIS.KC_I):
+            self._jump()
 
     def postStep(self):
         self._alignToZAxis()
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
+        self._motor.setAngleParam(ode.ParamFMax, 0)
         self._updateDisplay()
 
     def _alignToZAxis(self):
@@ -184,10 +182,23 @@ class DynamicObject(StaticObject):
         self._motor.setXParam(ode.ParamVel,  DynamicObject.maxMoveVelocity)
         self._motor.setXParam(ode.ParamFMax, DynamicObject.maxMoveForce)
 
+    def _rotateLeft(self):
+        self._motor.setAngleParam(ode.ParamVel,  DynamicObject.maxSpinVelocity)
+        self._motor.setAngleParam(ode.ParamFMax, DynamicObject.maxSpinForce)
+
+    def _rotateRight(self):
+        self._motor.setAngleParam(ode.ParamVel,  -DynamicObject.maxSpinVelocity)
+        self._motor.setAngleParam(ode.ParamFMax, DynamicObject.maxSpinForce)
+        
+    def _jump(self):
+        self._motor.setYParam(ode.ParamVel,  DynamicObject.maxMoveVelocity)
+        self._motor.setYParam(ode.ParamFMax, DynamicObject.maxMoveForce)
+
     def __str__(self):
         return StaticObject.__str__(self) + ", LV=(%2.2f, %2.2f, %2.2f), AV=(%2.2f, %2.2f, %2.2f)" % \
                (self._body.getLinearVel() + self._body.getAngularVel())
-        
+    
+
 def assert_equal(expected, actual):
     assert round(expected,1) == round(actual,1), "Expected %0.1f, got %0.1f" % (expected, actual)
         
