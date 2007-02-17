@@ -80,16 +80,14 @@ class GameWorld(Application):
         static = StaticObject(self, "%sr" % 6, size=(1,50,1))
         static.setPosition((25,25,0))
             
-        dynamic = SphereObject(self, "p1")
-        dynamic.setPosition((-5.0,3.0,0.0))
+        self.player = Person(self, "p1")
+        self.player.setPosition((-5.0,3.0,0.0))
         
-        self.objects += [dynamic]
-        self.player = dynamic
+        self.objects += [self.player]
         
-        dynamic = DynamicObject(self, "p2")
-        dynamic.setPosition((5.0,3.0,0.0))
-        self.objects += [dynamic]
-        self.player2 = dynamic
+        self.player2 = DynamicObject(self, "p2")
+        self.player2.setPosition((5.0,3.0,0.0))
+        self.objects += [self.player2]
         
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
@@ -136,16 +134,22 @@ class GameWorld(Application):
     def collision_callback(self, args, geom1, geom2):
         contacts = ode.collide(geom1, geom2)
 
-        for contact in contacts:
-            contact.setMode(ode.ContactSoftERP + ode.ContactSoftCFM + ode.ContactBounce)
-            contact.setBounce(0.20)
-            contact.setBounceVel(10.0)
-            contact.setMu(9200.0)
-            contact.setSoftERP(0.3)
-            contact.setSoftCFM(0.0000125)
+        for contact in contacts: #ode.ContactSoftERP + ode.ContactSoftCFM + 
+            contact.setMode(ode.ContactBounce + ode.ContactApprox1_1 + ode.ContactFDir1)
+            normal = contact.getContactGeomParams()[1]
+            contact.setFDir1((-normal[1],normal[0],0))
+            contact.setBounce(0.30)
+            contact.setBounceVel(0.0)
+            contact.setMu(1.5)
+
+            body = geom1.getBody()
+            if body:
+                # Apply rolling friction
+                # TODO: Add check for object touching ground
+                body.addTorque([x*-7.5 for x in body.getAngularVel()])
                             
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
-            joint.attach(geom1.getBody(), geom2.getBody())
+            joint.attach(body, geom2.getBody())
 
 class StaticObject():    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
@@ -225,6 +229,11 @@ class DynamicObject(StaticObject):
             self._jump()
 
     def postStep(self):
+        # Apply wind friction
+        # v^2
+        #self._body.addForce([-0.9*x*math.fabs(x)for x in self._body.getLinearVel()])
+        # Linear
+        self._body.addForce([-5.0*x for x in self._body.getLinearVel()])
         self._alignToZAxis()
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
@@ -264,7 +273,6 @@ class DynamicObject(StaticObject):
                (self._body.getLinearVel() + self._body.getAngularVel())
     
 class SphereObject(DynamicObject):
-    
     def __init__(self, gameworld, name, size = 0.5, scale = (0.01, 0.01, 0.01), mesh = 'sphere.mesh', geomFunc = ode.GeomSphere, weight = 10):
         DynamicObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc, weight)
         self._body.getMass().setSphereTotal(weight, size)
@@ -274,6 +282,9 @@ class SphereObject(DynamicObject):
                 'right':OIS.KC_NUMPAD6,
                 'rotate-left':OIS.KC_NUMPAD7,
                 'rotate-right':OIS.KC_NUMPAD9}
+
+class Person(SphereObject):
+    pass
 
 def assert_equal(expected, actual):
     assert round(expected,1) == round(actual,1), "Expected %0.1f, got %0.1f" % (expected, actual)
