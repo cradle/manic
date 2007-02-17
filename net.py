@@ -109,7 +109,7 @@ class NetCode:
 		self.reactor.stop()
 
 if __name__ == "__main__":
-	n = NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "ug0/*worz")
+	n = NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
 
 	while 1:
 		time.sleep(0.1)
