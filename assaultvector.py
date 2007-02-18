@@ -1,12 +1,12 @@
 import ode, math
 import Ogre as ogre
+import CEGUI as CEGUI
 import OIS
+from Ogre.sf_OIS import *
+#from CEGUI_framework import *   ## we need the OIS version of the framelistener
 
-ogre.OgreVersion = ogre.GetOgreVersion()
-if (ogre.OgreVersion[0]+ ogre.OgreVersion[1]) == "12":
-    from Ogre.sf import *
-else: 
-    from Ogre.sf_OIS import *
+def cegui_reldim ( x ) :
+    return CEGUI.UDim((x),0)
 
 class GameFrameListener ( FrameListener ):
     def __init__( self, game, renderWindow, camera ):
@@ -18,6 +18,18 @@ class GameFrameListener ( FrameListener ):
         return FrameListener.frameEnded(self, evt)
     
 class GameWorld(Application):
+    # /*************************************************************************
+    #     Free function handler called when editbox text changes
+    # *************************************************************************/
+    def textChangedHandler(self, e):
+        ##find the static box
+        st = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
+
+        ## set text from the edit box...
+        st.setText(e.window.getText())
+
+        return True
+    
     def _createCamera(self):
         self.camera = self.sceneManager.createCamera("Player1Cam")
         self.camera.setPosition(0,0,20)
@@ -88,11 +100,64 @@ class GameWorld(Application):
         self.player2 = DynamicObject(self, "p2")
         self.player2.setPosition((5.0,3.0,0.0))
         self.objects += [self.player2]
+
+        ## setup GUI system
+        self.GUIRenderer = CEGUI.OgreCEGUIRenderer(self.renderWindow, 
+            ogre.RENDER_QUEUE_OVERLAY, False, 3000, self.sceneManager) 
+
+        self.GUIsystem = CEGUI.System(self.GUIRenderer)
+        
+        logger = CEGUI.Logger.getSingleton()
+        logger.setLoggingLevel( CEGUI.Informative )
+
+        winMgr = CEGUI.WindowManager.getSingleton()
+        ## load scheme and set up defaults
+        CEGUI.SchemeManager.getSingleton().loadScheme("TaharezLook.scheme") 
+        self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow") 
+        CEGUI.FontManager.getSingleton().createFont("Commonwealth-10.font")
+        background = winMgr.createWindow("TaharezLook/StaticImage", "background_wnd")
+        background.setProperty("FrameEnabled", "false")
+        background.setProperty("BackgroundEnabled", "false")
+        ## install this as the root GUI sheet
+        self.GUIsystem.setGUISheet(background)
+        sheet = winMgr.createWindow("DefaultWindow", "root_wnd")
+        ## attach this to the 'real' root
+        background.addChildWindow(sheet)
+            
+        ##
+        ## Build a window with some text and formatting options via radio buttons etc
+        ##
+        textwnd = winMgr.createWindow("TaharezLook/FrameWindow", "TextWindow")
+        sheet.addChildWindow(textwnd)
+        textwnd.setPosition(CEGUI.UVector2(cegui_reldim(0.2), cegui_reldim( 0.2)))
+        textwnd.setMaxSize(CEGUI.UVector2(cegui_reldim(0.75), cegui_reldim( 0.75)))
+        textwnd.setMinSize(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.1)))
+        textwnd.setSize(CEGUI.UVector2(cegui_reldim(0.5), cegui_reldim( 0.5)))
+        textwnd.setCloseButtonEnabled(False)
+        textwnd.setText("Chat")
+        
+        st = winMgr.createWindow("TaharezLook/StaticText", "TextWindow/Static")
+        textwnd.addChildWindow(st)
+        st.setPosition(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.2)))
+        st.setSize(CEGUI.UVector2(cegui_reldim(0.5), cegui_reldim( 0.6)))
+        
+        ## Edit box for text entry
+        eb = winMgr.createWindow("TaharezLook/Editbox", "TextWindow/Editbox1")
+        textwnd.addChildWindow(eb)
+        eb.setPosition(CEGUI.UVector2(cegui_reldim(0.05), cegui_reldim( 0.85)))
+        eb.setMaxSize(CEGUI.UVector2(cegui_reldim(1.0), cegui_reldim( 0.04)))
+        eb.setSize(CEGUI.UVector2(cegui_reldim(0.90), cegui_reldim( 0.08)))
+        ## subscribe a handler to listen for when the text changes
+
+        winMgr.getWindow("TextWindow/Editbox1").setText("Type message here")
+        eb.subscribeEvent(CEGUI.Window.EventTextChanged, self.textChangedHandler,"")
+
         
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
         self.frameListener = GameFrameListener(self, self.renderWindow, self.camera)
         self.root.addFrameListener(self.frameListener)
+        self.frameListener.showDebugOverlay(False)
         
     def frameEnded(self, time, keyboard,  mouse):
         self.step(keyboard, 1, time)
