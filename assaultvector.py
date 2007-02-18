@@ -124,16 +124,47 @@ class Application(object):
            psyco.full()
        except ImportError:
            pass
-
-class GameKeyListener(OIS.KeyListener):
-    def __init__(self):
-        OIS.KeyListener.__init__(self)
-
-    def keyPressed(self, evt):
-        print "Key Pressed"
+        
+def convertOISMouseButtonToCegui( buttonID):
+    if buttonID ==0:
+        return CEGUI.LeftButton
+    elif buttonID ==1:
+        return CEGUI.RightButton
+    elif buttonID ==2:
+        return CEGUI.MiddleButton
+    elif buttonID ==3:
+        return CEGUI.X1Button
+    else:
+        return CEGUI.LeftButton
     
-    def keyReleased(self, evt):
-        print "Key Released"
+class GameKeyListener(OIS.KeyListener):
+    def __init__(self, game):
+        OIS.KeyListener.__init__(self)
+        self.game = game
+
+    def keyPressed(self, arg):
+        if arg.key == OIS.KC_ESCAPE:
+            self.ShutdownRequested = True
+        CEGUI.System.getSingleton().injectKeyDown( arg.key )
+        CEGUI.System.getSingleton().injectChar( arg.text )
+    
+    def keyReleased(self, arg):
+        CEGUI.System.getSingleton().injectKeyUp( arg.key )
+        if arg.key == OIS.KC_RETURN:
+            self.game.sendText()
+
+class GameMouseListener(OIS.MouseListener):
+    def __init__(self):
+        OIS.MouseListener.__init__( self)
+
+    def mouseMoved( self, arg ):
+        CEGUI.System.getSingleton().injectMouseMove( arg.get_state().X.rel, arg.get_state().Y.rel )
+
+    def mousePressed(  self, arg, id ):
+        CEGUI.System.getSingleton().injectMouseButtonDown(convertOISMouseButtonToCegui(id))
+
+    def mouseReleased( self, arg, id ):
+        CEGUI.System.getSingleton().injectMouseButtonUp(convertOISMouseButtonToCegui(id))
 
 class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
     """A default frame listener, which takes care of basic mouse and keyboard
@@ -163,8 +194,11 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
 
         self._setupInput()
 
-        self.keylistener = GameKeyListener()
+        self.keylistener = GameKeyListener(self.game)
         self.Keyboard.setEventCallback(self.keylistener)
+
+        self.mouselistener = GameMouseListener()
+        self.Mouse.setEventCallback(self.mouselistener)
         
     def __del__ (self ):
       ogre.WindowEventUtilities.removeWindowEventListener(self.renderWindow, self)
@@ -218,8 +252,6 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
             self.InputManager=None
             
     def frameStarted(self, frameEvent):
-        self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
-        
         if(self.renderWindow.isClosed()):
             return False
         
@@ -232,6 +264,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         return True
 
     def frameEnded(self, frameEvent):
+        self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
         self._updateStatistics()
         return True
 
@@ -296,14 +329,14 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         element.setCaption(ogre.UTFString(text))
     
 class GameWorld(Application):
-    def textChangedHandler(self, e):
-        ##find the static box
+    def sendText(self):
         st = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
-
-        ## set text from the edit box...
-        st.setText(st.getText() + e.window.getText())
-
-        return True
+        e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
+        currentText = st.getText()
+        currentText += "\n"
+        currentText += e.getText()
+        st.setText(currentText)
+        e.setText("")
     
     def _createCamera(self):
         self.camera = self.sceneManager.createCamera("Player1Cam")
@@ -412,6 +445,8 @@ class GameWorld(Application):
         textwnd.setText("Chat")
         
         st = winMgr.createWindow("TaharezLook/StaticText", "TextWindow/Static")
+        st.setProperty("HorzFormatting","WordWrapLeftAligned")
+        st.setProperty("VertFormatting", "BottomAligned")
         textwnd.addChildWindow(st)
         st.setPosition(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.2)))
         st.setSize(CEGUI.UVector2(cegui_reldim(0.5), cegui_reldim( 0.6)))
@@ -425,7 +460,7 @@ class GameWorld(Application):
         ## subscribe a handler to listen for when the text changes
 
         winMgr.getWindow("TextWindow/Editbox1").setText("Type message here")
-        eb.subscribeEvent(CEGUI.Window.EventTextChanged, self.textChangedHandler,"")
+        #eb.subscribeEvent(CEGUI.Window.EventKeyDown, self.blah,"")
 
         
     def _createFrameListener(self):
