@@ -448,21 +448,20 @@ class GameWorld(Application):
         st.setProperty("HorzFormatting","WordWrapLeftAligned")
         st.setProperty("VertFormatting", "BottomAligned")
         textwnd.addChildWindow(st)
-        st.setPosition(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.2)))
-        st.setSize(CEGUI.UVector2(cegui_reldim(0.5), cegui_reldim( 0.6)))
+        st.setPosition(CEGUI.UVector2(CEGUI.UDim(0.0,5.0), CEGUI.UDim(0.0,5.0)))
+        st.setSize(CEGUI.UVector2(CEGUI.UDim(1.0,-10.0), CEGUI.UDim(1.0,-30.0)))
         
         ## Edit box for text entry
         eb = winMgr.createWindow("TaharezLook/Editbox", "TextWindow/Editbox1")
         textwnd.addChildWindow(eb)
-        eb.setPosition(CEGUI.UVector2(cegui_reldim(0.05), cegui_reldim( 0.85)))
-        eb.setMaxSize(CEGUI.UVector2(cegui_reldim(1.0), cegui_reldim( 0.04)))
-        eb.setSize(CEGUI.UVector2(cegui_reldim(0.90), cegui_reldim( 0.08)))
+        eb.setPosition(CEGUI.UVector2(cegui_reldim(0.0), CEGUI.UDim(1.0,-30.0)))
+        eb.setMaxSize(CEGUI.UVector2(cegui_reldim(1.0), CEGUI.UDim(0.0,30.0)))
+        eb.setSize(CEGUI.UVector2(cegui_reldim(1.0), CEGUI.UDim(0.0,30.0)))
         ## subscribe a handler to listen for when the text changes
 
         winMgr.getWindow("TextWindow/Editbox1").setText("Type message here")
         #eb.subscribeEvent(CEGUI.Window.EventKeyDown, self.blah,"")
 
-        
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
         self.frameListener = FrameListener(self, self.renderWindow, self.camera, True)
