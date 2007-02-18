@@ -2,10 +2,11 @@ import ode, math
 import Ogre as ogre
 import CEGUI as CEGUI
 import OIS
+import gamenet
 
 def cegui_reldim ( x ) :
     return CEGUI.UDim((x),0)
-
+__file__ = ''
 def getPluginPath():
     """Return the absolute path to a valid plugins.cfg file.""" 
     import sys
@@ -330,13 +331,17 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
     
 class GameWorld(Application):
     def sendText(self):
-        st = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
+        self.appendText(e.getText())
+        self.net.sendMessage(e.getText())
+        e.setText("")
+
+    def appendText(self, text):
+        st = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
         currentText = st.getText()
         currentText += "\n"
-        currentText += e.getText()
+        currentText += text
         st.setText(currentText)
-        e.setText("")
     
     def _createCamera(self):
         self.camera = self.sceneManager.createCamera("Player1Cam")
@@ -462,6 +467,14 @@ class GameWorld(Application):
         winMgr.getWindow("TextWindow/Editbox1").setText("Type message here")
         #eb.subscribeEvent(CEGUI.Window.EventKeyDown, self.blah,"")
 
+        self.net = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
+        self.net.registerMessageListener(self.messageListener)
+        self.messageListener("System", "Created netcode")
+        self.net.update()
+            
+    def messageListener(self, source, message):
+        self.appendText("%s: %s" % (source, message))
+
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
         self.frameListener = FrameListener(self, self.renderWindow, self.camera, True)
@@ -470,6 +483,7 @@ class GameWorld(Application):
         
     def frameEnded(self, time, keyboard,  mouse):
         self.step(keyboard, 1, time)
+        self.net.update()
         pos = self.player._geometry.getPosition()
         self.camera.setPosition(pos[0], pos[1], pos[2] + 20)
         pos = self.player2._geometry.getPosition()

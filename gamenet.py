@@ -23,8 +23,6 @@ class NetCode:
 		# Go!
 		self.reactor.connectTCP(server, 5222, self.factory)
 		self.reactor.startRunning()
-		self.update()
-		#self.reactor.run()
 
 	def sendMessage(self, text):
 		message = domish.Element((None, 'message'))
@@ -50,7 +48,7 @@ class NetCode:
 
 	def authd(self, xmlstream):
 		self.thexmlstream = xmlstream
-		print "we've authd!"
+		self.statusListener("System", "Logged in")
 		print repr(xmlstream)
 
 		#need to send presence so clients know we're
@@ -59,24 +57,22 @@ class NetCode:
 		presence.addElement('status').addContent('Online')
 		xmlstream.send(presence)
 
-		print 'Initializing...'
 		xmlstream.addObserver('/message', self.gotMessage)
 		xmlstream.addObserver('/presence', self.gotPresence)
 		xmlstream.addObserver('/iq', self.gotIq)
 		xmlstream.addObserver('/*', self.gotSomething)
-		print 'Done init'
 
 	def gotMessage(self, el):
-		print 'Got message'
+		self.statusListener("System", 'Got message')
 
 	def gotSomething(self, el):
 		print el.toXml()
 
 	def gotIq(self, el):
-		print 'Got IQ'
+		self.statusListener("System", 'Got IQ')
 
 	def gotPresence(self, el):
-		print 'We got a presence message'
+		self.statusListener("System", 'We got a presence message')
 		try:
 			t = el.attributes['type']
 			if t == 'subscribe':
@@ -91,27 +87,38 @@ class NetCode:
 			pass
 
 	def invaliduserEvent(self, xmlstream):
-		print 'Invalid user!'
+		self.statusListener("System", 'Invalid user!')
 		if self.tryandregister:
 			self.tryandregister = 0
-			print 'Attempting to register...'
+			self.statusListener("System", 'Attempting to register...')
 			self.factory.authenticator.registerAccount(name, password)
 		else:
-			'Registration failed. Stopping reactor'
+			self.statusListener("System", 'Registration failed. Stopping reactor')
 			self.reactor.stop()
 
 	def authfailedEvent(self, xmlstream):
-		print 'Auth failed!'
+		self.statusListener("System", 'Auth failed!')
 		self.reactor.stop()
 
 	def registerfailedEvent(self, xmlstream):
-		print 'Register failed!'
+		self.statusListener("System", 'Register failed!')
 		self.reactor.stop()
 
+	def statusListener(self, name, message):
+		#print "%s: %s" % (name, message)
+		self.remoteStatusListener(name, message)
+
+	def registerMessageListener(self, method):
+		self.remoteStatusListener = method
+
+def aMethod(a,b):
+        print a,b
+
 if __name__ == "__main__":
-	n = NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
+	n = NetCode("cradle", "cradle.dyndns.org", "test", "enter")
+	n.registerMessageListener(aMethod)
 
 	while 1:
-		time.sleep(0.1)
+		time.sleep(0.000001)
 		n.update()
 		#n.sendMessage("test")
