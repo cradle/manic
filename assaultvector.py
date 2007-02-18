@@ -2,11 +2,14 @@ import ode, math
 import Ogre as ogre
 import CEGUI as CEGUI
 import OIS
-import gamenet
+import gamenet, time
 
+def aMethod(a,b):
+    print a,"=>",b
+    
 def cegui_reldim ( x ) :
     return CEGUI.UDim((x),0)
-__file__ = ''
+
 def getPluginPath():
     """Return the absolute path to a valid plugins.cfg file.""" 
     import sys
@@ -50,9 +53,10 @@ class Application(object):
         """This sets up the ogre application, and returns false if the user
         hits "cancel" in the dialog box."""
         self.root = ogre.Root(getPluginPath())
-        self.root.setFrameSmoothingPeriod (5.0)
+        self.root.setFrameSmoothingPeriod (0.0)
 
         self._setUpResources()
+        
         if not self._configure():
             return False
         
@@ -102,8 +106,10 @@ class Application(object):
     def _configure(self):
         """This shows the config dialog and creates the renderWindow."""
         carryOn = self.root.showConfigDialog()
+            
         if carryOn:
             self.renderWindow = self.root.initialise(True, "Assault Vector")
+
         return carryOn
 
     def _chooseSceneManager(self):
@@ -266,7 +272,6 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
 
     def frameEnded(self, frameEvent):
         self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
-        self._updateStatistics()
         return True
 
     def showDebugOverlay(self, show):
@@ -313,27 +318,17 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
             self.camera.translate(self.translateVector) # for using OgreRefApp
         except AttributeError:
             self.camera.moveRelative(self.translateVector)
-
-    def _updateStatistics(self):
-        statistics = self.renderWindow
-        self._setGuiCaption('Core/AverageFps', 'Average FPS: %f' % statistics.getAverageFPS())
-        self._setGuiCaption('Core/CurrFps', 'Current FPS: %f' % statistics.getLastFPS())
-        self._setGuiCaption('Core/BestFps',
-                             'Best FPS: %f %d ms' % (statistics.getBestFPS(), statistics.getBestFrameTime()))
-        self._setGuiCaption('Core/WorstFps',
-                             'Worst FPS: %f %d ms' % (statistics.getWorstFPS(), statistics.getWorstFrameTime()))
-        self._setGuiCaption('Core/NumTris', 'Triangle Count: %d' % statistics.getTriangleCount())
-        self._setGuiCaption('Core/DebugText', Application.debugText)
-
-    def _setGuiCaption(self, elementName, text):
-        element = ogre.OverlayManager.getSingleton().getOverlayElement(elementName, False)
-        element.setCaption(ogre.UTFString(text))
     
 class GameWorld(Application):
+    def __init__(self):
+        Application.__init__(self)
+        self.net = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
+        self.net.registerMessageListener(self.messageListener)
+    
     def sendText(self):
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
-        self.appendText(e.getText())
-        self.net.sendMessage(e.getText())
+        self.messageListener("Me", e.getText().c_str())
+        self.net.sendMessage(e.getText().c_str())
         e.setText("")
 
     def appendText(self, text):
@@ -466,11 +461,6 @@ class GameWorld(Application):
 
         winMgr.getWindow("TextWindow/Editbox1").setText("Type message here")
         #eb.subscribeEvent(CEGUI.Window.EventKeyDown, self.blah,"")
-
-        self.net = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
-        self.net.registerMessageListener(self.messageListener)
-        self.messageListener("System", "Created netcode")
-        self.net.update()
             
     def messageListener(self, source, message):
         self.appendText("%s: %s" % (source, message))
@@ -481,9 +471,10 @@ class GameWorld(Application):
         self.root.addFrameListener(self.frameListener)
         self.frameListener.showDebugOverlay(False)
         
-    def frameEnded(self, time, keyboard,  mouse):
-        self.step(keyboard, 1, time)
+    def frameEnded(self, frameTime, keyboard,  mouse):
         self.net.update()
+        self.step(keyboard, 1, frameTime)
+        
         pos = self.player._geometry.getPosition()
         self.camera.setPosition(pos[0], pos[1], pos[2] + 20)
         pos = self.player2._geometry.getPosition()
@@ -788,6 +779,13 @@ if __name__ == '__test__':
     t = TestGame()
     t.go()
 
-if __name__ == '__main__':
+if __name__ == '__main____main__':
+    world = GameWorld()
+    world.go()
+
+
+    
+if __name__ == "__main__":
+    import time
     world = GameWorld()
     world.go()
