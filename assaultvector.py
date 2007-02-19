@@ -659,66 +659,21 @@ class SphereObject(DynamicObject):
 
 class Person(SphereObject):
     def __init__(self, gameworld, name, size = (0.2, 1.0, 0.5), \
-                 scale = (0.01, 0.01, 0.01), \
+                 scale = (0.01, 0.01, 0.01), offset = (0.0, -1.0, 0.0), \
                  mesh = 'ninja.mesh', geomFunc = ode.GeomSphere, weight = 70):
-        # http://www.ogre3d.org/wiki/index.php/OgreOde_Walking_Character
-        self._entity = gameworld.sceneManager.createEntity("ninja" + name, "ninja.mesh")
-        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode("ninja")
-        modelNode = self._node.createChildSceneNode("ninja_model" + name)
-        modelNode.attachObject(self._entity)
-        self._node.setScale(scale)
-
-        modelNode.showBoundingBox(True)
-
-        aab = modelNode.getAttachedObject(0).getBoundingBox()
-        min = aab.getMinimum()*self._node.getScale()
-        max = aab.getMaximum()*self._node.getScale()
-        center = aab.getCenter()*self._node.getScale()
-        size = ogre.Vector3(math.fabs(max.x-min.x),math.fabs(max.y-min.y),math.fabs(max.z-min.z))
-        radius = None;
-        if size.x > size.z:
-            radius = size.z / 2.0
-        else:
-            radius = size.x / 2.0
-
-        dollSpace = ode.SimpleSpace(gameworld.space)
-        dollSpace.setCollideBits(0)
-
-        dollFeetBody = ode.Body(gameworld.world)
-        m = ode.Mass()
-        m.setSphere(70*2.5,radius)
-        dollFeetBody.setMass(m)
-        feetGeom = ode.GeomSphere(None, radius)
-        feetTrans = ode.GeomTransform(dollSpace) 
-        modelNode.translate(ogre.Vector3(0,-radius/self._node.getScale().y,0))
-        feetTrans.setBody(dollFeetBody)
-        feetTrans.setGeom(feetGeom)
-        self._node.attachObject(dollFeetBody)
-
-        dollTorsoBody = ode.Body(gameworld.world)
-        m = ode.Mass()
-        m.setCapsule(70*2.5,radius,ogre.Vector3.UNIT_Y,radius)
-        dollTorsoBody.getMass(m)
-        dollTorsoBody.setAffectedByGravity(False)
-        dollTorsoBody.setDamping(0,50000)
-        torsoTrans = ode.GeomTransform(None, dollSpace)
-        torsoGeom = ode.GeomCapsule(radius,size.y-4*radius,dollSpace)
-        torsoGeom.setPosition(ogre.Vector3(0,size.y-((size.y-4*radius)/2+2*radius),0))
-        torsoGeom.setOrientation(ogre.Quaternion(ogre.Degree(90),ogre.Vector3.UNIT_X))
-        torsoTrans.setBody(dollTorsoBody)
-        torsoTrans.setEncapsulatedGeometry(torsoGeom)
-        self._node.attachObject(dollTorsoBody)
-
-        #self._node.setDirection(1.0,0.0,0.0)
+        self._nodeOffset = offset
+        SphereObject.__init__(self, gameworld, name, 1.0, scale, mesh, geomFunc, weight)
+        self._node.setDirection(1.0,0.0,0.0)
+        self.facing = "right"
         self._camera = gameworld.camera
-
+        
         self.keys['up'] = OIS.KC_W
         self.keys['down'] = OIS.KC_S
         self.keys['left'] = OIS.KC_A
         self.keys['right'] = OIS.KC_D
         self.keys['rotate-left'] = OIS.KC_A
         self.keys['rotate-right'] = OIS.KC_D
-
+        
         self.maxStopForce = 35000
         self.maxSpinForce = 28000
         self.maxSpinVelocity = 10 # Walking
@@ -732,9 +687,22 @@ class Person(SphereObject):
         self.animation.Enabled = True
 
     def frameEnded(self, time):
-        #cameraDir = self._camera.getDirection()
+        left = ogre.Quaternion(ogre.Degree(90), ogre.Vector3.UNIT_Y)
+        right = ogre.Quaternion(ogre.Degree(-90), ogre.Vector3.UNIT_Y)
+        if self._camera.getDirection()[0] <= 0.0 and \
+           self._node.getOrientation().equals(right, ogre.Radian(ogre.Degree(5))): 
+            self._node.setOrientation(left)
+            self.facing = "left"
+        elif self._camera.getDirection()[0] > 0.0 and \
+           self._node.getOrientation().equals(left, ogre.Radian(ogre.Degree(5))): 
+            self._node.setOrientation(right)
+            self.facing = "right"
+            
         if math.fabs(self._body.getLinearVel()[0]) > 0.1:
-            self.animation.addTime(time * self._body.getLinearVel()[0] * 0.3)
+            if self.facing == "left":
+                self.animation.addTime(time * self._body.getLinearVel()[0] * -0.3)
+            else: # "right"
+                self.animation.addTime(time * self._body.getLinearVel()[0] * 0.3)
 
     def _jump(self):
         if self._geometry.isOnGround:
@@ -759,6 +727,7 @@ class Person(SphereObject):
 
     def _updateDisplay(self):
         p = self._geometry.getPosition()
+        o = self._nodeOffset
         self._node.setPosition(p[0]+o[0], p[1]+o[1], p[2]+o[2])
 
 
