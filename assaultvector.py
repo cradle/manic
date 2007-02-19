@@ -165,16 +165,19 @@ class GameKeyListener(OIS.KeyListener):
     def keyReleased(self, arg):
         if len(self.keyToRepeat) != 0 and arg.key == self.keyToRepeat['key']:
             self.keyToRepeat = {}
-        
+            
         CEGUI.System.getSingleton().injectKeyUp( arg.key )
-        if arg.key == OIS.KC_RETURN:
-            self.game.sendText()
 
         static = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
         chat = CEGUI.WindowManager.getSingleton().getWindow("TextWindow")
         editBox = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
 
         # TODO: Put more thought into HCI
+        if arg.key == OIS.KC_RETURN and editBox.hasInputFocus():
+            self.game.sendText()
+            static.activate() # Remove focus from editbox
+            chat.setEnabled(False)
+            
         if arg.key == OIS.KC_T and \
            (chat.isDisabled() or (not chat.isDisabled() and not editBox.hasInputFocus())):
             chat.setEnabled(True)
@@ -321,7 +324,7 @@ class GameWorld(Application):
         self.net = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
         self.net.registerMessageListener(self.messageListener)
         self.timeBetweenNetworkUpdates = 0.1
-        self.stepTime = 0.001
+        self.stepSize = 1.0/60.0
         self.timeUntilNextNetworkUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
     
@@ -420,7 +423,8 @@ class GameWorld(Application):
         #textwnd.setMinSize(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.1)))
         textwnd.setSize(CEGUI.UVector2(cegui_reldim(0.55), cegui_reldim( 0.2)))
         textwnd.setCloseButtonEnabled(False)
-        textwnd.setText("Chat")
+        textwnd.setText("Chat (press 't' to activate, 'Enter' to send, 'ESC' to cancel)")
+        textwnd.setEnabled(False)
         
         st = winMgr.createWindow("TaharezLook/StaticText", "TextWindow/Static")
         st.setProperty("HorzFormatting","WordWrapLeftAligned")
@@ -450,15 +454,15 @@ class GameWorld(Application):
         self.root.addFrameListener(self.frameListener)
         
     def frameEnded(self, frameTime, keyboard,  mouse):
-        self.timeUntilNextNetworkPoll -= frameTime
-        if self.timeUntilNextNetworkPoll <= 0.0:
+        self.timeUntilNextNetworkUpdate -= frameTime
+        if self.timeUntilNextNetworkUpdate <= 0.0:
             self.net.update()
-            while self.timeUntilNextNetworkPoll <= 0.0:
-                self.timeUntilNextNetworkPoll += self.timeBetweenNetworkPolls
+            while self.timeUntilNextNetworkUpdate <= 0.0:
+                self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
         self.timeUntilNextEngineUpdate -= frameTime
         while self.timeUntilNextEngineUpdate <= 0.0:
-            self.step(keyboard, 1, self.stepSize)
+            self.step(keyboard)
             for object in self.objects:
                 object.frameEnded(self.stepSize)
             self.timeUntilNextEngineUpdate += self.stepSize
@@ -466,22 +470,21 @@ class GameWorld(Application):
         pos = self.player._geometry.getPosition()
         self.camera.setPosition(pos[0], pos[1], pos[2] + 20)
 
-    def step(self, keyboard, steps = 1, stepSize = 0.01):
-        if stepSize == 0.0:
+    def step(self, keyboard):
+        if self.stepSize == 0.0:
             return 
     
-        for i in range(steps):
-            self.space.collide(0, self.collision_callback)
+        self.space.collide(0, self.collision_callback)
+        
+        for object in self.objects:
+            object.preStep(keyboard)
             
-            for object in self.objects:
-                object.preStep(keyboard)
-                
-            self.world.step(stepSize)
+        self.world.step(self.stepSize)
+        
+        for object in self.objects:
+            object.postStep()
             
-            for object in self.objects:
-                object.postStep()
-                
-            self.contactgroup.empty()
+        self.contactgroup.empty()
 
     def collision_callback(self, args, geom1, geom2):
         contacts = ode.collide(geom1, geom2)
@@ -576,6 +579,16 @@ class DynamicObject(StaticObject):
         self._geometry.isOnGround = False
 
     def preStep(self, input):
+        # TODO: Move, for lack of a better home...
+        # Apply wind friction
+        # v^2
+        self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
+        # Linear
+        #self._body.addForce([-5.0*x for x in self._body.getLinearVel()])
+        
+        if CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1").hasInputFocus():
+            return
+        
         if input.isKeyDown(self.keys['left']):
             self._moveLeft()
         elif input.isKeyDown(self.keys['right']):
@@ -592,11 +605,6 @@ class DynamicObject(StaticObject):
             self._prone()
 
     def postStep(self):
-        # Apply wind friction
-        # v^2
-        self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
-        # Linear
-        #self._body.addForce([-5.0*x for x in self._body.getLinearVel()])
         self._alignToZAxis()
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
@@ -668,6 +676,10 @@ class Person(SphereObject):
         self._node.setDirection(1.0,0.0,0.0)
         self.facing = "right"
         self._camera = gameworld.camera
+
+        self.timeNeededToPrepareJump = 0.1
+        self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
+        self.wantsToJump = False
         
         self.keys['up'] = OIS.KC_W
         self.keys['down'] = OIS.KC_S
@@ -678,10 +690,10 @@ class Person(SphereObject):
         
         self.maxStopForce = 35000
         self.maxSpinForce = 28000
-        self.maxSpinVelocity = 10 # Walking
+        self.maxSpinVelocity = 10
         self.maxMoveForce = 20
         self.maxMoveVelocity = 1
-        self.maxJumpForce = 140000
+        self.maxJumpForce = ode.Infinity
         self.maxJumpVelocity = 10
 
         ogre.Animation.setDefaultInterpolationMode(ogre.Animation.IM_SPLINE)
@@ -706,10 +718,21 @@ class Person(SphereObject):
             else: # "right"
                 self.animation.addTime(time * self._body.getLinearVel()[0] * 0.3)
 
+        # TODO: I hate flags!!!
+        if self.wantsToJump:
+            self.timeLeftUntilCanJump -= time
+        else:
+            self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
+
     def _jump(self):
-        if self._geometry.isOnGround:
+        if self._geometry.isOnGround and self.timeLeftUntilCanJump <= 0:
             self._motor.setYParam(ode.ParamVel,  self.maxJumpVelocity)
             self._motor.setYParam(ode.ParamFMax, self.maxJumpForce)
+            self.wantsToJump = False
+        elif self._geometry.isOnGround:
+            self.wantsToJump = True
+        else:
+            self.wantsToJump = False
 
     def _rotateLeft(self):
         if self._geometry.isOnGround:
@@ -719,6 +742,7 @@ class Person(SphereObject):
         if self._geometry.isOnGround:
             SphereObject._rotateRight(self)
 
+    # TODO: Should be pre-step? Post-collision?
     def postStep(self):
         isOnGround = self._geometry.isOnGround
         SphereObject.postStep(self)
