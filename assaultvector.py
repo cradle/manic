@@ -100,12 +100,9 @@ class Application(object):
         pass
 
     def _loadResources(self):
-        """This loads all initial resources.  Redefine this if you do not want
-        to load all resources at startup."""
         ogre.ResourceGroupManager.getSingleton().initialiseAllResourceGroups()
 
     def _configure(self):
-        """This shows the config dialog and creates the renderWindow."""
         carryOn = self.root.showConfigDialog()
             
         if carryOn:
@@ -114,19 +111,12 @@ class Application(object):
         return carryOn
 
     def _chooseSceneManager(self):
-        """Chooses a default SceneManager."""
-        #typedef uint16 SceneTypeMask;
-        #md=ogre.SceneManagerMetaData()
-        #md.sceneTypeMask=ogre.ST_GENERIC
-        #print dir(self.root)    
         self.sceneManager = self.root.createSceneManager(ogre.ST_GENERIC,"ExampleSMInstance")
 
     def _isPsycoEnabled(self):
-        """Override this function and return True to turn on Psyco"""
         return True
 
     def _activatePsyco(self):        
-       """Import Psyco if available"""
        try:
            import psyco
            psyco.full()
@@ -330,6 +320,10 @@ class GameWorld(Application):
         Application.__init__(self)
         self.net = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
         self.net.registerMessageListener(self.messageListener)
+        self.timeBetweenNetworkUpdates = 0.1
+        self.stepTime = 0.001
+        self.timeUntilNextNetworkUpdate = 0.0
+        self.timeUntilNextEngineUpdate = 0.0
     
     def sendText(self):
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
@@ -456,13 +450,21 @@ class GameWorld(Application):
         self.root.addFrameListener(self.frameListener)
         
     def frameEnded(self, frameTime, keyboard,  mouse):
-        self.net.update()
-        stepSize = 0.001
-        self.step(keyboard, 1, frameTime)
+        self.timeUntilNextNetworkPoll -= frameTime
+        if self.timeUntilNextNetworkPoll <= 0.0:
+            self.net.update()
+            while self.timeUntilNextNetworkPoll <= 0.0:
+                self.timeUntilNextNetworkPoll += self.timeBetweenNetworkPolls
+
+        self.timeUntilNextEngineUpdate -= frameTime
+        while self.timeUntilNextEngineUpdate <= 0.0:
+            self.step(keyboard, 1, self.stepSize)
+            for object in self.objects:
+                object.frameEnded(self.stepSize)
+            self.timeUntilNextEngineUpdate += self.stepSize
+                
         pos = self.player._geometry.getPosition()
         self.camera.setPosition(pos[0], pos[1], pos[2] + 20)
-        for object in self.objects:
-            object.frameEnded(frameTime)
 
     def step(self, keyboard, steps = 1, stepSize = 0.01):
         if stepSize == 0.0:
