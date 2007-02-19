@@ -54,7 +54,7 @@ class Application(object):
         """This sets up the ogre application, and returns false if the user
         hits "cancel" in the dialog box."""
         self.root = ogre.Root(getPluginPath())
-        self.root.setFrameSmoothingPeriod (0.0)
+        self.root.setFrameSmoothingPeriod(5.0)
 
         self._setUpResources()
         
@@ -123,7 +123,7 @@ class Application(object):
 
     def _isPsycoEnabled(self):
         """Override this function and return True to turn on Psyco"""
-        return False
+        return True
 
     def _activatePsyco(self):        
        """Import Psyco if available"""
@@ -199,17 +199,34 @@ class GameKeyListener(OIS.KeyListener):
             chat.setEnabled(chat.isVisible())
 
 class GameMouseListener(OIS.MouseListener):
-    def __init__(self):
+    def __init__(self, game):
+        self.game = game
         OIS.MouseListener.__init__( self)
 
     def mouseMoved( self, arg ):
-        CEGUI.System.getSingleton().injectMouseMove( arg.get_state().X.rel, arg.get_state().Y.rel )
+        #CEGUI.System.getSingleton().injectMouseMove( arg.get_state().X.rel, arg.get_state().Y.rel )
+        self.game.camera.yaw(ogre.Radian(- arg.get_state().X.rel * 0.06))
+        self.game.camera.pitch(ogre.Radian(- arg.get_state().Y.rel * 0.11))
+        d = self.game.camera.getDirection()
+        # TODO: Make circular?
+        # TODO: Swing camera on circular path away from directly in front of character?
+        if d.x >= 0.35:
+            d.x = 0.35
+        if d.x <= -0.35:
+            d.x = -0.35
+        if d.y >= 0.39:
+            d.y = 0.39
+        if d.y <= -0.39:
+            d.y = -0.39
+        self.game.camera.setDirection(d)
 
     def mousePressed(  self, arg, id ):
-        CEGUI.System.getSingleton().injectMouseButtonDown(convertOISMouseButtonToCegui(id))
+        pass
+        #CEGUI.System.getSingleton().injectMouseButtonDown(convertOISMouseButtonToCegui(id))
 
     def mouseReleased( self, arg, id ):
-        CEGUI.System.getSingleton().injectMouseButtonUp(convertOISMouseButtonToCegui(id))
+        pass
+        #CEGUI.System.getSingleton().injectMouseButtonUp(convertOISMouseButtonToCegui(id))
 
 class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
     """A default frame listener, which takes care of basic mouse and keyboard
@@ -228,7 +245,6 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         self.rotationScale = 0.0
         self.translateVector = ogre.Vector3(0.0,0.0,0.0)
         self.filtering = ogre.TFO_BILINEAR
-        self.showDebugOverlay(True)
         self.moveSpeed = 100.0
         self.rotationSpeed = 8.0
         self.displayCameraDetails = False
@@ -242,7 +258,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         self.keylistener = GameKeyListener(self.game)
         self.Keyboard.setEventCallback(self.keylistener)
 
-        self.mouselistener = GameMouseListener()
+        self.mouselistener = GameMouseListener(self.game)
         self.Mouse.setEventCallback(self.mouselistener)
         
     def __del__ (self ):
@@ -250,8 +266,6 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
       self.windowClosed(self.renderWindow)
       
     def _setupInput(self):
-        # ignore buffered input
-        
          windowHnd = self.renderWindow.getCustomAttributeInt("WINDOW")
          self.InputManager = \
              OIS.createPythonInputSystem([("WINDOW",str(windowHnd))])
@@ -266,8 +280,6 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
          
          #Set initial mouse clipping size
          self.windowResized(self.renderWindow)
-         
-         self.showDebugOverlay(True)
          
          #Register as a Window listener
          ogre.WindowEventUtilities.addWindowEventListener(self.renderWindow, self);
@@ -312,51 +324,6 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         self.keylistener.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard)
         self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
         return True
-
-    def showDebugOverlay(self, show):
-        """Turns the debug overlay (frame statistics) on or off."""
-        overlay = ogre.OverlayManager.getSingleton().getByName('Core/DebugOverlay')
-        if overlay is None:
-            raise ogre.Exception(111, "Could not find overlay Core/DebugOverlay", "SampleFramework.py")
-        if show:
-            overlay.show()
-        else:
-            overlay.hide()
-
-    def _processUnbufferedKeyInput(self, frameEvent):
-        if self.Keyboard.isKeyDown(OIS.KC_ESCAPE) or self.Keyboard.isKeyDown(OIS.KC_Q):
-            return False
-        return True        
-        
-    def _isToggleKeyDown(self, keyCode, toggleTime = 1.0):
-        if self.Keyboard.isKeyDown(keyCode)and self.timeUntilNextToggle <=0:
-            self.timeUntilNextToggle = toggleTime
-            return True
-        return False
-        
-    def _isToggleMouseDown(self, Button, toggleTime = 1.0): 
-        ms = self.Mouse.getMouseState() 
-        if ms.buttonDown( Button ) and self.timeUntilNextToggle <=0: 
-            self.timeUntilNextToggle = toggleTime 
-            return True 
-        return False 
-
-    def _processUnbufferedMouseInput(self, frameEvent):
-        ms = self.Mouse.getMouseState()
-        if ms.buttonDown( OIS.MB_Right ):
-            self.translateVector.x += ms.X.rel * 0.13
-            self.translateVector.y -= ms.Y.rel * 0.13
-        else:
-            self.rotationX = ogre.Radian(- ms.X.rel * 0.13)
-            self.rotationY = ogre.Radian(- ms.Y.rel * 0.13)
-
-    def _moveCamera(self):
-        self.camera.yaw(self.rotationX)
-        self.camera.pitch(self.rotationY)
-        try:
-            self.camera.translate(self.translateVector) # for using OgreRefApp
-        except AttributeError:
-            self.camera.moveRelative(self.translateVector)
     
 class GameWorld(Application):
     def __init__(self):
@@ -382,72 +349,49 @@ class GameWorld(Application):
         self.camera.setPosition(0,0,20)
         self.camera.lookAt(0,0.5,0)
         self.camera.nearClipDistance = 5
- 
-        self.camera2 = self.sceneManager.createCamera("Player2Cam") 
-        self.camera2.setPosition(0,0,-20)
-        self.camera2.lookAt(0,0.5,0)
-        self.camera2.nearClipDistance = 5
     
     def _createViewports(self):
         self.viewPort = self.renderWindow.addViewport(self.camera,1)
-        self.viewPort.setDimensions(0.0, 0.0, 1.0, 0.5)
-        self.viewPort2 = self.renderWindow.addViewport(self.camera2,2)
-        self.viewPort2.setDimensions(0.0, 0.5, 1.0, 0.5)
-        self.viewPort2.setBackgroundColour((0.44,0.44,0.44))
-        self._updateViewports()
- 
-    def _updateViewports(self):
-        if self.viewPort.actualWidth == 0:
-            self.camera2.aspectRatio = self.viewPort2.actualWidth / self.viewPort2.actualHeight
-            self.viewPort2.setOverlaysEnabled(True)
-        elif self.viewPort2.actualWidth == 0:
-            self.camera.aspectRatio = self.viewPort.actualWidth / self.viewPort.actualHeight
-            self.viewPort.setOverlaysEnabled(True)
-        else:
-            self.camera2.aspectRatio = self.viewPort2.actualWidth / self.viewPort2.actualHeight
-            self.camera.aspectRatio = self.viewPort.actualWidth / self.viewPort.actualHeight
-            self.viewPort2.setOverlaysEnabled(True)
-            self.viewPort.setOverlaysEnabled(True)
-            
+        self.viewPort.setDimensions(0.0, 0.0, 1.0, 1.0)
+        self.camera.aspectRatio = self.viewPort.actualWidth / self.viewPort.actualHeight
+        self.viewPort.setOverlaysEnabled(True)             
     
     def _createScene(self):
-        self.sceneManager.setAmbientLight((0.25, 0.25, 0.25))
+        self.sceneManager.setAmbientLight((0.75, 0.75, 0.75))
         self.world = ode.World()
         self.world.setGravity((0,-9.81,0))
+        #self.world.setERP(0.2)
+        #self.world.setCFM(0.0000001)
         self.space = ode.Space()
         self.contactgroup = ode.JointGroup()
         self.objects = []
   
-        static = StaticObject(self, "bottom", size=(50,1,1))
+        static = StaticObject(self, "bottom", size=(50,1,3))
         static.setPosition((0,0,0))
             
-        static = StaticObject(self, "%s" % 1, size=(10,1,1))
+        static = StaticObject(self, "%s" % 1, size=(10,1,3))
         static.setPosition((10,5,0))
         
-        static = StaticObject(self, "%s" % 2, size=(10,1,1))
+        static = StaticObject(self, "%s" % 2, size=(10,1,3))
         static.setPosition((-10.5,10,0))
             
-        static = StaticObject(self, "%sa" % 3, size=(10,1,1))
+        static = StaticObject(self, "%sa" % 3, size=(10,1,3))
         static.setPosition((20,7.5,0))
         static.setRotation((-0.84851580858230591,0,0,0.52916997671127319))
             
-        static = StaticObject(self, "%s" % 4, size=(10,1,1))
+        static = StaticObject(self, "%s" % 4, size=(10,1,3))
         static.setPosition((-15,15,0))
         
-        static = StaticObject(self, "%sl" % 5, size=(1,50,1))
+        static = StaticObject(self, "%sl" % 5, size=(1,50,3))
         static.setPosition((-25,25,0))
 
-        static = StaticObject(self, "%sr" % 6, size=(1,50,1))
+        static = StaticObject(self, "%sr" % 6, size=(1,50,3))
         static.setPosition((25,25,0))
             
         self.player = Person(self, "p1")
         self.player.setPosition((-5.0,3.0,0.0))
         
         self.objects += [self.player]
-        
-        self.player2 = DynamicObject(self, "p2")
-        self.player2.setPosition((5.0,3.0,0.0))
-        self.objects += [self.player2]
 
         ## setup GUI system
         self.GUIRenderer = CEGUI.OgreCEGUIRenderer(self.renderWindow, 
@@ -461,7 +405,7 @@ class GameWorld(Application):
         winMgr = CEGUI.WindowManager.getSingleton()
         ## load scheme and set up defaults
         CEGUI.SchemeManager.getSingleton().loadScheme("TaharezLook.scheme") 
-        self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow") 
+        #self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow") 
         CEGUI.FontManager.getSingleton().createFont("Commonwealth-10.font")
         background = winMgr.createWindow("TaharezLook/StaticImage", "background_wnd")
         background.setProperty("FrameEnabled", "false")
@@ -477,10 +421,10 @@ class GameWorld(Application):
         ##
         textwnd = winMgr.createWindow("TaharezLook/FrameWindow", "TextWindow")
         sheet.addChildWindow(textwnd)
-        textwnd.setPosition(CEGUI.UVector2(cegui_reldim(0.2), cegui_reldim( 0.2)))
-        textwnd.setMaxSize(CEGUI.UVector2(cegui_reldim(0.75), cegui_reldim( 0.75)))
-        textwnd.setMinSize(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.1)))
-        textwnd.setSize(CEGUI.UVector2(cegui_reldim(0.5), cegui_reldim( 0.5)))
+        textwnd.setPosition(CEGUI.UVector2(cegui_reldim(0.2), cegui_reldim( 0.8)))
+        #textwnd.setMaxSize(CEGUI.UVector2(cegui_reldim(0.4), cegui_reldim( 0.2)))
+        #textwnd.setMinSize(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.1)))
+        textwnd.setSize(CEGUI.UVector2(cegui_reldim(0.55), cegui_reldim( 0.2)))
         textwnd.setCloseButtonEnabled(False)
         textwnd.setText("Chat")
         
@@ -510,30 +454,15 @@ class GameWorld(Application):
         self.frameListener = FrameListener(self, self.renderWindow, self.camera, True)
         self.keylistener = GameKeyListener(self)
         self.root.addFrameListener(self.frameListener)
-        #self.frameListener.showDebugOverlay(False)
         
     def frameEnded(self, frameTime, keyboard,  mouse):
         self.net.update()
+        stepSize = 0.001
         self.step(keyboard, 1, frameTime)
-        
         pos = self.player._geometry.getPosition()
         self.camera.setPosition(pos[0], pos[1], pos[2] + 20)
-        pos = self.player2._geometry.getPosition()
-        self.camera2.setPosition(pos[0], pos[1], pos[2] - 20)
-
-        if keyboard.isKeyDown(OIS.KC_1):
-            self.viewPort.setDimensions(0.0, 0.0, 1.0, 1.0)
-            self.viewPort2.setDimensions(0.0, 0.0, 0.0, 0.0)
-            self._updateViewports()
-        elif keyboard.isKeyDown(OIS.KC_2):
-            self.viewPort.setDimensions(0.0, 0.0, 0.0, 0.0)
-            self.viewPort2.setDimensions(0.0, 0.0, 1.0, 1.0)
-            self._updateViewports()
-        elif keyboard.isKeyDown(OIS.KC_3):
-            self.viewPort.setDimensions(0.0, 0.0, 1.0, 0.5)
-            self.viewPort2.setDimensions(0.0, 0.5, 1.0, 0.5)
-            self._updateViewports()
-
+        for object in self.objects:
+            object.frameEnded(frameTime)
 
     def step(self, keyboard, steps = 1, stepSize = 0.01):
         if stepSize == 0.0:
@@ -556,18 +485,20 @@ class GameWorld(Application):
         contacts = ode.collide(geom1, geom2)
 
         for contact in contacts: #ode.ContactSoftERP + ode.ContactSoftCFM + 
-            contact.setMode(ode.ContactBounce + ode.ContactApprox1_1 + ode.ContactFDir1)
-            normal = contact.getContactGeomParams()[1]
-            contact.setFDir1((-normal[1],normal[0],0))
+            contact.setMode(ode.ContactBounce + ode.ContactApprox1_1)
             contact.setBounce(0.30)
             contact.setBounceVel(0.0)
-            contact.setMu(1.5)
+            contact.setMu(1.7)
 
             body = geom1.getBody()
             if body:
-                # Apply rolling friction
-                # TODO: Add check for object touching ground
-                body.addTorque([x*-7.5 for x in body.getAngularVel()])
+                # Assume that if collision normal is facing up we are 'on ground'
+                normal = contact.getContactGeomParams()[1]
+                if normal[1] > 0.05: # normal.y points "up"
+                    geom1.isOnGround = True
+                
+                    # Apply rolling friction
+                    body.addTorque([x*-2.0 for x in body.getAngularVel()])
                             
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
             joint.attach(body, geom2.getBody())
@@ -576,9 +507,9 @@ class StaticObject():
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
         self._size = size
         self._geometry = geomFunc(gameworld.space, self._size)
-        entity = gameworld.sceneManager.createEntity('entity_' + name, mesh)
+        self._entity = gameworld.sceneManager.createEntity('entity_' + name, mesh)
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
-        self._node.attachObject(entity)
+        self._node.attachObject(self._entity)
         
         if hasattr(size, "__getitem__"):
             self._node.setScale(scale[0]*size[0],scale[1]*size[1],scale[2]*size[2])
@@ -607,21 +538,24 @@ class StaticObject():
 
 
 class DynamicObject(StaticObject):
-    maxMoveForce = 2000
-    maxMoveVelocity = 10
-    maxSpinForce = 700
-    maxSpinVelocity = 15
     
-    def __init__(self, gameworld, name, size = (1.0,1.0,1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox, weight = 50):
+    def __init__(self, gameworld, name, size = (1.0,1.0,1.0), \
+                 scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox, weight = 50):
+        StaticObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc)
+
         self.keys = {
             'up':OIS.KC_I,
             'down':OIS.KC_K,
+            'downdown':OIS.KC_Z,
             'left':OIS.KC_L,
             'right':OIS.KC_J,
             'rotate-left':OIS.KC_O,
             'rotate-right':OIS.KC_U}
         
-        StaticObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc)
+        self.maxMoveForce = 2000
+        self.maxMoveVelocity = 10
+        self.maxSpinForce = 700
+        self.maxSpinVelocity = 15
         
         self._body = ode.Body(gameworld.world)
         mass = ode.Mass()
@@ -637,28 +571,35 @@ class DynamicObject(StaticObject):
         self._motor = ode.Plane2DJoint(gameworld.world)
         self._motor.attach(self._body, ode.environment)
 
+        self._geometry.isOnGround = False
+
     def preStep(self, input):
         if input.isKeyDown(self.keys['left']):
             self._moveLeft()
-        if input.isKeyDown(self.keys['right']):
+        elif input.isKeyDown(self.keys['right']):
             self._moveRight()
         if input.isKeyDown(self.keys['rotate-left']):
             self._rotateLeft()
-        if input.isKeyDown(self.keys['rotate-right']):
+        elif input.isKeyDown(self.keys['rotate-right']):
             self._rotateRight()
         if input.isKeyDown(self.keys['up']):
             self._jump()
+        elif input.isKeyDown(self.keys['down']):
+            self._crouch()
+        elif input.isKeyDown(self.keys['downdown']):
+            self._prone()
 
     def postStep(self):
         # Apply wind friction
         # v^2
-        #self._body.addForce([-0.9*x*math.fabs(x)for x in self._body.getLinearVel()])
+        self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
         # Linear
-        self._body.addForce([-5.0*x for x in self._body.getLinearVel()])
+        #self._body.addForce([-5.0*x for x in self._body.getLinearVel()])
         self._alignToZAxis()
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
         self._motor.setAngleParam(ode.ParamFMax, 0)
+        self._geometry.isOnGround = False
         self._updateDisplay()
 
     def _alignToZAxis(self):
@@ -670,42 +611,156 @@ class DynamicObject(StaticObject):
         # http://opende.sourceforge.net/wiki/index.php/HOWTO_constrain_objects_to_2d
         
     def _moveLeft(self):
-        self._motor.setXParam(ode.ParamVel, -DynamicObject.maxMoveVelocity)
-        self._motor.setXParam(ode.ParamFMax, DynamicObject.maxMoveForce)
+        self._motor.setXParam(ode.ParamVel, -self.maxMoveVelocity)
+        self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
         
     def _moveRight(self):
-        self._motor.setXParam(ode.ParamVel,  DynamicObject.maxMoveVelocity)
-        self._motor.setXParam(ode.ParamFMax, DynamicObject.maxMoveForce)
+        self._motor.setXParam(ode.ParamVel,  self.maxMoveVelocity)
+        self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
 
     def _rotateLeft(self):
-        self._motor.setAngleParam(ode.ParamVel,  DynamicObject.maxSpinVelocity)
-        self._motor.setAngleParam(ode.ParamFMax, DynamicObject.maxSpinForce)
+        self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity)
+        self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
 
     def _rotateRight(self):
-        self._motor.setAngleParam(ode.ParamVel,  -DynamicObject.maxSpinVelocity)
-        self._motor.setAngleParam(ode.ParamFMax, DynamicObject.maxSpinForce)
+        self._motor.setAngleParam(ode.ParamVel,  -self.maxSpinVelocity)
+        self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
         
     def _jump(self):
-        self._motor.setYParam(ode.ParamVel,  DynamicObject.maxMoveVelocity)
-        self._motor.setYParam(ode.ParamFMax, DynamicObject.maxMoveForce)
+        if self._geometry.isOnGround:
+            self._motor.setYParam(ode.ParamVel,  self.maxMoveVelocity)
+            self._motor.setYParam(ode.ParamFMax, self.maxMoveForce)
+
+    def _crouch(self):
+        pass
+
+    def _prone(self):
+        pass
 
     def __str__(self):
         return StaticObject.__str__(self) + ", LV=(%2.2f, %2.2f, %2.2f), AV=(%2.2f, %2.2f, %2.2f)" % \
                (self._body.getLinearVel() + self._body.getAngularVel())
     
 class SphereObject(DynamicObject):
-    def __init__(self, gameworld, name, size = 0.5, scale = (0.01, 0.01, 0.01), mesh = 'sphere.mesh', geomFunc = ode.GeomSphere, weight = 10):
+    def __init__(self, gameworld, name, size = 0.5, scale = (0.01, 0.01, 0.01), \
+                 mesh = 'sphere.mesh', geomFunc = ode.GeomSphere, weight = 10):
+        
         DynamicObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc, weight)
-        self._body.getMass().setSphereTotal(weight, size)
-        self.keys = {'up':OIS.KC_NUMPAD8,
-                'down':OIS.KC_NUMPAD5,
-                'left':OIS.KC_NUMPAD4,
-                'right':OIS.KC_NUMPAD6,
-                'rotate-left':OIS.KC_NUMPAD7,
-                'rotate-right':OIS.KC_NUMPAD9}
+
+        if type(size) == float or type(size) == int:
+            self._body.getMass().setSphereTotal(weight, size)
+            
+        self.keys['up'] = OIS.KC_NUMPAD8
+        self.keys['down'] = OIS.KC_NUMPAD5
+        self.keys['left'] = OIS.KC_NUMPAD4
+        self.keys['right'] = OIS.KC_NUMPAD6
+        self.keys['rotate-left'] = OIS.KC_NUMPAD7
+        self.keys['rotate-right'] = OIS.KC_NUMPAD9
 
 class Person(SphereObject):
-    pass
+    def __init__(self, gameworld, name, size = (0.2, 1.0, 0.5), \
+                 scale = (0.01, 0.01, 0.01), \
+                 mesh = 'ninja.mesh', geomFunc = ode.GeomSphere, weight = 70):
+        # http://www.ogre3d.org/wiki/index.php/OgreOde_Walking_Character
+        self._entity = gameworld.sceneManager.createEntity("ninja" + name, "ninja.mesh")
+        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode("ninja")
+        modelNode = self._node.createChildSceneNode("ninja_model" + name)
+        modelNode.attachObject(self._entity)
+        self._node.setScale(scale)
+
+        modelNode.showBoundingBox(True)
+
+        aab = modelNode.getAttachedObject(0).getBoundingBox()
+        min = aab.getMinimum()*self._node.getScale()
+        max = aab.getMaximum()*self._node.getScale()
+        center = aab.getCenter()*self._node.getScale()
+        size = ogre.Vector3(math.fabs(max.x-min.x),math.fabs(max.y-min.y),math.fabs(max.z-min.z))
+        radius = None;
+        if size.x > size.z:
+            radius = size.z / 2.0
+        else:
+            radius = size.x / 2.0
+
+        dollSpace = ode.SimpleSpace(gameworld.space)
+        dollSpace.setCollideBits(0)
+
+        dollFeetBody = ode.Body(gameworld.world)
+        m = ode.Mass()
+        m.setSphere(70*2.5,radius)
+        dollFeetBody.setMass(m)
+        feetGeom = ode.GeomSphere(None, radius)
+        feetTrans = ode.GeomTransform(dollSpace) 
+        modelNode.translate(ogre.Vector3(0,-radius/self._node.getScale().y,0))
+        feetTrans.setBody(dollFeetBody)
+        feetTrans.setGeom(feetGeom)
+        self._node.attachObject(dollFeetBody)
+
+        dollTorsoBody = ode.Body(gameworld.world)
+        m = ode.Mass()
+        m.setCapsule(70*2.5,radius,ogre.Vector3.UNIT_Y,radius)
+        dollTorsoBody.getMass(m)
+        dollTorsoBody.setAffectedByGravity(False)
+        dollTorsoBody.setDamping(0,50000)
+        torsoTrans = ode.GeomTransform(None, dollSpace)
+        torsoGeom = ode.GeomCapsule(radius,size.y-4*radius,dollSpace)
+        torsoGeom.setPosition(ogre.Vector3(0,size.y-((size.y-4*radius)/2+2*radius),0))
+        torsoGeom.setOrientation(ogre.Quaternion(ogre.Degree(90),ogre.Vector3.UNIT_X))
+        torsoTrans.setBody(dollTorsoBody)
+        torsoTrans.setEncapsulatedGeometry(torsoGeom)
+        self._node.attachObject(dollTorsoBody)
+
+        #self._node.setDirection(1.0,0.0,0.0)
+        self._camera = gameworld.camera
+
+        self.keys['up'] = OIS.KC_W
+        self.keys['down'] = OIS.KC_S
+        self.keys['left'] = OIS.KC_A
+        self.keys['right'] = OIS.KC_D
+        self.keys['rotate-left'] = OIS.KC_A
+        self.keys['rotate-right'] = OIS.KC_D
+
+        self.maxStopForce = 35000
+        self.maxSpinForce = 28000
+        self.maxSpinVelocity = 10 # Walking
+        self.maxMoveForce = 20
+        self.maxMoveVelocity = 1
+        self.maxJumpForce = 140000
+        self.maxJumpVelocity = 10
+
+        ogre.Animation.setDefaultInterpolationMode(ogre.Animation.IM_SPLINE)
+        self.animation = self._entity.getAnimationState('Walk')
+        self.animation.Enabled = True
+
+    def frameEnded(self, time):
+        #cameraDir = self._camera.getDirection()
+        if math.fabs(self._body.getLinearVel()[0]) > 0.1:
+            self.animation.addTime(time * self._body.getLinearVel()[0] * 0.3)
+
+    def _jump(self):
+        if self._geometry.isOnGround:
+            self._motor.setYParam(ode.ParamVel,  self.maxJumpVelocity)
+            self._motor.setYParam(ode.ParamFMax, self.maxJumpForce)
+
+    def _rotateLeft(self):
+        if self._geometry.isOnGround:
+            SphereObject._rotateLeft(self)
+
+    def _rotateRight(self):
+        if self._geometry.isOnGround:
+            SphereObject._rotateRight(self)
+
+    def postStep(self):
+        isOnGround = self._geometry.isOnGround
+        SphereObject.postStep(self)
+        if isOnGround:
+            # People have a lot of friction against movement, if we aren't moving. Slam on the brakes
+            self._motor.setAngleParam(ode.ParamFMax, self.maxStopForce)
+            self._motor.setAngleParam(ode.ParamVel, 0)
+
+    def _updateDisplay(self):
+        p = self._geometry.getPosition()
+        self._node.setPosition(p[0]+o[0], p[1]+o[1], p[2]+o[2])
+
 
 def assert_equal(expected, actual):
     assert round(expected,1) == round(actual,1), "Expected %0.1f, got %0.1f" % (expected, actual)

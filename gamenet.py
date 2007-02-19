@@ -29,7 +29,7 @@ class NetCode:
 
         def gotMessage(self, el):
                 self.el = el
-                error = ''.join([x.attributes['code'] for x in el.elements() if x.name == 'error'])
+                error = ''.join([''.join(x.attributes['code']) for x in el.elements() if x.name == 'error'])
                 message = ''.join([''.join(x.children) for x in el.elements() if x.name == 'body'])
                 
                 if len(error) != 0:
@@ -142,7 +142,7 @@ class NetCode:
 
         def statusListener(self, name, message):
                 #print "%s: %s" % (name, message)
-                self.remoteStatusListener(name, message)
+                self.remoteStatusListener(str(name), str(message))
 
         def registerMessageListener(self, method):
                 self.remoteStatusListener = method
