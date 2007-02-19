@@ -4,11 +4,13 @@ from twisted.internet import reactor
 import time
 
 class NetCode:
-        def __init__(self, name, server, resource, password):
+        def __init__(self, name, server, resource, password, updateInterval = 1.0):
                 self.reactor = reactor
                 self.thexmlstream = None
                 self.tryandregister = 1
                 self.messageNum = 0
+                self.updateInterval = updateInterval
+                self.nextUpdateTime = time.clock() + self.updateInterval
                 self.el = None
 
                 me = u'%s@%s/%s-%i' % (name, server, resource, time.time())
@@ -27,16 +29,20 @@ class NetCode:
 
         def gotMessage(self, el):
                 self.el = el
+                error = ''.join([x.attributes['code'] for x in el.elements() if x.name == 'error'])
                 message = ''.join([''.join(x.children) for x in el.elements() if x.name == 'body'])
-                if len(message) != 0:
+                
+                if len(error) != 0:
+                        self.statusListener("System", "Error, %s" % error)      
+                elif len(message) != 0:
                         self.statusListener(str(jid.JID(el.attributes['from']).userhost()), str(message))
 
         def sendMessage(self, text):
                 split = text.split(":",1)
                 to = None
-                if len(split) == 2:
+                if len(split) == 2 and len(split[0]) != 0:
                         try:
-                                to = jid.JID(text.split(":")[0])
+                                to = jid.JID(split[0])
                                 text = split[1]
                         except jid.InvalidFormat:
                                 pass
@@ -67,8 +73,10 @@ class NetCode:
                     return False
                  
         def update(self):
-                self.reactor.runUntilCurrent()
-                self.reactor.doIteration(0)
+                if time.clock() > self.nextUpdateTime:
+                        self.reactor.runUntilCurrent()
+                        self.reactor.doIteration(0)
+                        self.nextUpdateTime = time.clock() + self.updateInterval
 
         def authd(self, xmlstream):
                 self.thexmlstream = xmlstream
@@ -99,13 +107,13 @@ class NetCode:
                 if jid.JID(el.attributes['from']).userhost == self.myJID.userhost:
                         return
                 
-                self.statusListener(str(jid.JID(el.attributes['from']).userhost()), 'is %s' % status)
+                self.statusListener(str(jid.JID(el.attributes['from']).userhost()), str('is %s' % status))
                         
                 try:
                         t = el.attributes['type']
                         if t == 'subscribe':
                                 # Grant every subscription request
-                                xmlstream.send(domish.Element(('jabber:client', 'presence'), attribs={
+                                self.thexmlstream.send(domish.Element(('jabber:client', 'presence'), attribs={
                                         'from': me,
                                         'to':el.attributes['from'],
                                         'type':'subscribed'
@@ -146,10 +154,7 @@ if __name__ == "__main__":
         n = NetCode("cradle", "cradle.dyndns.org", "test", "enter")
         n.registerMessageListener(aMethod)
 
-        #while 1:
-        #        time.sleep(0.1)
-        #        n.update()
-        #        #n.sendMessage("test")
-
-n = NetCode("cradle", "cradle.dyndns.org", "test", "enter")
-n.registerMessageListener(aMethod)
+        time.sleep(0.1)
+        n.update()
+        n.sendMessage(":P")
+        n.sendMessage("P:")

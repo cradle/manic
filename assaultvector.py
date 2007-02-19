@@ -2,7 +2,8 @@ import ode, math
 import Ogre as ogre
 import CEGUI as CEGUI
 import OIS
-import gamenet, time
+import gamenet
+import time
 
 def aMethod(a,b):
     print a,"=>",b
@@ -18,7 +19,7 @@ def getPluginPath():
     
     paths = [os.path.join(os.getcwd(), 'plugins.cfg'),
              '/etc/OGRE/plugins.cfg',
-             os.path.join(os.path.dirname(os.path.abspath(__file__)),
+             os.path.join(os.path.dirname(os.path.abspath(".")),
                               'plugins.cfg')]
     for path in paths:
         if os.path.exists(path):
@@ -148,17 +149,54 @@ class GameKeyListener(OIS.KeyListener):
     def __init__(self, game):
         OIS.KeyListener.__init__(self)
         self.game = game
+        self.keyToRepeat = {}
+        self.timeUntilRepeat = 0.4
+        self.timeBetweenRepeats = 0.03
+
+    def frameEnded(self, time, keyboard):
+        if len(self.keyToRepeat) != 0:
+            key = self.keyToRepeat['key']
+            self.keyToRepeat['time'] += time
+            if self.keyToRepeat['mode'] == 'waiting' and \
+               self.keyToRepeat['time'] > self.timeUntilRepeat:
+                self.keyToRepeat['mode'] = 'repeating'
+                self.keyToRepeat['time'] -= self.timeUntilRepeat
+            elif self.keyToRepeat['mode'] == 'repeating':
+                while self.keyToRepeat['time'] > self.timeBetweenRepeats:
+                    self.keyToRepeat['time'] -= self.timeBetweenRepeats
+                    CEGUI.System.getSingleton().injectKeyDown( key )
+                    CEGUI.System.getSingleton().injectChar( self.keyToRepeat['text'] )
 
     def keyPressed(self, arg):
-        if arg.key == OIS.KC_ESCAPE:
-            self.ShutdownRequested = True
+        self.keyToRepeat = {'mode':'waiting', 'time':0.0, 'text':arg.text, 'key':arg.key}
         CEGUI.System.getSingleton().injectKeyDown( arg.key )
         CEGUI.System.getSingleton().injectChar( arg.text )
     
     def keyReleased(self, arg):
+        if len(self.keyToRepeat) != 0 and arg.key == self.keyToRepeat['key']:
+            self.keyToRepeat = {}
+        
         CEGUI.System.getSingleton().injectKeyUp( arg.key )
         if arg.key == OIS.KC_RETURN:
             self.game.sendText()
+
+        static = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
+        chat = CEGUI.WindowManager.getSingleton().getWindow("TextWindow")
+        editBox = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
+
+        # TODO: Put more thought into HCI
+        if arg.key == OIS.KC_T and \
+           (chat.isDisabled() or (not chat.isDisabled() and not editBox.hasInputFocus())):
+            chat.setEnabled(True)
+            editBox.activate()
+                    
+        if arg.key == OIS.KC_ESCAPE and editBox.hasInputFocus():
+            static.activate() # Remove focus from editbox
+            chat.setEnabled(False)
+                
+        if arg.key == OIS.KC_F12:
+            chat.setVisible(not chat.isVisible())
+            chat.setEnabled(chat.isVisible())
 
 class GameMouseListener(OIS.MouseListener):
     def __init__(self):
@@ -271,6 +309,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         return True
 
     def frameEnded(self, frameEvent):
+        self.keylistener.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard)
         self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
         return True
 
@@ -368,7 +407,8 @@ class GameWorld(Application):
             self.camera2.aspectRatio = self.viewPort2.actualWidth / self.viewPort2.actualHeight
             self.camera.aspectRatio = self.viewPort.actualWidth / self.viewPort.actualHeight
             self.viewPort2.setOverlaysEnabled(True)
-            self.viewPort.setOverlaysEnabled(False)
+            self.viewPort.setOverlaysEnabled(True)
+            
     
     def _createScene(self):
         self.sceneManager.setAmbientLight((0.25, 0.25, 0.25))
@@ -459,7 +499,7 @@ class GameWorld(Application):
         eb.setSize(CEGUI.UVector2(cegui_reldim(1.0), CEGUI.UDim(0.0,30.0)))
         ## subscribe a handler to listen for when the text changes
 
-        winMgr.getWindow("TextWindow/Editbox1").setText("Type message here")
+        winMgr.getWindow("TextWindow/Editbox1").setText("")
         #eb.subscribeEvent(CEGUI.Window.EventKeyDown, self.blah,"")
             
     def messageListener(self, source, message):
@@ -468,8 +508,9 @@ class GameWorld(Application):
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
         self.frameListener = FrameListener(self, self.renderWindow, self.camera, True)
+        self.keylistener = GameKeyListener(self)
         self.root.addFrameListener(self.frameListener)
-        self.frameListener.showDebugOverlay(False)
+        #self.frameListener.showDebugOverlay(False)
         
     def frameEnded(self, frameTime, keyboard,  mouse):
         self.net.update()
@@ -492,6 +533,7 @@ class GameWorld(Application):
             self.viewPort.setDimensions(0.0, 0.0, 1.0, 0.5)
             self.viewPort2.setDimensions(0.0, 0.5, 1.0, 0.5)
             self._updateViewports()
+
 
     def step(self, keyboard, steps = 1, stepSize = 0.01):
         if stepSize == 0.0:
@@ -786,6 +828,5 @@ if __name__ == '__main____main__':
 
     
 if __name__ == "__main__":
-    import time
     world = GameWorld()
     world.go()
