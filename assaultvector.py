@@ -197,7 +197,6 @@ class GameMouseListener(OIS.MouseListener):
         OIS.MouseListener.__init__( self)
 
     def mouseMoved( self, arg ):
-        #CEGUI.System.getSingleton().injectMouseMove( arg.get_state().X.rel, arg.get_state().Y.rel )
         self.game.camera.yaw(ogre.Radian(- arg.get_state().X.rel * 0.06))
         self.game.camera.pitch(ogre.Radian(- arg.get_state().Y.rel * 0.11))
         d = self.game.camera.getDirection()
@@ -212,7 +211,27 @@ class GameMouseListener(OIS.MouseListener):
         if d.y <= -0.39:
             d.y = -0.39
         self.game.camera.setDirection(d)
+        print arg.get_state().width, arg.get_state().height
+        CEGUI.System.getSingleton().injectMousePosition( \
+            ((d.x + 0.35)/(0.35*2))*arg.get_state().width, \
+            ((1.0 - ((d.y + 0.39))/(0.39*2)))*arg.get_state().height )
 
+        # ms = self.Mouse.getMouseState()
+        # ms.width = width
+        # ms.height = height        # Determine where the cursor should be
+        #   i.e. Where a ray from the camera would hit the gameworld
+        #ray = ogre.Ray((0,0,20), self.game.camera.getDirection())
+        #gameWorld = ogre.Plane((0,0,1),(0,0,0))
+        #intersection = ray.intersects(gameWorld)
+        #if intersection.first:
+        #    intersectionPoint = ray.getPoint(intersection.second)
+        #    CEGUI.System.getSingleton().injectMousePosition( \
+        #        (intersectionPoint.x + 10)*10, \
+        #        (intersectionPoint.y + 10)*10 )
+        #else:
+        #    print "No intersection... wah????"
+        
+        
     def mousePressed(  self, arg, id ):
         pass
         #CEGUI.System.getSingleton().injectMouseButtonDown(convertOISMouseButtonToCegui(id))
@@ -402,7 +421,7 @@ class GameWorld(Application):
         winMgr = CEGUI.WindowManager.getSingleton()
         ## load scheme and set up defaults
         CEGUI.SchemeManager.getSingleton().loadScheme("TaharezLook.scheme") 
-        #self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow") 
+        self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow") 
         CEGUI.FontManager.getSingleton().createFont("Commonwealth-10.font")
         background = winMgr.createWindow("TaharezLook/StaticImage", "background_wnd")
         background.setProperty("FrameEnabled", "false")
@@ -491,7 +510,7 @@ class GameWorld(Application):
 
         for contact in contacts: #ode.ContactSoftERP + ode.ContactSoftCFM + 
             contact.setMode(ode.ContactBounce + ode.ContactApprox1_1)
-            contact.setBounce(0.30)
+            contact.setBounce(0.01)
             contact.setBounceVel(0.0)
             contact.setMu(1.7)
 
@@ -683,12 +702,14 @@ class Person(SphereObject):
         
         self.keys['up'] = OIS.KC_W
         self.keys['down'] = OIS.KC_S
+        # For air movement (will influence ground *slightly*)
         self.keys['left'] = OIS.KC_A
         self.keys['right'] = OIS.KC_D
+        # For ground movement
         self.keys['rotate-left'] = OIS.KC_A
         self.keys['rotate-right'] = OIS.KC_D
         
-        self.maxStopForce = 35000
+        self.maxStopForce = 28000
         self.maxSpinForce = 28000
         self.maxSpinVelocity = 10
         self.maxMoveForce = 20
@@ -718,7 +739,7 @@ class Person(SphereObject):
             else: # "right"
                 self.animation.addTime(time * self._body.getLinearVel()[0] * 0.3)
 
-        # TODO: I hate flags!!!
+        # TODO: I hate flags!!! 
         if self.wantsToJump:
             self.timeLeftUntilCanJump -= time
         else:
