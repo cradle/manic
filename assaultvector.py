@@ -211,25 +211,9 @@ class GameMouseListener(OIS.MouseListener):
         if d.y <= -0.39:
             d.y = -0.39
         self.game.camera.setDirection(d)
-        print arg.get_state().width, arg.get_state().height
         CEGUI.System.getSingleton().injectMousePosition( \
             ((d.x + 0.35)/(0.35*2))*arg.get_state().width, \
             ((1.0 - ((d.y + 0.39))/(0.39*2)))*arg.get_state().height )
-
-        # ms = self.Mouse.getMouseState()
-        # ms.width = width
-        # ms.height = height        # Determine where the cursor should be
-        #   i.e. Where a ray from the camera would hit the gameworld
-        #ray = ogre.Ray((0,0,20), self.game.camera.getDirection())
-        #gameWorld = ogre.Plane((0,0,1),(0,0,0))
-        #intersection = ray.intersects(gameWorld)
-        #if intersection.first:
-        #    intersectionPoint = ray.getPoint(intersection.second)
-        #    CEGUI.System.getSingleton().injectMousePosition( \
-        #        (intersectionPoint.x + 10)*10, \
-        #        (intersectionPoint.y + 10)*10 )
-        #else:
-        #    print "No intersection... wah????"
         
         
     def mousePressed(  self, arg, id ):
@@ -520,9 +504,6 @@ class GameWorld(Application):
                 normal = contact.getContactGeomParams()[1]
                 if normal[1] > 0.05: # normal.y points "up"
                     geom1.isOnGround = True
-                
-                    # Apply rolling friction
-                    body.addTorque([x*-2.0 for x in body.getAngularVel()])
                             
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
             joint.attach(body, geom2.getBody())
@@ -598,12 +579,13 @@ class DynamicObject(StaticObject):
         self._geometry.isOnGround = False
 
     def preStep(self, input):
-        # TODO: Move, for lack of a better home...
+        # TODO: Move! for lack of a better home...
         # Apply wind friction
-        # v^2
         self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
-        # Linear
-        #self._body.addForce([-5.0*x for x in self._body.getLinearVel()])
+
+        if self._geometry.isOnGround:
+            # Apply rolling friction
+            self._body.addTorque([x*-2.0 for x in self._body.getAngularVel()])
         
         if CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1").hasInputFocus():
             return
