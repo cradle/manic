@@ -211,4 +211,6 @@ if __name__ == "__main__":
 				n.joinChatroom()
 			if cmd[0] == "chat":
 				n.sendGroupMessage(cmd[1])
+			if cmd[0] == "run":
+				n.reactor.run()
 	n.stop()
