@@ -84,7 +84,6 @@ class NetCode:
 
                 #need to send presence so clients know we're
                 #actually online
-                self.el = el
                 presence = domish.Element(('jabber:client', 'presence'))
                 presence.addElement('status').addContent('Online')
                 xmlstream.send(presence)
