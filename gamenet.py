@@ -10,7 +10,7 @@ class NetCode:
                 self.tryandregister = 1
                 self.messageNum = 0
                 self.updateInterval = updateInterval
-                self.nextUpdateTime = time.clock() + self.updateInterval
+                self.nextUpdateTime = time.time() + self.updateInterval
 
                 me = u'%s@%s/%s-%i' % (name, server, resource, time.time())
                 self.myJID = jid.JID(me)
@@ -73,10 +73,10 @@ class NetCode:
                     return False
                  
         def update(self):
-                if time.clock() > self.nextUpdateTime:
+                if time.time() > self.nextUpdateTime:
                         self.reactor.runUntilCurrent()
                         self.reactor.doIteration(0)
-                        self.nextUpdateTime = time.clock() + self.updateInterval
+                        self.nextUpdateTime = time.time() + self.updateInterval
 
         def authd(self, xmlstream):
                 self.thexmlstream = xmlstream
@@ -95,9 +95,11 @@ class NetCode:
 
 
 	def debug(self, eq):
-		print eq.toXml()
+		pass
+		#print eq.toXml()
 
         def gotIq(self, el):
+		#TODO: Process and respond to IQ's (eg version number)
                 pass
                 #self.statusListener("System", 'Got IQ')
 
@@ -158,10 +160,22 @@ class NetCode:
         def registerMessageListener(self, method):
                 self.remoteStatusListener = method
 
+	def stop(self):
+		self.reactor.stop()
+                self.statusListener("System", 'Shutting down')
+
 def aMethod(a,b):
         print a,"=>",b
 
 if __name__ == "__main__":
         n = NetCode("cradle", "cradle.dyndns.org", "test", "enter")
         n.registerMessageListener(aMethod)
-	n.reactor.run()
+	i = ""
+	while i != "exit":
+		n.update()
+		time.sleep(0.1)
+		i = raw_input(":")
+		cmd = i.split(" ",1)
+		if len(cmd) > 0 and cmd[0] == "send":
+			n.sendMessage(cmd[1])
+	n.stop()
