@@ -21,7 +21,8 @@ class NetCode:
                 self.factory.addBootstrap('//event/client/basicauth/invaliduser', self.invaliduserEvent)
                 self.factory.addBootstrap('//event/client/basicauth/authfailed', self.authfailedEvent)
                 self.factory.addBootstrap('//event/client/basicauth/registerfailed', self.registerfailedEvent)
-        	self.factory.addBootstrap(xmlstream.STREAM_CONNECTED_EVENT, self.connectedEvent)
+        	#self.factory.addBootstrap(xmlstream.STREAM_CONNECTED_EVENT, self.connectedEvent)
+        	self.factory.addBootstrap('//event/stream/connected', self.connectedEvent)
 		self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnectedEvent)
 
                 # Go!
@@ -35,9 +36,17 @@ class NetCode:
                 if len(error) != 0:
                         self.statusListener("System", "Error, %s" % error)      
                 elif len(message) != 0:
-                        self.statusListener(str(jid.JID(el.attributes['from']).userhost()), str(message))
+			sender = jid.JID(el.attributes['from'])
+			if el.attributes['type'] == 'groupchat':
+				self.statusListener(str(sender.resource + "@" + sender.user), str(message))
+			else:
+				self.statusListener(str(sender.userhost()), str(message))
+				
 
-        def sendMessage(self, text):
+	def sendGroupMessage(self, message, room = "assaultvector", nick = "test"):
+		self.sendMessage(room + "@conference.cradle.dyndns.org:" + message, type="groupchat")
+
+        def sendMessage(self, text, type='chat'):
                 split = text.split(":",1)
                 to = None
                 if len(split) == 2 and len(split[0]) != 0:
@@ -58,7 +67,7 @@ class NetCode:
                 message = domish.Element((None, 'message'))
                 message['to'] = to
                 message['id'] = "%i" % self.messageNum
-                message['type'] = 'chat'
+                message['type'] = type
                 self.messageNum += 1
                 message.addElement('body', content=str(text))
                 event = domish.Element(('jabber:x:event', 'x'))
@@ -66,11 +75,15 @@ class NetCode:
                 event.addElement("delivered")
                 event.addElement("composing")
                 message.addChild(event)
+		#if message['type'] == 'groupchat'
+		#	nick = domish.Element(('http://jabber.org/protocol/nick',"nick"))
+		#	nick.addChild("test")
+	        #	message.addChild(nick)
+
                 if(self.thexmlstream):
                     self.thexmlstream.send(message)
-                    return True
                 else:
-                    return False
+                    self.statusListener("System", "Not online")
                  
         def update(self):
                 if time.time() > self.nextUpdateTime:
@@ -93,6 +106,21 @@ class NetCode:
                 xmlstream.addObserver('/iq', self.gotIq)
                 xmlstream.addObserver('/*', self.debug)
 
+	def joinChatroom(self, roomName = 'assaultvector', nickName = 'test'):
+		xmlstream = self.thexmlstream
+		message = domish.Element((None, 'presence'))
+		message['to'] = roomName + "@conference.cradle.dyndns.org/" + nickName
+		message.addElement("priority",content="5")
+		c = domish.Element(("http://jabber.org/protocol/caps","c"))
+		c['ext'] = 'cs ep-notify'
+		x = domish.Element(("http://jabber.org/protocol/muc#user","x"))
+		message.addChild(c)
+		message.addChild(x)
+
+                if(self.thexmlstream):
+                    self.thexmlstream.send(message)
+                else:
+                    self.statusListener("System", "Not online")
 
 	def debug(self, eq):
 		pass
@@ -176,6 +204,11 @@ if __name__ == "__main__":
 		time.sleep(0.1)
 		i = raw_input(":")
 		cmd = i.split(" ",1)
-		if len(cmd) > 0 and cmd[0] == "send":
-			n.sendMessage(cmd[1])
+		if len(cmd) > 0:
+			if cmd[0] == "send":
+				n.sendMessage(cmd[1])
+			if cmd[0] == "join":
+				n.joinChatroom()
+			if cmd[0] == "chat":
+				n.sendGroupMessage(cmd[1])
 	n.stop()
