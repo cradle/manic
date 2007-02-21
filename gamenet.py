@@ -4,14 +4,13 @@ from twisted.internet import reactor
 import time
 
 class NetCode:
-        def __init__(self, name, server, resource, password, updateInterval = 1.0):
+        def __init__(self, name, server, resource, password, updateInterval = 0.1):
                 self.reactor = reactor
                 self.thexmlstream = None
                 self.tryandregister = 1
                 self.messageNum = 0
                 self.updateInterval = updateInterval
                 self.nextUpdateTime = time.clock() + self.updateInterval
-                self.el = None
 
                 me = u'%s@%s/%s-%i' % (name, server, resource, time.time())
                 self.myJID = jid.JID(me)
@@ -22,13 +21,14 @@ class NetCode:
                 self.factory.addBootstrap('//event/client/basicauth/invaliduser', self.invaliduserEvent)
                 self.factory.addBootstrap('//event/client/basicauth/authfailed', self.authfailedEvent)
                 self.factory.addBootstrap('//event/client/basicauth/registerfailed', self.registerfailedEvent)
+        	self.factory.addBootstrap(xmlstream.STREAM_CONNECTED_EVENT, self.connectedEvent)
+		self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnectedEvent)
 
                 # Go!
                 self.reactor.connectTCP(server, 5222, self.factory)
                 self.reactor.startRunning()
 
         def gotMessage(self, el):
-                self.el = el
                 error = ''.join([''.join(x.attributes['code']) for x in el.elements() if x.name == 'error'])
                 message = ''.join([''.join(x.children) for x in el.elements() if x.name == 'body'])
                 
@@ -84,6 +84,7 @@ class NetCode:
 
                 #need to send presence so clients know we're
                 #actually online
+                self.el = el
                 presence = domish.Element(('jabber:client', 'presence'))
                 presence.addElement('status').addContent('Online')
                 xmlstream.send(presence)
@@ -91,6 +92,11 @@ class NetCode:
                 xmlstream.addObserver('/message', self.gotMessage)
                 xmlstream.addObserver('/presence', self.gotPresence)
                 xmlstream.addObserver('/iq', self.gotIq)
+                xmlstream.addObserver('/*', self.debug)
+
+
+	def debug(self, eq):
+		print eq.toXml()
 
         def gotIq(self, el):
                 pass
@@ -136,6 +142,12 @@ class NetCode:
                 self.statusListener("System", 'Authentication failed')
                 self.reactor.stop()
 
+        def connectedEvent(self, xmlstream):
+                self.statusListener("System", 'Connected')
+
+        def disconnectedEvent(self, xmlstream):
+                self.statusListener("System", 'Disconnected')
+
         def registerfailedEvent(self, xmlstream):
                 self.statusListener("System", 'Registration failed')
                 self.reactor.stop()
@@ -148,13 +160,9 @@ class NetCode:
                 self.remoteStatusListener = method
 
 def aMethod(a,b):
-        print a,b
+        print a,"=>",b
 
 if __name__ == "__main__":
         n = NetCode("cradle", "cradle.dyndns.org", "test", "enter")
         n.registerMessageListener(aMethod)
-
-        time.sleep(0.1)
-        n.update()
-        n.sendMessage(":P")
-        n.sendMessage("P:")
+	n.reactor.run()
