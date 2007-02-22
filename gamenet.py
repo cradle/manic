@@ -1,7 +1,19 @@
 from twisted.words.protocols.jabber import client, jid
 from twisted.words.xish import domish, xmlstream
+from twisted.names.srvconnect import SRVConnector
 from twisted.internet import reactor
 import time
+
+class XMPPClientConnector(SRVConnector):
+    def __init__(self, reactor, domain, factory):        
+	SRVConnector.__init__(self, reactor, 'xmpp-client', domain, factory)
+
+    def pickServer(self):
+        host, port = SRVConnector.pickServer(self)
+        if not self.servers and not self.orderedServers:
+		# no SRV record, fall back..             
+		port = 5222
+        return host, port
 
 class NetCode:
         def __init__(self, name, server, resource, password, updateInterval = 0.1):
@@ -14,7 +26,7 @@ class NetCode:
 
                 me = u'%s@%s/%s-%i' % (name, server, resource, time.time())
                 self.myJID = jid.JID(me)
-                self.factory = client.basicClientFactory(self.myJID, password)
+                self.factory = client.XMPPClientFactory(self.myJID, password)
 
                 # Register authentication callbacks
                 self.factory.addBootstrap('//event/stream/authd', self.authd)
@@ -25,8 +37,10 @@ class NetCode:
         	self.factory.addBootstrap('//event/stream/connected', self.connectedEvent)
 		self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnectedEvent)
 
-                # Go!
-                self.reactor.connectTCP(server, 5222, self.factory)
+	        connector = XMPPClientConnector(reactor, self.myJID.host, self.factory)
+
+		connector.connect()
+
                 self.reactor.startRunning()
 
         def gotMessage(self, el):
@@ -132,7 +146,8 @@ class NetCode:
 
         def gotIq(self, el):
 		#TODO: Process and respond to IQ's (eg version number)
-                pass
+		#print eq.toXml()
+		pass
                 #self.statusListener("System", 'Got IQ')
 
         def gotPresence(self, el):
@@ -173,6 +188,7 @@ class NetCode:
 
         def authfailedEvent(self, xmlstream):
                 self.statusListener("System", 'Authentication failed')
+		print xmlstream.toXml()
                 self.reactor.stop()
 
         def connectedEvent(self, xmlstream):
@@ -200,7 +216,10 @@ def aMethod(a,b):
         print a,"=>",b
 
 if __name__ == "__main__":
-        n = NetCode("cradle", "cradle.dyndns.org", "test", "enter")
+	user = raw_input("Login (user@host.com):")
+	u = jid.JID(user + "/AssaultVector")
+	password = raw_input("Password:")
+        n = NetCode(u.user, u.host, u.resource, password)
         n.registerMessageListener(aMethod)
 	i = ""
 	while i != "exit":
