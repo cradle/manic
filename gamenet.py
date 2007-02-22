@@ -106,6 +106,10 @@ class NetCode:
                 xmlstream.addObserver('/iq', self.gotIq)
                 xmlstream.addObserver('/*', self.debug)
 
+		self.joinChatroom("assaultvector", self.myJID.user)
+		self.joinChatroom("assaultvector-team1", self.myJID.user)
+		
+
 	def joinChatroom(self, roomName = 'assaultvector', nickName = 'test'):
 		xmlstream = self.thexmlstream
 		message = domish.Element((None, 'presence'))
@@ -205,12 +209,21 @@ if __name__ == "__main__":
 		i = raw_input(":")
 		cmd = i.split(" ",1)
 		if len(cmd) > 0:
-			if cmd[0] == "send":
+			if cmd[0] == "send" and len(cmd) > 1:
 				n.sendMessage(cmd[1])
-			if cmd[0] == "join":
-				n.joinChatroom()
-			if cmd[0] == "chat":
-				n.sendGroupMessage(cmd[1])
+			if cmd[0] == "team" and len(cmd) > 1:
+				n.sendGroupMessage(cmd[1],"assaultvector-team1")
+			if cmd[0] == "all" and len(cmd) > 1:
+				n.sendGroupMessage(cmd[1],"assaultvector")
 			if cmd[0] == "run":
 				n.reactor.run()
+
+	print "Shutting Down"			
 	n.stop()
+	print "Cleaning Up"
+	del n.reactor
+	print "More Cleaning Up"
+	del n
+	print "Cleaned Up"
+	import os
+	os._exit(1)

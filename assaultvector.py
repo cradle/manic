@@ -5,9 +5,6 @@ import OIS
 import gamenet
 import time
 
-def aMethod(a,b):
-    print a,"=>",b
-    
 def cegui_reldim ( x ) :
     return CEGUI.UDim((x),0)
 
@@ -883,3 +880,5 @@ if __name__ == '__main____main__':
 if __name__ == "__main__":
     world = GameWorld()
     world.go()
+    import os
+    os._exit(0)
