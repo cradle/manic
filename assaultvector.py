@@ -324,7 +324,7 @@ class GameWorld(Application):
         self.net = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
         self.net.registerMessageListener(self.messageListener)
         self.timeBetweenNetworkUpdates = 0.1
-        self.stepSize = 1.0/60.0
+        self.stepSize = 1.0/100.0
         self.timeUntilNextNetworkUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
     
@@ -359,31 +359,39 @@ class GameWorld(Application):
         self.world.setGravity((0,-9.81,0))
         #self.world.setERP(0.2)
         #self.world.setCFM(0.0000001)
-        self.space = ode.Space()
+        self.space = ode.Space(type=1)
         self.contactgroup = ode.JointGroup()
         self.objects = []
+        self.statics = []
   
         static = StaticObject(self, "bottom", size=(50,1,3))
         static.setPosition((0,0,0))
+        self.statics += [static]
             
         static = StaticObject(self, "%s" % 1, size=(10,1,3))
         static.setPosition((10,5,0))
+        self.statics += [static]
         
         static = StaticObject(self, "%s" % 2, size=(10,1,3))
         static.setPosition((-10.5,10,0))
+        self.statics += [static]
             
         static = StaticObject(self, "%sa" % 3, size=(10,1,3))
         static.setPosition((20,7.5,0))
         static.setRotation((-0.84851580858230591,0,0,0.52916997671127319))
+        self.statics += [static]
             
         static = StaticObject(self, "%s" % 4, size=(10,1,3))
         static.setPosition((-15,15,0))
+        self.statics += [static]
         
         static = StaticObject(self, "%sl" % 5, size=(1,50,3))
         static.setPosition((-25,25,0))
+        self.statics += [static]
 
         static = StaticObject(self, "%sr" % 6, size=(1,50,3))
         static.setPosition((25,25,0))
+        self.statics += [static]
             
         self.player = Person(self, "p1")
         self.player.setPosition((-5.0,3.0,0.0))
@@ -497,11 +505,14 @@ class GameWorld(Application):
 
             body = geom1.getBody()
             if body:
+                if body.objectType == "Bullet" and geom2.getBody() == None:
+                    body.isDead = True
+                    
                 # Assume that if collision normal is facing up we are 'on ground'
                 normal = contact.getContactGeomParams()[1]
                 if normal[1] > 0.05: # normal.y points "up"
                     geom1.isOnGround = True
-                            
+           
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
             joint.attach(body, geom2.getBody())
 
@@ -509,11 +520,13 @@ class StaticObject():
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
         self._size = size
         self._geometry = geomFunc(gameworld.space, self._size)
+        self._name = 'node_' + name
         self._entity = gameworld.sceneManager.createEntity('entity_' + name, mesh)
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
         self._node.attachObject(self._entity)
         self._world = gameworld.world
         self._space = gameworld.space
+        self._gameworld = gameworld
         
         if hasattr(size, "__getitem__"):
             self._node.setScale(scale[0]*size[0],scale[1]*size[1],scale[2]*size[2])
@@ -522,6 +535,10 @@ class StaticObject():
 
  
         self._updateDisplay()
+
+    def __del__(self):
+        self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild(self._name)
+        self._geometry.disable()
 
     def __str__(self):
         return "P=(%2.2f, %2.2f, %2.2f)" % self._geometry.getPosition()
@@ -578,6 +595,12 @@ class DynamicObject(StaticObject):
         self._motor.attach(self._body, ode.environment)
 
         self._geometry.isOnGround = False
+        self._body.objectType = "Dynamic"
+
+    #def __del__(self):
+    #    self._body.disable()
+    #    self._motor.disable()
+    #    StaticObject.__del__(self)
 
     def preStep(self, keyboard, mouse):
         # TODO: Move! for lack of a better home...
@@ -700,6 +723,11 @@ class BulletObject(SphereObject):
         self._motor.setYParam(ode.ParamFMax, ode.Infinity)
 
         self._geometry.setPosition(position)
+        self._body.isDead = False
+        self._body.objectType = "Bullet"
+
+    def isDead(self):
+        return self._body.isDead
 
     def _postStep(self):
         SphereObject._postStep(self)
@@ -749,6 +777,7 @@ class Person(SphereObject):
         self.timeNeededToPrepareJump = 0.1
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
+        self._body.objectType = "Person"
         
 
         self.keys = {
@@ -850,6 +879,8 @@ class Person(SphereObject):
             
         for bullet in self._bullets:
             bullet.postStep()
+            if bullet.isDead():
+                self._bullets.remove(bullet)
 
     def _updateDisplay(self):
         p = self._geometry.getPosition()
