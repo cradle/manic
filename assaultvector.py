@@ -495,7 +495,11 @@ class GameWorld(Application):
         self.contactgroup.empty()
 
     def collision_callback(self, args, geom1, geom2):
-        contacts = ode.collide(geom1, geom2)
+        if geom1.getBody() and geom1.getBody().objectType == "Bullet" \
+           and geom2.getBody() and geom2.getBody().objectType == "Bullet":
+            contacts = []
+        else:
+            contacts = ode.collide(geom1, geom2)
 
         for contact in contacts: #ode.ContactSoftERP + ode.ContactSoftCFM + 
             contact.setMode(ode.ContactBounce + ode.ContactApprox1_1)
@@ -597,11 +601,6 @@ class DynamicObject(StaticObject):
         self._geometry.isOnGround = False
         self._body.objectType = "Dynamic"
 
-    #def __del__(self):
-    #    self._body.disable()
-    #    self._motor.disable()
-    #    StaticObject.__del__(self)
-
     def preStep(self, keyboard, mouse):
         # TODO: Move! for lack of a better home...
         # Apply wind friction
@@ -700,12 +699,12 @@ class SphereObject(DynamicObject):
 
 class BulletObject(SphereObject):
     def __init__(self, gameworld, name, position, direction):
-        size = 0.1
+        size = (0.05, 0.05, 0.05)
         scale = (0.01, 0.01, 0.01)
         self.maxSpeed = 50
-        weight = 0.1
+        weight = 0.01
         
-        SphereObject.__init__(self, gameworld, name, size, scale, weight = 0.01)
+        SphereObject.__init__(self, gameworld, name, size, scale, geomFunc = ode.GeomBox, weight = 0.01)
 
         if type(size) == float or type(size) == int:
             self._body.getMass().setSphereTotal(weight, size)
