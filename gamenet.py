@@ -37,10 +37,8 @@ class NetCode:
         	self.factory.addBootstrap('//event/stream/connected', self.connectedEvent)
 		self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnectedEvent)
 
-	        connector = XMPPClientConnector(reactor, self.myJID.host, self.factory)
-
-		connector.connect()
-
+                # Go!
+                self.reactor.connectTCP(server, 5222, self.factory)
                 self.reactor.startRunning()
 
         def gotMessage(self, el):

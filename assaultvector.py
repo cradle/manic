@@ -462,24 +462,24 @@ class GameWorld(Application):
 
         self.timeUntilNextEngineUpdate -= frameTime
         while self.timeUntilNextEngineUpdate <= 0.0:
-            self.step(keyboard)
+            self.step(keyboard, mouse)
             for object in self.objects:
                 object.frameEnded(self.stepSize)
             self.timeUntilNextEngineUpdate += self.stepSize
                 
         pos = self.player._geometry.getPosition()
-        self.camera.setPosition(pos[0], pos[1], pos[2] + 20)
+        self.camera.setPosition(pos[0], pos[1], pos[2] + 40)
 
-    def step(self, keyboard):
+    def step(self, keyboard, mouse):
         if self.stepSize == 0.0:
             return 
     
         self.space.collide(0, self.collision_callback)
         
         for object in self.objects:
-            object.preStep(keyboard)
+            object.preStep(keyboard, mouse)
             
-        self.world.step(self.stepSize)
+        self.world.quickStep(self.stepSize)
         
         for object in self.objects:
             object.postStep()
@@ -512,12 +512,15 @@ class StaticObject():
         self._entity = gameworld.sceneManager.createEntity('entity_' + name, mesh)
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
         self._node.attachObject(self._entity)
+        self._world = gameworld.world
+        self._space = gameworld.space
         
         if hasattr(size, "__getitem__"):
             self._node.setScale(scale[0]*size[0],scale[1]*size[1],scale[2]*size[2])
         else:
             self._node.setScale(scale[0]*size,scale[1]*size,scale[2]*size)
-            
+
+ 
         self._updateDisplay()
 
     def __str__(self):
@@ -552,7 +555,8 @@ class DynamicObject(StaticObject):
             'left':OIS.KC_L,
             'right':OIS.KC_J,
             'rotate-left':OIS.KC_O,
-            'rotate-right':OIS.KC_U}
+            'rotate-right':OIS.KC_U,
+            'shoot':-1}
         
         self.maxMoveForce = 2000
         self.maxMoveVelocity = 10
@@ -575,7 +579,7 @@ class DynamicObject(StaticObject):
 
         self._geometry.isOnGround = False
 
-    def preStep(self, input):
+    def preStep(self, keyboard, mouse):
         # TODO: Move! for lack of a better home...
         # Apply wind friction
         self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
@@ -587,21 +591,23 @@ class DynamicObject(StaticObject):
         if CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1").hasInputFocus():
             return
         
-        if input.isKeyDown(self.keys['left']):
+        if keyboard.isKeyDown(self.keys['left']):
             self._moveLeft()
-        elif input.isKeyDown(self.keys['right']):
+        if keyboard.isKeyDown(self.keys['right']):
             self._moveRight()
-        if input.isKeyDown(self.keys['rotate-left']):
+        if keyboard.isKeyDown(self.keys['rotate-left']):
             self._rotateLeft()
-        elif input.isKeyDown(self.keys['rotate-right']):
+        if keyboard.isKeyDown(self.keys['rotate-right']):
             self._rotateRight()
-        if input.isKeyDown(self.keys['up']):
+        if keyboard.isKeyDown(self.keys['up']):
             self._jump()
-        elif input.isKeyDown(self.keys['down']):
+        if keyboard.isKeyDown(self.keys['down']):
             self._crouch()
-        elif input.isKeyDown(self.keys['downdown']):
+        if keyboard.isKeyDown(self.keys['downdown']):
             self._prone()
-
+        if mouse.getMouseState().buttonDown(self.keys['shoot']):
+            self._shoot()
+        
     def postStep(self):
         self._alignToZAxis()
         self._motor.setXParam(ode.ParamFMax, 0)
@@ -617,7 +623,10 @@ class DynamicObject(StaticObject):
         self._body.setQuaternion((old_quat[0] / quat_len, 0, 0, old_quat[3] / quat_len))
         self._body.setAngularVel((0,0,rot[2]))
         # http://opende.sourceforge.net/wiki/index.php/HOWTO_constrain_objects_to_2d
-        
+
+    def _shoot(self):
+        pass
+    
     def _moveLeft(self):
         self._motor.setXParam(ode.ParamVel, -self.maxMoveVelocity)
         self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
@@ -648,7 +657,8 @@ class DynamicObject(StaticObject):
     def __str__(self):
         return StaticObject.__str__(self) + ", LV=(%2.2f, %2.2f, %2.2f), AV=(%2.2f, %2.2f, %2.2f)" % \
                (self._body.getLinearVel() + self._body.getAngularVel())
-    
+
+
 class SphereObject(DynamicObject):
     def __init__(self, gameworld, name, size = 0.5, scale = (0.01, 0.01, 0.01), \
                  mesh = 'sphere.mesh', geomFunc = ode.GeomSphere, weight = 10):
@@ -665,12 +675,73 @@ class SphereObject(DynamicObject):
         self.keys['rotate-left'] = OIS.KC_NUMPAD7
         self.keys['rotate-right'] = OIS.KC_NUMPAD9
 
+class BulletObject(SphereObject):
+    def __init__(self, gameworld, name, position, direction):
+        size = 0.1
+        scale = (0.01, 0.01, 0.01)
+        self.maxSpeed = 50
+        weight = 0.1
+        
+        SphereObject.__init__(self, gameworld, name, size, scale, weight = 0.01)
+
+        if type(size) == float or type(size) == int:
+            self._body.getMass().setSphereTotal(weight, size)
+            
+        self.keys['up'] = OIS.KC_UNASSIGNED
+        self.keys['down'] = OIS.KC_UNASSIGNED
+        self.keys['left'] = OIS.KC_UNASSIGNED
+        self.keys['right'] = OIS.KC_UNASSIGNED
+        self.keys['rotate-left'] = OIS.KC_UNASSIGNED
+        self.keys['rotate-right'] = OIS.KC_UNASSIGNED
+        
+        self._motor.setXParam(ode.ParamVel,  self.maxSpeed * direction[0])
+        self._motor.setXParam(ode.ParamFMax, ode.Infinity)
+        self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1])
+        self._motor.setYParam(ode.ParamFMax, ode.Infinity)
+
+        self._geometry.setPosition(position)
+
+    def _postStep(self):
+        SphereObject._postStep(self)
+        self._motor.setXParam(ode.ParamFMax, 0)
+        self._motor.setYParam(ode.ParamFMax, 0)
+
 class Person(SphereObject):
-    def __init__(self, gameworld, name, size = (0.2, 1.0, 0.5), \
-                 scale = (0.01, 0.01, 0.01), offset = (0.0, -1.0, 0.0), \
-                 mesh = 'ninja.mesh', geomFunc = ode.GeomSphere, weight = 70):
+    def __init__(self, gameworld, name):
+
+        # The size of the bounding box
+        size = (1.0, 1.0, 1.0)
+        # The scale to scale the model by
+        scale = 0.01
+        offset = (0.0, -1.0, 0.0)
+        weight = 70
         self._nodeOffset = offset
-        SphereObject.__init__(self, gameworld, name, 1.0, scale, mesh, geomFunc, weight)
+        
+        self._size = size
+        # Entity
+        self._entity = gameworld.sceneManager.createEntity('entity_' + name, 'ninja.mesh')
+        # Scene -> Node
+        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
+        self._node.setScale(scale*size[0],scale*size[1],scale*size[2])
+        # Node -> Entity
+        self._node.attachObject(self._entity)
+        # Space -> Geometry
+        self._geometry = ode.GeomSphere(gameworld.space, min(self._size))
+        # World -> Body
+        self._body = ode.Body(gameworld.world)
+        # Mass
+        mass = ode.Mass()
+        mass.setBoxTotal(weight, size[0], size[1], size[2])
+        # Body -> Mass
+        self._body.setMass(mass)
+        # Geometry -> Body
+        self._geometry.setBody(self._body)
+        
+        self._motor = ode.Plane2DJoint(gameworld.world)
+        self._motor.attach(self._body, ode.environment)
+
+        self._geometry.isOnGround = False
+
         self._node.setDirection(1.0,0.0,0.0)
         self.facing = "right"
         self._camera = gameworld.camera
@@ -679,14 +750,26 @@ class Person(SphereObject):
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
         
+
+        self.keys = {
+            'up':OIS.KC_UNASSIGNED,
+            'down':OIS.KC_UNASSIGNED,
+            'downdown':OIS.KC_UNASSIGNED,
+            'left':OIS.KC_UNASSIGNED,
+            'right':OIS.KC_UNASSIGNED,
+            'rotate-left':OIS.KC_UNASSIGNED,
+            'rotate-right':OIS.KC_UNASSIGNED,
+            'shoot':OIS.KC_UNASSIGNED}
+        
         self.keys['up'] = OIS.KC_W
         self.keys['down'] = OIS.KC_S
-        # For air movement (will influence ground *slightly*)
+        # For air movement (will influence ground movement *slightly*)
         self.keys['left'] = OIS.KC_A
         self.keys['right'] = OIS.KC_D
         # For ground movement
         self.keys['rotate-left'] = OIS.KC_A
         self.keys['rotate-right'] = OIS.KC_D
+        self.keys['shoot'] = OIS.MB_Left
         
         self.maxStopForce = 28000
         self.maxSpinForce = 28000
@@ -699,6 +782,12 @@ class Person(SphereObject):
         ogre.Animation.setDefaultInterpolationMode(ogre.Animation.IM_SPLINE)
         self.animation = self._entity.getAnimationState('Walk')
         self.animation.Enabled = True
+
+        self._bullets = []
+        self._bulletNum = 0
+        
+        self._world = gameworld
+
 
     def frameEnded(self, time):
         left = ogre.Quaternion(ogre.Degree(90), ogre.Vector3.UNIT_Y)
@@ -724,6 +813,14 @@ class Person(SphereObject):
         else:
             self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
 
+
+    def _shoot(self):
+        direction = ogre.Vector3(self._camera.getDirection()[0], self._camera.getDirection()[1], 0)
+        direction.normalise()
+        self._bulletNum += 1
+        self._bullets.append(BulletObject(self._world, "b" + str(self._bulletNum), \
+                                self._geometry.getPosition(), direction))
+        
     def _jump(self):
         if self._geometry.isOnGround and self.timeLeftUntilCanJump <= 0:
             self._motor.setYParam(ode.ParamVel,  self.maxJumpVelocity)
@@ -750,6 +847,9 @@ class Person(SphereObject):
             # People have a lot of friction against movement, if we aren't moving. Slam on the brakes
             self._motor.setAngleParam(ode.ParamFMax, self.maxStopForce)
             self._motor.setAngleParam(ode.ParamVel, 0)
+            
+        for bullet in self._bullets:
+            bullet.postStep()
 
     def _updateDisplay(self):
         p = self._geometry.getPosition()
