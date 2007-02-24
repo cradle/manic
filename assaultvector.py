@@ -3,30 +3,10 @@ import Ogre as ogre
 import CEGUI as CEGUI
 import OIS
 import gamenet
-import time
+import os, time
 
 def cegui_reldim ( x ) :
     return CEGUI.UDim((x),0)
-
-def getPluginPath():
-    """Return the absolute path to a valid plugins.cfg file.""" 
-    import sys
-    import os
-    import os.path
-    
-    paths = [os.path.join(os.getcwd(), 'plugins.cfg'),
-             '/etc/OGRE/plugins.cfg',
-             os.path.join(os.path.dirname(os.path.abspath(".")),
-                              'plugins.cfg')]
-    for path in paths:
-        if os.path.exists(path):
-            return path
-
-    sys.stderr.write("\n"
-        "** Warning: Unable to locate a suitable plugins.cfg file.\n"
-        "** Warning: Please check your ogre installation and copy a\n"
-        "** Warning: working plugins.cfg file to the current directory.\n\n")
-    raise ogre.Exception(0, "can't locate the 'plugins.cfg' file", "")
     
 class Application(object):
     debugText = ""
@@ -50,7 +30,7 @@ class Application(object):
     def _setUp(self):
         """This sets up the ogre application, and returns false if the user
         hits "cancel" in the dialog box."""
-        self.root = ogre.Root(getPluginPath())
+        self.root = ogre.Root(os.path.join(os.getcwd(), 'plugins.cfg'))
         self.root.setFrameSmoothingPeriod(5.0)
 
         self._setUpResources()
@@ -367,6 +347,14 @@ class GameWorld(Application):
         static = StaticObject(self, "bottom", size=(50,1,3))
         static.setPosition((0,0,0))
         self.statics += [static]
+  
+        static = StaticObject(self, "back", size=(51,51,3))
+        static.setPosition((0,25,-5))
+        self.statics += [static]
+  
+        static = StaticObject(self, "top", size=(50,1,3))
+        static.setPosition((0,50,0))
+        self.statics += [static]
             
         static = StaticObject(self, "%s" % 1, size=(10,1,3))
         static.setPosition((10,5,0))
@@ -393,10 +381,15 @@ class GameWorld(Application):
         static.setPosition((25,25,0))
         self.statics += [static]
             
-        self.player = Person(self, "p1")
+        self.player = Player(self, "p1", self.camera)
         self.player.setPosition((-5.0,3.0,0.0))
         
         self.objects += [self.player]
+            
+        player2 = Person(self, "p2")
+        player2.setPosition((5.0,3.0,0.0))
+        
+        self.objects += [player2]
 
         ## setup GUI system
         self.GUIRenderer = CEGUI.OgreCEGUIRenderer(self.renderWindow, 
@@ -577,7 +570,7 @@ class DynamicObject(StaticObject):
             'right':OIS.KC_J,
             'rotate-left':OIS.KC_O,
             'rotate-right':OIS.KC_U,
-            'shoot':-1}
+            'shoot':None}
         
         self.maxMoveForce = 2000
         self.maxMoveVelocity = 10
@@ -627,7 +620,7 @@ class DynamicObject(StaticObject):
             self._crouch()
         if keyboard.isKeyDown(self.keys['downdown']):
             self._prone()
-        if mouse.getMouseState().buttonDown(self.keys['shoot']):
+        if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
             self._shoot()
         
     def postStep(self):
@@ -650,12 +643,14 @@ class DynamicObject(StaticObject):
         pass
     
     def _moveLeft(self):
-        self._motor.setXParam(ode.ParamVel, -self.maxMoveVelocity)
-        self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
+        if self._body.getLinearVel()[0] > -self.maxMoveVelocity:
+            self._motor.setXParam(ode.ParamVel, -self.maxMoveVelocity)
+            self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
         
     def _moveRight(self):
-        self._motor.setXParam(ode.ParamVel,  self.maxMoveVelocity)
-        self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
+        if self._body.getLinearVel()[0] < self.maxMoveVelocity:
+            self._motor.setXParam(ode.ParamVel,  self.maxMoveVelocity)
+            self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
 
     def _rotateLeft(self):
         self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity)
@@ -734,7 +729,7 @@ class BulletObject(SphereObject):
         self._motor.setYParam(ode.ParamFMax, 0)
 
 class Person(SphereObject):
-    def __init__(self, gameworld, name):
+    def __init__(self, gameworld, name, camera = None):
 
         # The size of the bounding box
         size = (1.0, 1.0, 1.0)
@@ -771,12 +766,16 @@ class Person(SphereObject):
 
         self._node.setDirection(1.0,0.0,0.0)
         self.facing = "right"
-        self._camera = gameworld.camera
+        self._camera = camera
+        self._pointingDirection = (1,0,0)
 
         self.timeNeededToPrepareJump = 0.1
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
         self._body.objectType = "Person"
+
+        self.timeBetweenShots = 0.1
+        self.timeLeftUntilNextShot = self.timeBetweenShots
         
 
         self.keys = {
@@ -787,25 +786,15 @@ class Person(SphereObject):
             'right':OIS.KC_UNASSIGNED,
             'rotate-left':OIS.KC_UNASSIGNED,
             'rotate-right':OIS.KC_UNASSIGNED,
-            'shoot':OIS.KC_UNASSIGNED}
-        
-        self.keys['up'] = OIS.KC_W
-        self.keys['down'] = OIS.KC_S
-        # For air movement (will influence ground movement *slightly*)
-        self.keys['left'] = OIS.KC_A
-        self.keys['right'] = OIS.KC_D
-        # For ground movement
-        self.keys['rotate-left'] = OIS.KC_A
-        self.keys['rotate-right'] = OIS.KC_D
-        self.keys['shoot'] = OIS.MB_Left
+            'shoot':None}
         
         self.maxStopForce = 28000
         self.maxSpinForce = 28000
         self.maxSpinVelocity = 10
-        self.maxMoveForce = 20
-        self.maxMoveVelocity = 1
+        self.maxMoveForce = 1500
+        self.maxMoveVelocity = 4
         self.maxJumpForce = ode.Infinity
-        self.maxJumpVelocity = 10
+        self.maxJumpVelocity = 11
 
         ogre.Animation.setDefaultInterpolationMode(ogre.Animation.IM_SPLINE)
         self.animation = self._entity.getAnimationState('Walk')
@@ -820,11 +809,15 @@ class Person(SphereObject):
     def frameEnded(self, time):
         left = ogre.Quaternion(ogre.Degree(90), ogre.Vector3.UNIT_Y)
         right = ogre.Quaternion(ogre.Degree(-90), ogre.Vector3.UNIT_Y)
-        if self._camera.getDirection()[0] <= 0.0 and \
+        
+        if self._camera:
+            self._pointingDirection = self._camera.getDirection()
+        
+        if self._pointingDirection[0] <= 0.0 and \
            self._node.getOrientation().equals(right, ogre.Radian(ogre.Degree(5))): 
             self._node.setOrientation(left)
             self.facing = "left"
-        elif self._camera.getDirection()[0] > 0.0 and \
+        elif self._pointingDirection[0] > 0.0 and \
            self._node.getOrientation().equals(left, ogre.Radian(ogre.Degree(5))): 
             self._node.setOrientation(right)
             self.facing = "right"
@@ -841,13 +834,17 @@ class Person(SphereObject):
         else:
             self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
 
+        self.timeLeftUntilNextShot -= time
+
 
     def _shoot(self):
-        direction = ogre.Vector3(self._camera.getDirection()[0], self._camera.getDirection()[1], 0)
-        direction.normalise()
-        self._bulletNum += 1
-        self._bullets.append(BulletObject(self._world, "b" + str(self._bulletNum), \
-                                self._geometry.getPosition(), direction))
+        if self.timeLeftUntilNextShot <= 0:
+            direction = ogre.Vector3(self._camera.getDirection()[0], self._camera.getDirection()[1], 0)
+            direction.normalise()
+            self._bulletNum += 1
+            self._bullets.append(BulletObject(self._world, "b" + str(self._bulletNum), \
+                                    self._geometry.getPosition(), direction))
+            self.timeLeftUntilNextShot = self.timeBetweenShots
         
     def _jump(self):
         if self._geometry.isOnGround and self.timeLeftUntilCanJump <= 0:
@@ -886,126 +883,19 @@ class Person(SphereObject):
         o = self._nodeOffset
         self._node.setPosition(p[0]+o[0], p[1]+o[1], p[2]+o[2])
 
-
-def assert_equal(expected, actual):
-    assert round(expected,1) == round(actual,1), "Expected %0.1f, got %0.1f" % (expected, actual)
+class Player(Person):
+    def __init__(self, gameworld, name, camera):
+        Person.__init__(self, gameworld, name, camera)
         
-class TestGame():    
-    def __init__(self):
-        pass
-
-    def go(self):
-        tests = [method for method in dir(self) if method.startswith('test_')]
-        for test in tests:
-            print "Running", test
-            self.setup()
-            eval(("self.%s()" % test))
-            print ".",
-
-        print
-        print len(tests), 'tests run and passed'
-        
-    def setup(self):
-        global world, static, dynamic
-        world = GameWorld()
-        static = StaticObject(world, "s")
-        dynamic = DynamicObject(world, "d")
-        dynamic.geometry.setPosition((0.0,10.0,0.0))
-        world.objects += [static]
-        world.objects += [dynamic]
-
-    def get_maximum_rebound_height(self, initial_height):
-        dynamic.geometry.setPosition((0.0,initial_height,0.0))
-        on_way_down_second_time = False
-        on_way_up = False
-        while not on_way_down_second_time:
-            if dynamic.body.getLinearVel()[1] > 0.0:
-                on_way_up = True
-
-            if on_way_up and dynamic.body.getLinearVel()[1] <= 0.0:
-                on_way_down_second_time = True
-
-            world.go()
-            
-        return dynamic.body.getPosition()[1]
-
-    def test_one_second_static_object_doesnt_move(self):
-        world.go(169)
-        assert_equal( 0.0, static.geometry.getPosition()[1] )
-            
-    def test_one_second_fall_dynamic_object_falls_with_gravity(self):
-        world.go(100)
-        assert_equal( 5.0, dynamic.body.getPosition()[1] )
-        assert_equal( -9.8, dynamic.body.getLinearVel()[1] )
-
-    def test_dynamic_hitting_static(self):
-        world.go(200)
-        assert_equal( 0.0, dynamic.body.getLinearVel()[1] )
-        assert_equal( 1.0, dynamic.body.getPosition()[1] )
-
-    def test_dynamic_rebounding_off_static_100(self):
-        assert_equal( 4.0, round(self.get_maximum_rebound_height(100),0))
-
-    def test_dynamic_rebounding_off_static_50(self):
-        assert_equal( 3.0, round(self.get_maximum_rebound_height(50),0))
-
-    def test_dynamic_rebounding_off_static_20(self):
-        assert_equal( 2.0, round(self.get_maximum_rebound_height(20),0))
-
-    def test_dynamic_rebounding_off_static_10(self):
-        assert_equal( 1.0, round(self.get_maximum_rebound_height(10),0))
-
-    def test_does_not_move_on_z_axis(self):
-        static = StaticObject(world, size=(1000.0, 1.0, 1.0))
-        for i in range(200):
-            dynamic.moveRight()
-            world.go()
-            assert_equal( 0.0, dynamic.body.getPosition()[2] )
-
-    def test_move_left(self):
-        static = StaticObject(world, size=(100.0, 100.0, 0.0))
-        #dynamic.body.setPosition((0.0, 1.0, 0.0))
-        for i in range(100):
-            dynamic.moveLeft()
-            world.go()
-            
-        assert_equal( -10.0, round(dynamic.body.getPosition()[0],0))
-
-    def test_move_right(self):
-        static = StaticObject(world, size=(1000.0, 1.0, 1.0))
-        #dynamic.body.setPosition((0.0, 1.0, 0.0))
-        for i in range(100):
-            dynamic.moveRight()
-            world.go()
-            
-        assert_equal( 10.0, round(dynamic.body.getPosition()[0],0))
-
-    def test_slide_after_move(self):
-        static = StaticObject(world, size=(1000.0, 1.0, 1.0))
-        #dynamic.body.setPosition((0.0, 1.0, 0.0))
-        i = 0
-        for i in range(100):
-            dynamic.moveRight()
-            world.go()
-            
-        while (round(dynamic.body.getLinearVel()[1],2), \
-               round(dynamic.body.getLinearVel()[2],2), \
-               round(dynamic.body.getLinearVel()[0],2)) != (0,0,0):
-            world.go()
-        
-        assert_equal( 0.0, round(dynamic.body.getPosition()[2],4))
-        assert_equal( 1.0, round(dynamic.body.getPosition()[1],0))
-        assert_equal( 15.0, round(dynamic.body.getPosition()[0],0))
-
-if __name__ == '__test__':
-    t = TestGame()
-    t.go()
-
-if __name__ == '__main____main__':
-    world = GameWorld()
-    world.go()
-
-
+        self.keys['up'] = OIS.KC_W
+        self.keys['down'] = OIS.KC_S
+        # For air movement (will influence ground movement *slightly*)
+        self.keys['left'] = OIS.KC_A
+        self.keys['right'] = OIS.KC_D
+        # For ground movement
+        self.keys['rotate-left'] = OIS.KC_A
+        self.keys['rotate-right'] = OIS.KC_D
+        self.keys['shoot'] = OIS.MB_Left
     
 if __name__ == "__main__":
     world = GameWorld()
