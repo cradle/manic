@@ -5,10 +5,10 @@ import time
 
 class Engine():    
     def __init__(self):
-        self.net = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
-        self.net.registerMessageListener(self.messageListener)
-        self.timeBetweenNetworkUpdates = 0.1
+        self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
+        self.chat.registerMessageListener(self.messageListener)
         self.stepSize = 1.0/100.0
+        self.timeBetweenChatUpdates = 0.5
         self.timeUntilNextNetworkUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
         self.players = []
@@ -21,8 +21,8 @@ class Engine():
             lastFrame += timeSinceLastFrame
             self.frameEnded(timeSinceLastFrame)
 
-            for object in self.objects:
-                print object
+            #for object in self.objects:
+            #    print object
     
     def _createWorld(self):
         self.world = ode.World()
@@ -83,11 +83,11 @@ class Engine():
         print "%s: %s" % (source, message)
         
     def frameEnded(self, frameTime):
-        self.timeUntilNextNetworkUpdate -= frameTime
-        if self.timeUntilNextNetworkUpdate <= 0.0:
-            self.net.update()
-            while self.timeUntilNextNetworkUpdate <= 0.0:
-                self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
+        self.timeUntilNextChatUpdate -= frameTime
+        if self.timeUntilNextChatUpdate <= 0.0:
+            self.chat.update()
+            while self.timeUntilNextChatUpdate <= 0.0:
+                self.timeUntilNextChatUpdate += self.timeBetweenChatUpdates
 
         self.timeUntilNextEngineUpdate -= frameTime
         while self.timeUntilNextEngineUpdate <= 0.0:
