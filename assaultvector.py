@@ -453,6 +453,10 @@ class GameWorld(Application):
         self.frameListener = FrameListener(self, self.renderWindow, self.camera, True)
         self.keylistener = GameKeyListener(self)
         self.root.addFrameListener(self.frameListener)
+
+
+    def updateWorld(self, objects):
+        self.objects = objects
         
     def frameEnded(self, frameTime, keyboard,  mouse):
         self.timeUntilNextNetworkUpdate -= frameTime
@@ -462,11 +466,12 @@ class GameWorld(Application):
                 self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
         self.timeUntilNextEngineUpdate -= frameTime
-        while self.timeUntilNextEngineUpdate <= 0.0:
-            self.step(keyboard, mouse)
-            for object in self.objects:
-                object.frameEnded(self.stepSize)
-            self.timeUntilNextEngineUpdate += self.stepSize
+        
+        #while self.timeUntilNextEngineUpdate <= 0.0:
+        #    self.step(keyboard, mouse)
+        #    for object in self.objects:
+        #        object.frameEnded(self.stepSize)
+        #    self.timeUntilNextEngineUpdate += self.stepSize
                 
         pos = self.player._geometry.getPosition()
         self.camera.setPosition(pos[0], pos[1], pos[2] + 40)

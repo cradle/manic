@@ -11,6 +11,7 @@ class Engine():
         self.stepSize = 1.0/100.0
         self.timeUntilNextNetworkUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
+        self.players = []
 
     def go(self):
         self._createWorld()
@@ -19,6 +20,9 @@ class Engine():
             timeSinceLastFrame = time.time() - lastFrame
             lastFrame += timeSinceLastFrame
             self.frameEnded(timeSinceLastFrame)
+
+            for object in self.objects:
+                print object
     
     def _createWorld(self):
         self.world = ode.World()
@@ -90,6 +94,8 @@ class Engine():
             self.step()
             for object in self.objects:
                 object.frameEnded(self.stepSize)
+            for player in self.players:
+                player.updateWorld(objects)
             self.timeUntilNextEngineUpdate += self.stepSize
 
     def step(self):
