@@ -19,15 +19,15 @@ class StaticObject(StaticObject):
         self._updateDisplay()
 
     def __del__(self):
-        super.__del__(self)
+        super(StaticObject, self).__del__()
         self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild(self._name)
 
     def setPosition(self, position):
-        super.setPosition(self, position)
+        super(StaticObject, self).setPosition(position)
         self._updateDisplay()
 
     def setRotation(self, quaternion):
-        super.setRotation(self, quaternion)
+        super(StaticObject, self).setRotation(quaternion)
         self._updateDisplay()
 
     def _updateDisplay(self):
@@ -55,7 +55,7 @@ class DynamicObject(DynamicObject):
             'shoot':None}
 
     def preStep(self, keyboard, mouse):
-        DynamicObject.preStep(self)        
+        super(DynamicObject, self).preStep()        
         if CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1").hasInputFocus():
             return
         
@@ -77,7 +77,7 @@ class DynamicObject(DynamicObject):
             self._shoot()
         
     def postStep(self):
-        DynamicObject.postStep(self)
+        super(DynamicObject, self).postStep()
         self._updateDisplay()
 
 class SphereObject(SphereObject):
@@ -143,7 +143,7 @@ class Person(Person):
 
 
     def frameEnded(self, time):
-        Person.frameEnded(self, time)
+        super(Person, self).frameEnded(time)
         left = ogre.Quaternion(ogre.Degree(90), ogre.Vector3.UNIT_Y)
         right = ogre.Quaternion(ogre.Degree(-90), ogre.Vector3.UNIT_Y)
         
