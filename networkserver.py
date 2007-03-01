@@ -31,6 +31,7 @@ class NetworkServer(DatagramProtocol):
         self.reactor.listenUDP(9999, self)
         
     def datagramReceived(self, data, address):
+        # Allocate the received datagram to the correct client
         client = Client(address, self.transport)
         if not self.clients.count(client):
             self.clients.append(client)

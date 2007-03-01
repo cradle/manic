@@ -49,6 +49,18 @@ class DynamicObject(StaticObject):
         self._geometry.isOnGround = False
         self._body.objectType = "Dynamic"
 
+    def getAttributes(self):
+        return [self._geometry.getPosition(),
+         self._body.getQuaternion(),
+         self._body.getAngularVel(),
+         self._body.getLinearVel()]
+
+    def setAttributes(self, attributes):
+        self._geometry.setPosition(attributes[0])
+        self._body.setQuaternion(attributes[1])
+        self._body.setAngularVel(attributes[2])
+        self._body.setLinearVel(attributes[3])
+
     def preStep(self):
         # Apply wind friction
         self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
@@ -56,8 +68,6 @@ class DynamicObject(StaticObject):
         if self._geometry.isOnGround:
             # Apply rolling friction
             self._body.addTorque([x*-2.0 for x in self._body.getAngularVel()])
-
-        #TODO: Controller input (network/keyboard)
         
     def postStep(self):
         self._alignToZAxis()
@@ -154,7 +164,8 @@ class Person(SphereObject):
         # The size of the bounding box
         size = (1.0, 1.0, 1.0)
         weight = 70
-        
+
+        self._name = "person_" + name        
         self._size = size
         self._geometry = ode.GeomSphere(gameworld.space, min(self._size))
         self._body = ode.Body(gameworld.world)

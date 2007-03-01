@@ -9,7 +9,7 @@ class Engine():
         self.chat.registerMessageListener(self.messageListener)
         self.stepSize = 1.0/100.0
         self.timeBetweenChatUpdates = 0.5
-        self.timeUntilNextNetworkUpdate = 0.0
+        self.timeUntilNextChatUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
         self.players = []
 
@@ -94,8 +94,6 @@ class Engine():
             self.step()
             for object in self.objects:
                 object.frameEnded(self.stepSize)
-            for player in self.players:
-                player.updateWorld(objects)
             self.timeUntilNextEngineUpdate += self.stepSize
 
     def step(self):
