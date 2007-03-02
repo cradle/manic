@@ -304,7 +304,14 @@ class Client(Application, Engine):
     def __init__(self):
         Application.__init__(self)
         Engine.__init__(self)
-        self.network = networkclient.NetworkClient()
+        self.chat.registerMessageListener(self.messageListener)
+        address = raw_input("server ('127.0.0.1:9999') :> ")
+        if address != "":
+            ip, port = address.split(":")
+        else:
+            ip, port = "127.0.0.1", 9999
+            
+        self.network = networkclient.NetworkClient(ip, int(port))
         self.network.send("connect")
         self.timeBetweenNetworkUpdates = 0.1
         self.timeUntilNextNetworkUpdate = 0.0
@@ -314,6 +321,9 @@ class Client(Application, Engine):
         self.messageListener("Me", e.getText().c_str())
         self.chat.sendMessage(e.getText().c_str())
         e.setText("")
+
+    def messageListener(self, name, message):
+        self.appendText(name + ": " + message)
 
     def appendText(self, text):
         st = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
@@ -338,8 +348,6 @@ class Client(Application, Engine):
         self.sceneManager.setAmbientLight((0.75, 0.75, 0.75))
         self.world = ode.World()
         self.world.setGravity((0,-9.81,0))
-        #self.world.setERP(0.2)
-        #self.world.setCFM(0.0000001)
         self.space = ode.Space(type=1)
         self.contactgroup = ode.JointGroup()
         self.objects = []

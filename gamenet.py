@@ -61,10 +61,14 @@ class NetCode:
         def sendMessage(self, text, type='chat'):
                 split = text.split(":",1)
                 to = None
+                if len(split) == 2 and split[0].lower() == "team":
+                    self.sendGroupMessage(split[1])
+                    return
+                
                 if len(split) == 2 and len(split[0]) != 0:
                         try:
                                 to = jid.JID(split[0])
-                                text = split[1]
+                                theBody = split[1]
                         except jid.InvalidFormat:
                                 pass
 
@@ -72,6 +76,7 @@ class NetCode:
                         to = to.full()
                 else:
                         to = 'cradle@gmail.com'
+                        theBody = text
 
                 if len(text) == 0:
                         return
@@ -81,7 +86,7 @@ class NetCode:
                 message['id'] = "%i" % self.messageNum
                 message['type'] = type
                 self.messageNum += 1
-                message.addElement('body', content=str(text))
+                message.addElement('body', content=str(theBody))
                 event = domish.Element(('jabber:x:event', 'x'))
                 event.addElement("offline")
                 event.addElement("delivered")
