@@ -96,10 +96,7 @@ class Engine():
                 object.frameEnded(self.stepSize)
             self.timeUntilNextEngineUpdate += self.stepSize
 
-    def step(self):
-        if self.stepSize == 0.0:
-            return 
-    
+    def step(self):    
         self.space.collide(0, self.collision_callback)
         
         for object in self.objects:
@@ -109,7 +106,7 @@ class Engine():
         
         for object in self.objects:
             object.postStep()
-            
+        
         self.contactgroup.empty()
 
     def collision_callback(self, args, geom1, geom2):

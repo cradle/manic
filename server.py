@@ -11,6 +11,7 @@ class Server(Engine):
         self.timeUntilNextNetworkUpdate = 0.0
 
     def frameEnded(self, frameTime):
+                    
         Engine.frameEnded(self, frameTime)
         
         self.timeUntilNextNetworkUpdate -= frameTime
@@ -24,8 +25,11 @@ class Server(Engine):
                     client.send([object._name,object.getAttributes()])
                     
                 while client.hasMoreMessages():
-                    # Client input (keyboard/mouse)
-                    print client.pop()
+                    self.player.inputPresses(client.pop())
+                    
+        time.sleep(min(self.timeUntilNextChatUpdate,
+                       self.timeUntilNextNetworkUpdate,
+                       self.timeUntilNextEngineUpdate))
 
 if __name__ == "__main__":
     engine = Server()

@@ -1,6 +1,6 @@
 import ode, math
 
-class StaticObject():    
+class StaticObject(object):    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), geomFunc = ode.GeomBox):
         self._size = size
         self._geometry = geomFunc(gameworld.space, self._size)
@@ -48,20 +48,40 @@ class DynamicObject(StaticObject):
 
         self._geometry.isOnGround = False
         self._body.objectType = "Dynamic"
+        
+        self._moveLeftPressed = False;
+        self._moveRightPressed = False;
+        self._rotateLeftPressed = False;
+        self._rotateRightPressed = False;
+        self._crouchPressed = False;
+        self._jumpPressed = False;
 
     def getAttributes(self):
-        return [self._geometry.getPosition(),
+        return [self._body.getPosition(),
          self._body.getQuaternion(),
          self._body.getAngularVel(),
          self._body.getLinearVel()]
 
     def setAttributes(self, attributes):
-        self._geometry.setPosition(attributes[0])
+        self._body.setPosition(attributes[0])
         self._body.setQuaternion(attributes[1])
         self._body.setAngularVel(attributes[2])
         self._body.setLinearVel(attributes[3])
 
     def preStep(self):
+        if self._moveLeftPressed:
+            self._moveLeft()
+        if self._moveRightPressed:
+            self._moveRight()
+        if self._rotateLeftPressed:
+            self._rotateLeft()
+        if self._rotateRightPressed:
+            self._rotateRight()
+        if self._crouchPressed:
+            self._crouch()
+        if self._jumpPressed:
+            self._jump()
+
         # Apply wind friction
         self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
 
@@ -120,6 +140,31 @@ class DynamicObject(StaticObject):
         return StaticObject.__str__(self) + ", LV=(%2.2f, %2.2f, %2.2f), AV=(%2.2f, %2.2f, %2.2f)" % \
                (self._body.getLinearVel() + self._body.getAngularVel())
 
+    def inputPresses(self, presses):
+        if 'left' in presses:
+            self._moveLeftPressed = True;
+        else:
+            self._moveLeftPressed = False;
+        if 'right' in presses:
+            self._moveRightPressed = True;
+        else:
+            self._moveRightPressed = False;
+        if 'rotate-left' in presses:
+            self._rotateLeftPressed = True;
+        else:
+            self._rotateLeftPressed = False;
+        if 'rotate-right' in presses:
+            self._rotateRightPressed = True;
+        else:
+            self._rotateRightPressed = False;
+        if 'down' in presses:
+            self._crouchPressed = True;
+        else:
+            self._crouchPressed = False;
+        if 'up' in presses:
+            self._jumpPressed = True;
+        else:
+            self._jumpPressed = False;
 
 class SphereObject(DynamicObject):
     def __init__(self, gameworld, name, size = 0.5, geomFunc = ode.GeomSphere, weight = 10):
@@ -197,6 +242,13 @@ class Person(SphereObject):
         self._bulletNum = 0
         
         self._world = gameworld
+        
+        self._moveLeftPressed = False;
+        self._moveRightPressed = False;
+        self._rotateLeftPressed = False;
+        self._rotateRightPressed = False;
+        self._crouchPressed = False;
+        self._jumpPressed = False;
 
 
     def frameEnded(self, time):
@@ -213,6 +265,7 @@ class Person(SphereObject):
 
     def _shoot(self):
         if self.timeLeftUntilNextShot <= 0:
+            direction = self._getDirection()
             direction.normalise()
             self._bulletNum += 1
             self._bullets.append(BulletObject(self._world, "b" + str(self._bulletNum), \

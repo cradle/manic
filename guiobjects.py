@@ -2,10 +2,11 @@ from objects import *
 import Ogre as ogre
 import ode
 import OIS
+import CEGUI
 
 class StaticObject(StaticObject):    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
-        StaticObject.__init__(self, gameworld, name, size, geomFunc)   
+        super(StaticObject, self).__init__(gameworld, name, size, geomFunc)   
 
         self._entity = gameworld.sceneManager.createEntity('entity_' + name, mesh)
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
@@ -24,6 +25,7 @@ class StaticObject(StaticObject):
 
     def setPosition(self, position):
         super(StaticObject, self).setPosition(position)
+        print "Subclass Static Object " + self._name
         self._updateDisplay()
 
     def setRotation(self, quaternion):
@@ -38,11 +40,11 @@ class StaticObject(StaticObject):
                                  self._geometry.getQuaternion()[3])
 
 
-class DynamicObject(DynamicObject):
+class DynamicObject(DynamicObject, StaticObject):
     
     def __init__(self, gameworld, name, size = (1.0,1.0,1.0), \
                  scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox, weight = 50):
-        DynamicObject.__init__(self, gameworld, name, size, geomFunc, weight)
+        super(DynamicObject, self).__init__(gameworld, name, size, geomFunc, weight)
 
         self.keys = {
             'up':OIS.KC_I,
@@ -54,37 +56,48 @@ class DynamicObject(DynamicObject):
             'rotate-right':OIS.KC_U,
             'shoot':None}
 
-    def preStep(self, keyboard, mouse):
-        super(DynamicObject, self).preStep()        
+    def input(self, keyboard, mouse):
         if CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1").hasInputFocus():
-            return
-        
+            return []
+
+        presses = []
+
         if keyboard.isKeyDown(self.keys['left']):
             self._moveLeft()
+            presses.append("left")
         if keyboard.isKeyDown(self.keys['right']):
             self._moveRight()
+            presses.append("right")
         if keyboard.isKeyDown(self.keys['rotate-left']):
             self._rotateLeft()
+            presses.append("rotate-left")
         if keyboard.isKeyDown(self.keys['rotate-right']):
             self._rotateRight()
+            presses.append("rotate-right")
         if keyboard.isKeyDown(self.keys['up']):
             self._jump()
+            presses.append("up")
         if keyboard.isKeyDown(self.keys['down']):
             self._crouch()
+            presses.append("down")
         if keyboard.isKeyDown(self.keys['downdown']):
             self._prone()
+            presses.append("downdown")
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
             self._shoot()
+            presses.append("shoot")
+
+        return presses
         
     def postStep(self):
         super(DynamicObject, self).postStep()
         self._updateDisplay()
 
-class SphereObject(SphereObject):
+class SphereObject(SphereObject, DynamicObject):
     def __init__(self, gameworld, name, size = 0.5, scale = (0.01, 0.01, 0.01), \
                  mesh = 'sphere.mesh', geomFunc = ode.GeomSphere, weight = 10):
         
-        SphereObject.__init__(self, gameworld, name, size, geomFunc, weight)
+        super(SphereObject, self).__init__(gameworld, name, size, geomFunc, weight)
             
         self.keys['up'] = OIS.KC_NUMPAD8
         self.keys['down'] = OIS.KC_NUMPAD5
@@ -93,9 +106,9 @@ class SphereObject(SphereObject):
         self.keys['rotate-left'] = OIS.KC_NUMPAD7
         self.keys['rotate-right'] = OIS.KC_NUMPAD9
 
-class BulletObject(BulletObject):
+class BulletObject(BulletObject, SphereObject):
     def __init__(self, gameworld, name, position, direction):
-        BulletObject.__init__(self, gameworld, name, size, scale, geomFunc = ode.GeomBox, weight = 0.01)
+        super(BulletObject, self).__init__(gameworld, name, size, scale, geomFunc = ode.GeomBox, weight = 0.01)
         
         scale = (0.01, 0.01, 0.01)
             
@@ -106,9 +119,9 @@ class BulletObject(BulletObject):
         self.keys['rotate-left'] = OIS.KC_UNASSIGNED
         self.keys['rotate-right'] = OIS.KC_UNASSIGNED
 
-class Person(Person):
+class Person(Person, SphereObject):
     def __init__(self, gameworld, name, camera = None):
-        Person.__init__(self, gameworld, name, camera)
+        super(Person, self).__init__(gameworld, name, camera)
         # The scale to scale the model by
         scale = 0.01
         offset = (0.0, -1.0, 0.0)
@@ -149,6 +162,7 @@ class Person(Person):
         
         if self._camera:
             self._pointingDirection = self._camera.getDirection()
+            self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],20))
         
         if self._pointingDirection[0] <= 0.0 and \
            self._node.getOrientation().equals(right, ogre.Radian(ogre.Degree(5))): 
@@ -165,15 +179,16 @@ class Person(Person):
             else: # "right"
                 self.animation.addTime(time * self._body.getLinearVel()[0] * 0.3)
 
+        self._updateDisplay()
+
     def _updateDisplay(self):
         p = self._geometry.getPosition()
         o = self._nodeOffset
         self._node.setPosition(p[0]+o[0], p[1]+o[1], p[2]+o[2])
-        print self._name, self._geometry.getPosition()
 
 class Player(Person):
     def __init__(self, gameworld, name, camera):
-        Person.__init__(self, gameworld, name, camera)
+        super(Player, self).__init__(gameworld, name, camera)
         
         self.keys['up'] = OIS.KC_W
         self.keys['down'] = OIS.KC_S

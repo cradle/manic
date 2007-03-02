@@ -453,6 +453,8 @@ class Client(Application, Engine):
         self.root.addFrameListener(self.frameListener)
         
     def frameEnded(self, frameTime, keyboard,  mouse):
+        self.network.send(self.player.input(keyboard,  mouse));
+            
         Engine.frameEnded(self, frameTime)
         
         self.timeUntilNextNetworkUpdate -= frameTime
@@ -465,7 +467,7 @@ class Client(Application, Engine):
                 for object in self.objects:
                     if message[0] == object._name:
                         object.setAttributes(message[1])
-                        print "setting attributes of " + object._name
+            self.network._messages = []
     
 if __name__ == "__main__":
     world = Client()
