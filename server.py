@@ -21,8 +21,8 @@ class Server(Engine):
                 self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
             for client in self.network.clients:
-                for object in self.objects:
-                    client.send([object._name,object.getAttributes()])
+                client.send([[[o._name,o.getAttributes()] for o in self.objects],
+                            time.time()])
                     
                 while client.hasMoreMessages():
                     self.player.inputPresses(client.pop())

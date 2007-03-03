@@ -2,6 +2,7 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 from twisted.spread import jelly
 from twisted.spread import banana
+import time
 
 class Client():
     def __init__(self, address, transport):
@@ -13,6 +14,10 @@ class Client():
         return self.address == other.address
 
     def push(self, data):
+        if type(data) == list and len(data) > 0:
+            if data[0] == "ping":
+                self.send(["pong", data[1], time.time()])
+            
         self.messages.insert(0,data)
 
     def hasMoreMessages(self):
@@ -35,7 +40,6 @@ class NetworkServer(DatagramProtocol):
         client = Client(address, self.transport)
         if not self.clients.count(client):
             self.clients.append(client)
-            client.send(["position", (0.0,0.0,0.0)])
         else:
             client = self.clients[self.clients.index(client)]
 

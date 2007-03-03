@@ -312,9 +312,10 @@ class Client(Application, Engine):
             ip, port = "127.0.0.1", 9999
             
         self.network = networkclient.NetworkClient(ip, int(port))
-        self.network.send("connect")
         self.timeBetweenNetworkUpdates = 0.1
         self.timeUntilNextNetworkUpdate = 0.0
+        self.serverRoundTripTime = 0.0
+        self.lastServerUpdate = time.time()
     
     def sendText(self):
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
@@ -467,14 +468,18 @@ class Client(Application, Engine):
         
         self.timeUntilNextNetworkUpdate -= frameTime
         if self.timeUntilNextNetworkUpdate <= 0.0:
-            self.network.update()
+            self.network.update(frameTime)
             while self.timeUntilNextNetworkUpdate <= 0.0:
                 self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
             for message in self.network._messages:
-                for object in self.objects:
-                    if message[0] == object._name:
-                        object.setAttributes(message[1])
+                if message[1] > self.lastServerUpdate:
+                    self.lastServerUpdate = message[1]
+                    for object in self.objects:
+                        for serverObject in message[0]:
+                            if serverObject[0] == object._name:
+                                    object.setAttributes(serverObject[1])
+                        
             self.network._messages = []
 
     def step(self):
