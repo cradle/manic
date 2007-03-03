@@ -7,7 +7,7 @@ class Server(Engine):
     def __init__(self):
         Engine.__init__(self)
         self.network = networkserver.NetworkServer()
-        self.timeBetweenNetworkUpdates = 0.1
+        self.timeBetweenNetworkUpdates = 0.01
         self.timeUntilNextNetworkUpdate = 0.0
 
     def frameEnded(self, frameTime):

@@ -312,7 +312,7 @@ class Client(Application, Engine):
             ip, port = "127.0.0.1", 9999
             
         self.network = networkclient.NetworkClient(ip, int(port))
-        self.timeBetweenNetworkUpdates = 0.1
+        self.timeBetweenNetworkUpdates = 0.01
         self.timeUntilNextNetworkUpdate = 0.0
         self.serverRoundTripTime = 0.0
         self.lastServerUpdate = time.time()
@@ -464,7 +464,6 @@ class Client(Application, Engine):
     def frameEnded(self, frameTime, keyboard,  mouse):
         self.keyboard = keyboard
         self.mouse = mouse
-        Engine.frameEnded(self, frameTime)
         
         self.timeUntilNextNetworkUpdate -= frameTime
         if self.timeUntilNextNetworkUpdate <= 0.0:
@@ -482,9 +481,12 @@ class Client(Application, Engine):
                         
             self.network._messages = []
 
+        Engine.frameEnded(self, frameTime)
+
     def step(self):
         self.network.send(self.player.input(self.keyboard,  self.mouse));
-        Engine.step(self)
+        # TODO: Client side prediction of physics
+        #Engine.step(self)
     
 if __name__ == "__main__":
     world = Client()

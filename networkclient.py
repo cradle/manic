@@ -41,7 +41,6 @@ class NetworkClient(DatagramProtocol):
                 if ping.number == message[1]:
                     self.roundTripTime = time.time() - ping.time;
                     self.serverOffset = time.time() - (message[2] + self.roundTripTime/2)
-                    print "RTT:", self.roundTripTime, " OFFSET:", self.serverOffset
                     self.pings = [p for p in self.pings if p.number <= ping.number]
         else:
             self._messages.insert(0,message)

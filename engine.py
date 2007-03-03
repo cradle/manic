@@ -98,7 +98,7 @@ class Engine():
                 object.frameEnded(self.stepSize)
             self.timeUntilNextEngineUpdate += self.stepSize
 
-    def step(self):
+    def step(self):        
         for object in self.objects:
             object.preStep()
             
