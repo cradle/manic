@@ -4,7 +4,7 @@ class StaticObject(object):
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), geomFunc = ode.GeomBox):
         self._size = size
         self._geometry = geomFunc(gameworld.space, self._size)
-        self._name = 'node_' + name
+        self._name = name
         self._world = gameworld.world
         self._space = gameworld.space
         self._gameworld = gameworld
@@ -209,8 +209,7 @@ class Person(SphereObject):
         # The size of the bounding box
         size = (1.0, 1.0, 1.0)
         weight = 70
-
-        self._name = "person_" + name        
+        self._name = name        
         self._size = size
         self._geometry = ode.GeomSphere(gameworld.space, min(self._size))
         self._body = ode.Body(gameworld.world)

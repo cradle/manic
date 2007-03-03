@@ -69,11 +69,6 @@ class Engine():
         static.setPosition((25,25,0))
         self.statics += [static]
             
-        player2 = Person(self, "p2")
-        player2.setPosition((5.0,3.0,0.0))
-        
-        self.objects += [player2]
-            
     def messageListener(self, source, message):
         print "%s: %s" % (source, message)
         

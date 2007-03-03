@@ -316,6 +316,7 @@ class Client(Application, Engine):
         self.timeUntilNextNetworkUpdate = 0.0
         self.serverRoundTripTime = 0.0
         self.lastServerUpdate = time.time()
+        self.player = None
     
     def sendText(self):
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
@@ -386,17 +387,6 @@ class Client(Application, Engine):
         static = StaticObject(self, "%sr" % 6, size=(1,50,3))
         static.setPosition((25,25,0))
         self.statics += [static]
-            
-        self.player = Player(self, "p1", self.camera)
-        self.player.setPosition((-5.0,3.0,0.0))
-        self.player.disable()
-        
-        self.objects += [self.player]
-            
-        player2 = Person(self, "p2")
-        player2.setPosition((5.0,3.0,0.0))
-        
-        self.objects += [player2]
 
         ## setup GUI system
         self.GUIRenderer = CEGUI.OgreCEGUIRenderer(self.renderWindow, 
@@ -471,17 +461,31 @@ class Client(Application, Engine):
             for message in self.network._messages:
                 if message[1] > self.lastServerUpdate:
                     self.lastServerUpdate = message[1]
-                    for object in self.objects:
-                        for serverObject in message[0]:
+                    for serverObject in message[0]:
+                        hasObject = False
+                        for object in self.objects:
                             if serverObject[0] == object._name:
-                                    object.setAttributes(serverObject[1])
+                                hasObject = True
+                                object.setAttributes(serverObject[1])
+                        if not hasObject:
+                            newObject = None
+                            if serverObject[2] == True:
+                                newObject = Player(self, serverObject[0], self.camera)
+                                newObject.enable()
+                                self.player = newObject
+                            else:
+                                newObject = Person(self, serverObject[0])
+                                
+                            newObject.setAttributes(serverObject[1])
+                            self.objects += [newObject]
                         
             self.network._messages = []
 
         Engine.frameEnded(self, frameTime)
 
     def step(self):
-        self.network.send(self.player.input(self.keyboard,  self.mouse));
+        if self.player != None:
+            self.network.send(self.player.input(self.keyboard,  self.mouse));
         # TODO: Client side prediction of physics
         #Engine.step(self)
     
