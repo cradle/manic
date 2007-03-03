@@ -63,8 +63,6 @@ class NetworkClient(DatagramProtocol):
                 
         self.reactor.doIteration(0)
 
-
-
 if __name__ == "__main__":
     # 0 means any port, we don’t care in this case
     client = NetworkClient()

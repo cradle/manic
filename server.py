@@ -2,16 +2,23 @@ from engine import Engine
 import networkserver
 import os
 import time
+from objects import Person
 
 class Server(Engine):
     def __init__(self):
         Engine.__init__(self)
-        self.network = networkserver.NetworkServer()
+        self.network = networkserver.NetworkServer(self.clientConnected)
         self.timeBetweenNetworkUpdates = 0.01
         self.timeUntilNextNetworkUpdate = 0.0
+        self.clientNumber = 0
+
+    def clientConnected(self, client):
+        self.clientNumber += 1
+        client.player = Person(self, "p%i" % self.clientNumber)
+        client.player.setPosition((0.0,20.0,0.0))
+        self.objects += [client.player]
 
     def frameEnded(self, frameTime):
-                    
         Engine.frameEnded(self, frameTime)
         
         self.timeUntilNextNetworkUpdate -= frameTime
@@ -25,7 +32,7 @@ class Server(Engine):
                             time.time()])
                     
                 while client.hasMoreMessages():
-                    self.player.inputPresses(client.pop())
+                    client.player.inputPresses(client.pop())
                     
         time.sleep(min(self.timeUntilNextChatUpdate,
                        self.timeUntilNextNetworkUpdate,

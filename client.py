@@ -346,13 +346,9 @@ class Client(Application, Engine):
         self.viewPort.setOverlaysEnabled(True)             
     
     def _createScene(self):
+        Engine._createWorld(self)
         self.sceneManager.setAmbientLight((0.75, 0.75, 0.75))
-        self.world = ode.World()
-        self.world.setGravity((0,-9.81,0))
-        self.space = ode.Space(type=1)
-        self.contactgroup = ode.JointGroup()
-        self.objects = []
-        self.statics = []
+
   
         static = StaticObject(self, "bottom", size=(50,1,3))
         static.setPosition((0,0,0))
@@ -393,6 +389,7 @@ class Client(Application, Engine):
             
         self.player = Player(self, "p1", self.camera)
         self.player.setPosition((-5.0,3.0,0.0))
+        self.player.disable()
         
         self.objects += [self.player]
             

@@ -199,3 +199,28 @@ class Player(Person):
         self.keys['rotate-left'] = OIS.KC_A
         self.keys['rotate-right'] = OIS.KC_D
         #self.keys['shoot'] = OIS.MB_Left
+
+        self.disable()
+
+    def setAttributes(self, attributes):
+        Person.setAttributes(self, attributes)
+        if self.isDisabled():
+            self.enable()
+
+    def isEnabled(self):
+        return self.enabled
+
+    def isDisabled(self):
+        return not self.enabled
+    
+    def disable(self):
+        self._body.disable()
+        self._geometry.disable()
+        self._node.setVisible(False)
+        self.enabled = False
+
+    def enable(self):
+        self._body.enable()
+        self._geometry.enable()
+        self._node.setVisible(True)
+        self.enabled = True

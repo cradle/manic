@@ -30,16 +30,18 @@ class Client():
         self.transport.write(banana.encode(jelly.jelly(data)), self.address)
     
 class NetworkServer(DatagramProtocol):
-    def __init__(self):
+    def __init__(self, connectedCallback):
         self.clients = []
         self.reactor = reactor
         self.reactor.listenUDP(9999, self)
+        self.connectedCallback = connectedCallback
         
     def datagramReceived(self, data, address):
         # Allocate the received datagram to the correct client
         client = Client(address, self.transport)
-        if not self.clients.count(client):
+        if client not in self.clients:
             self.clients.append(client)
+            self.connectedCallback(client)
         else:
             client = self.clients[self.clients.index(client)]
 
