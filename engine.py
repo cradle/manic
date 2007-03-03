@@ -91,14 +91,14 @@ class Engine():
 
         self.timeUntilNextEngineUpdate -= frameTime
         while self.timeUntilNextEngineUpdate <= 0.0:
+            self.space.collide(0, self.collision_callback)
             self.step()
+            self.contactgroup.empty()
             for object in self.objects:
                 object.frameEnded(self.stepSize)
             self.timeUntilNextEngineUpdate += self.stepSize
 
-    def step(self):    
-        self.space.collide(0, self.collision_callback)
-        
+    def step(self):
         for object in self.objects:
             object.preStep()
             
@@ -106,8 +106,6 @@ class Engine():
         
         for object in self.objects:
             object.postStep()
-        
-        self.contactgroup.empty()
 
     def collision_callback(self, args, geom1, geom2):
         if geom1.getBody() and geom1.getBody().objectType == "Bullet" \

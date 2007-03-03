@@ -198,4 +198,4 @@ class Player(Person):
         # For ground movement
         self.keys['rotate-left'] = OIS.KC_A
         self.keys['rotate-right'] = OIS.KC_D
-        self.keys['shoot'] = OIS.MB_Left
+        #self.keys['shoot'] = OIS.MB_Left
