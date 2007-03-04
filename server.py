@@ -26,11 +26,16 @@ class Server(Engine):
                 self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
             for client in self.network.clients:
+                if client.timedOut():
+                    print "Client", client.player._name, "timed out, disconnecting"
+                    self.objects.remove(client.player)
+                    self.network.clients.remove(client)
+
+            for client in self.network.clients:                
                 client.send([[[o._name,
                                o.getAttributes(),
                                o._name == client.player._name,
-                               o._body.objectType,
-                               o.isDead()] for o in self.objects],
+                               o._body.objectType] for o in self.objects],
                             time.time()])
                 #parameter above is whether or not the player is the current player
                     

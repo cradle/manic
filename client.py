@@ -460,15 +460,17 @@ class Client(Application, Engine):
             for message in self.network._messages:
                 if message[1] > self.lastServerUpdate:
                     self.lastServerUpdate = message[1]
+
+                    for object in self.objects:
+                        object.existsOnServer = False
+                        
                     for serverObject in message[0]:
                         hasObject = False
                         for object in self.objects:
                             if serverObject[0] == object._name:
                                 hasObject = True
                                 object.setAttributes(serverObject[1])
-                                if serverObject[4] == True:
-                                    objects.remove(object)
-                                    print "removing", type(object)
+                                object.existsOnServer = True
                         if not hasObject:
                             newObject = None
                             if serverObject[2] == True:
@@ -483,9 +485,16 @@ class Client(Application, Engine):
                                 elif serverObject[3] == "Bullet":
                                     print "creating bullet"
                                     newObject = BulletObject(self, serverObject[0])
-                                    
+
+                            newObject.existsOnServer = True        
                             newObject.setAttributes(serverObject[1])
                             self.objects += [newObject]
+
+                    for object in self.objects:
+                        if not object.existsOnServer:
+                            "Server removed", object._name, ", removing"
+                            self.objects.remove(object)
+
                         
             self.network._messages = []
 

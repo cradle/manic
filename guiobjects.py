@@ -9,8 +9,8 @@ class StaticObject(objects.StaticObject):
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
         super(StaticObject, self).__init__(gameworld, name, size, geomFunc)   
 
-        self._entity = gameworld.sceneManager.createEntity('entity_' + name, mesh)
-        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
+        self._entity = gameworld.sceneManager.createEntity('e' + name, mesh)
+        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.attachObject(self._entity)
         
         if hasattr(size, "__getitem__"):
@@ -22,11 +22,10 @@ class StaticObject(objects.StaticObject):
 
     def __del__(self):
         objects.StaticObject.__del__(self)
-        self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild(self._name)
+        self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('n' + self._name)
 
     def setPosition(self, position):
         super(StaticObject, self).setPosition(position)
-        print "Subclass Static Object " + self._name
         self._updateDisplay()
 
     def setRotation(self, quaternion):
@@ -126,15 +125,16 @@ class BulletObject(objects.BulletObject, SphereObject):
 class Person(objects.Person, SphereObject):
     def __init__(self, gameworld, name, camera = None):
         super(Person, self).__init__(gameworld, name, camera)
+
         # The scale to scale the model by
         scale = 0.01
         offset = (0.0, -1.0, 0.0)
         self._nodeOffset = offset
         
         # Entity
-        self._entity = gameworld.sceneManager.createEntity('entity_' + name, 'ninja.mesh')
+        self._entity = gameworld.sceneManager.createEntity('e' + name, 'ninja.mesh')
         # Scene -> Node
-        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('node_' + name)
+        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.setScale(scale*self._size[0],scale*self._size[1],scale*self._size[2])
         # Node -> Entity
         self._node.attachObject(self._entity)

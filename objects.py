@@ -236,6 +236,7 @@ class BulletObject(SphereObject):
 
 class Person(SphereObject):
     def __init__(self, gameworld, name, camera = None):
+        self._gameworld = gameworld
 
         # The size of the bounding box
         size = (1.0, 1.0, 1.0)
