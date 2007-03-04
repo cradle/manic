@@ -492,7 +492,7 @@ class Client(Application, Engine):
 
                     for object in self.objects:
                         if not object.existsOnServer:
-                            "Server removed", object._name, ", removing"
+                            self.messageListener("Server", object._name + " timed out")
                             self.objects.remove(object)
 
                         
