@@ -11,7 +11,6 @@ class StaticObject(object):
 
     def __del__(self):
         self._geometry.disable()
-        #TODO: Remove geometry from world, prevent "memory leaks"
 
     def __str__(self):
         return "P=(%2.2f, %2.2f, %2.2f)" % self._geometry.getPosition()
@@ -49,24 +48,42 @@ class DynamicObject(StaticObject):
         self._geometry.isOnGround = False
         self._body.objectType = "Dynamic"
         
-        self._moveLeftPressed = False;
-        self._moveRightPressed = False;
-        self._rotateLeftPressed = False;
-        self._rotateRightPressed = False;
-        self._crouchPressed = False;
-        self._jumpPressed = False;
+        self._moveLeftPressed = False
+        self._moveRightPressed = False
+        self._rotateLeftPressed = False
+        self._rotateRightPressed = False
+        self._crouchPressed = False
+        self._jumpPressed = False
+        self._shootPressed = False
+        self._pointingDirection = (1.0,0.0,0.0)
+
+    def getDirection(self):
+        return self._pointingDirection
+
+    def setDirection(self, direction):
+        # Normalise
+        length = math.sqrt(direction[0]*direction[0] + direction[1]*direction[1])
+        
+        if length != 0.0:   
+            direction = (direction[0]/length, direction[1]/length, 0)
+        else:
+            direction = (1.0, 0.0, 0.0)
+            
+        self._pointingDirection = direction
 
     def getAttributes(self):
         return [self._body.getPosition(),
          self._body.getQuaternion(),
          self._body.getAngularVel(),
-         self._body.getLinearVel()]
+         self._body.getLinearVel(),
+         self.getDirection()]
 
     def setAttributes(self, attributes):
         self._body.setPosition(attributes[0])
         self._body.setQuaternion(attributes[1])
         self._body.setAngularVel(attributes[2])
         self._body.setLinearVel(attributes[3])
+        self.setDirection(attributes[4])
 
     def preStep(self):
         if self._moveLeftPressed:
@@ -81,6 +98,8 @@ class DynamicObject(StaticObject):
             self._crouch()
         if self._jumpPressed:
             self._jump()
+        if self._shootPressed:
+            self._shoot()
 
         # Apply wind friction
         self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
@@ -95,6 +114,9 @@ class DynamicObject(StaticObject):
         self._motor.setYParam(ode.ParamFMax, 0)
         self._motor.setAngleParam(ode.ParamFMax, 0)
         self._geometry.isOnGround = False
+
+    def frameEnded(self, frameTime):
+        pass
 
     def _alignToZAxis(self):
         rot = self._body.getAngularVel()
@@ -141,30 +163,36 @@ class DynamicObject(StaticObject):
                (self._body.getLinearVel() + self._body.getAngularVel())
 
     def inputPresses(self, presses):
+        self.setDirection(presses.pop(0))
+        
         if 'left' in presses:
-            self._moveLeftPressed = True;
+            self._moveLeftPressed = True
         else:
-            self._moveLeftPressed = False;
+            self._moveLeftPressed = False
         if 'right' in presses:
-            self._moveRightPressed = True;
+            self._moveRightPressed = True
         else:
-            self._moveRightPressed = False;
+            self._moveRightPressed = False
         if 'rotate-left' in presses:
-            self._rotateLeftPressed = True;
+            self._rotateLeftPressed = True
         else:
-            self._rotateLeftPressed = False;
+            self._rotateLeftPressed = False
         if 'rotate-right' in presses:
-            self._rotateRightPressed = True;
+            self._rotateRightPressed = True
         else:
-            self._rotateRightPressed = False;
+            self._rotateRightPressed = False
         if 'down' in presses:
-            self._crouchPressed = True;
+            self._crouchPressed = True
         else:
-            self._crouchPressed = False;
+            self._crouchPressed = False
         if 'up' in presses:
-            self._jumpPressed = True;
+            self._jumpPressed = True
         else:
-            self._jumpPressed = False;
+            self._jumpPressed = False
+        if 'shoot' in presses:
+            self._shootPressed = True
+        else:
+            self._shootPressed = False
 
 class SphereObject(DynamicObject):
     def __init__(self, gameworld, name, size = 0.5, geomFunc = ode.GeomSphere, weight = 10):
@@ -175,23 +203,26 @@ class SphereObject(DynamicObject):
             self._body.getMass().setSphereTotal(weight, size)
 
 class BulletObject(SphereObject):
-    def __init__(self, gameworld, name, position, direction):
+    def __init__(self, gameworld, name, position = None, direction = None):
         #TODO: When doing graphical, use billboard?
-        size = (0.05, 0.05, 0.05)
+        self.size = (0.05, 0.05, 0.05)
         self.maxSpeed = 50
-        weight = 0.01
+        self.weight = 0.01
         
-        SphereObject.__init__(self, gameworld, name, size, geomFunc = ode.GeomBox, weight = 0.01)
+        SphereObject.__init__(self, gameworld, name, self.size, geomFunc = ode.GeomBox, weight = self.weight)
 
-        if type(size) == float or type(size) == int:
-            self._body.getMass().setSphereTotal(weight, size)
-        
-        self._motor.setXParam(ode.ParamVel,  self.maxSpeed * direction[0])
-        self._motor.setXParam(ode.ParamFMax, ode.Infinity)
-        self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1])
-        self._motor.setYParam(ode.ParamFMax, ode.Infinity)
+        if type(self.size) == float or type(self.size) == int:
+            self._body.getMass().setSphereTotal(self.weight, self.size)
 
-        self._geometry.setPosition(position)
+        if direction:        
+            self._motor.setXParam(ode.ParamVel,  self.maxSpeed * direction[0])
+            self._motor.setXParam(ode.ParamFMax, ode.Infinity)
+            self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1])
+            self._motor.setYParam(ode.ParamFMax, ode.Infinity)
+
+        if position:
+            self._geometry.setPosition(position)
+            
         self._body.isDead = False
         self._body.objectType = "Bullet"
 
@@ -225,6 +256,7 @@ class Person(SphereObject):
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
         self._body.objectType = "Person"
+        self._body._isDead = False
 
         self.timeBetweenShots = 0.1
         self.timeLeftUntilNextShot = self.timeBetweenShots
@@ -237,18 +269,21 @@ class Person(SphereObject):
         self.maxJumpForce = ode.Infinity
         self.maxJumpVelocity = 11
 
-        self._bullets = []
         self._bulletNum = 0
         
         self._world = gameworld
         
-        self._moveLeftPressed = False;
-        self._moveRightPressed = False;
-        self._rotateLeftPressed = False;
-        self._rotateRightPressed = False;
-        self._crouchPressed = False;
-        self._jumpPressed = False;
+        self._moveLeftPressed = False
+        self._moveRightPressed = False
+        self._rotateLeftPressed = False
+        self._rotateRightPressed = False
+        self._crouchPressed = False
+        self._jumpPressed = False
+        self._shootPressed = False
+        self._pointingDirection = (1.0,0.0,0.0)
 
+    def isDead(self):
+        return False
 
     def frameEnded(self, time):
         # TODO: I hate flags!!! 
@@ -259,15 +294,11 @@ class Person(SphereObject):
 
         self.timeLeftUntilNextShot -= time
 
-    def _getDirection(self):
-        return (1,0,0)
-
     def _shoot(self):
         if self.timeLeftUntilNextShot <= 0:
-            direction = self._getDirection()
-            direction.normalise()
+            direction = self.getDirection()
             self._bulletNum += 1
-            self._bullets.append(BulletObject(self._world, "b" + str(self._bulletNum), \
+            self._world.addBullet(BulletObject(self._world, self._name + "b" + str(self._bulletNum), \
                                     self._geometry.getPosition(), direction))
             self.timeLeftUntilNextShot = self.timeBetweenShots
         
@@ -297,8 +328,3 @@ class Person(SphereObject):
             # People have a lot of friction against movement, if we aren't moving. Slam on the brakes
             self._motor.setAngleParam(ode.ParamFMax, self.maxStopForce)
             self._motor.setAngleParam(ode.ParamVel, 0)
-            
-        for bullet in self._bullets:
-            bullet.postStep()
-            if bullet.isDead():
-                self._bullets.remove(bullet)

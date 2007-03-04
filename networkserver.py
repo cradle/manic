@@ -14,11 +14,10 @@ class Client():
         return self.address == other.address
 
     def push(self, data):
-        if type(data) == list and len(data) > 0:
-            if data[0] == "ping":
-                self.send(["pong", data[1], time.time()])
-            
-        self.messages.insert(0,data)
+        if type(data) == list and len(data) > 0 and data[0] == "ping":
+            self.send(["pong", data[1], time.time()])
+        else:
+            self.messages.insert(0,data)
 
     def hasMoreMessages(self):
         return len(self.messages) != 0

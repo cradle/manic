@@ -19,8 +19,6 @@ class Server(Engine):
         self.objects += [client.player]
 
     def frameEnded(self, frameTime):
-        Engine.frameEnded(self, frameTime)
-        
         self.timeUntilNextNetworkUpdate -= frameTime
         if self.timeUntilNextNetworkUpdate <= 0.0:
             self.network.update()
@@ -28,7 +26,11 @@ class Server(Engine):
                 self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
             for client in self.network.clients:
-                client.send([[[o._name,o.getAttributes(), o._name == client.player._name] for o in self.objects],
+                client.send([[[o._name,
+                               o.getAttributes(),
+                               o._name == client.player._name,
+                               o._body.objectType,
+                               o.isDead()] for o in self.objects],
                             time.time()])
                 #parameter above is whether or not the player is the current player
                     
@@ -38,6 +40,8 @@ class Server(Engine):
         time.sleep(min(self.timeUntilNextChatUpdate,
                        self.timeUntilNextNetworkUpdate,
                        self.timeUntilNextEngineUpdate))
+        
+        Engine.frameEnded(self, frameTime)
 
 if __name__ == "__main__":
     engine = Server()

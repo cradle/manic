@@ -11,7 +11,6 @@ class Engine():
         self.timeBetweenChatUpdates = 0.5
         self.timeUntilNextChatUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
-        self.players = []
 
     def go(self):
         self._createWorld()
@@ -71,6 +70,9 @@ class Engine():
             
     def messageListener(self, source, message):
         print "%s: %s" % (source, message)
+
+    def addBullet(self, bullet):
+        self.objects.append(bullet)
         
     def frameEnded(self, frameTime):
         self.timeUntilNextChatUpdate -= frameTime
@@ -87,6 +89,12 @@ class Engine():
             for object in self.objects:
                 object.frameEnded(self.stepSize)
             self.timeUntilNextEngineUpdate += self.stepSize
+            
+        for object in self.objects:
+            if object.isDead():
+                #TODO: Tell client object is dead
+                print "dead", type(object)
+                self.objects.remove(object)
 
     def step(self):        
         for object in self.objects:

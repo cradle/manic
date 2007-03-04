@@ -336,8 +336,8 @@ class Client(Application, Engine):
     
     def _createCamera(self):
         self.camera = self.sceneManager.createCamera("Player1Cam")
-        self.camera.setPosition(0,0,20)
-        self.camera.lookAt(0,0.5,0)
+        self.camera.setPosition(0,25,75)
+        self.camera.lookAt(0,25,0)
         self.camera.nearClipDistance = 5
     
     def _createViewports(self):
@@ -349,7 +349,6 @@ class Client(Application, Engine):
     def _createScene(self):
         Engine._createWorld(self)
         self.sceneManager.setAmbientLight((0.75, 0.75, 0.75))
-
   
         static = StaticObject(self, "bottom", size=(50,1,3))
         static.setPosition((0,0,0))
@@ -467,6 +466,9 @@ class Client(Application, Engine):
                             if serverObject[0] == object._name:
                                 hasObject = True
                                 object.setAttributes(serverObject[1])
+                                if serverObject[4] == True:
+                                    objects.remove(object)
+                                    print "removing", type(object)
                         if not hasObject:
                             newObject = None
                             if serverObject[2] == True:
@@ -474,8 +476,14 @@ class Client(Application, Engine):
                                 newObject.enable()
                                 self.player = newObject
                             else:
-                                newObject = Person(self, serverObject[0])
-                                
+                                #serverObject[3] is the object "type"
+                                if serverObject[3] == "Person":
+                                    print "creating person"
+                                    newObject = Person(self, serverObject[0])
+                                elif serverObject[3] == "Bullet":
+                                    print "creating bullet"
+                                    newObject = BulletObject(self, serverObject[0])
+                                    
                             newObject.setAttributes(serverObject[1])
                             self.objects += [newObject]
                         
