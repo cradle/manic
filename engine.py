@@ -34,7 +34,20 @@ class Engine():
         self.contactgroup = ode.JointGroup()
         self.objects = []
         self.statics = []
-            
+
+        f = open('dm_arena.lvl', 'r')
+        for line in f:
+            line = line.strip()
+            if not line.startswith('#') and len(line) != 0:
+                size, loc, rot = [[float(y) for y in x.strip('()').split(',')] for x in line.split(":")]
+                static = self.createStaticObject(size)
+                static.setPosition(loc)
+                static.setRotation(rot)
+                self.statics += [static]
+
+    def createStaticObject(self, size):
+        return StaticObject(self, "s%s" % len(self.statics), size=size)
+    
     def messageListener(self, source, message):
         print "%s: %s" % (source, message)
 

@@ -346,47 +346,13 @@ class Client(Application, Engine):
         self.viewPort.setDimensions(0.0, 0.0, 1.0, 1.0)
         self.camera.aspectRatio = self.viewPort.actualWidth / self.viewPort.actualHeight
         self.viewPort.setOverlaysEnabled(True)             
+
+    def createStaticObject(self, size):
+        return StaticObject(self, "s%s" % len(self.statics), size=size)
     
     def _createScene(self):
         Engine._createWorld(self)
         self.sceneManager.setAmbientLight((0.75, 0.75, 0.75))
-  
-        static = StaticObject(self, "bottom", size=(50,1,3))
-        static.setPosition((0,0,0))
-        self.statics += [static]
-  
-        static = StaticObject(self, "back", size=(51,51,3))
-        static.setPosition((0,25,-5))
-        self.statics += [static]
-  
-        static = StaticObject(self, "top", size=(50,1,3))
-        static.setPosition((0,50,0))
-        self.statics += [static]
-            
-        static = StaticObject(self, "%s" % 1, size=(10,1,3))
-        static.setPosition((10,5,0))
-        self.statics += [static]
-        
-        static = StaticObject(self, "%s" % 2, size=(10,1,3))
-        static.setPosition((-10.5,10,0))
-        self.statics += [static]
-            
-        static = StaticObject(self, "%sa" % 3, size=(10,1,3))
-        static.setPosition((20,7.5,0))
-        static.setRotation((-0.84851580858230591,0,0,0.52916997671127319))
-        self.statics += [static]
-            
-        static = StaticObject(self, "%s" % 4, size=(10,1,3))
-        static.setPosition((-15,15,0))
-        self.statics += [static]
-        
-        static = StaticObject(self, "%sl" % 5, size=(1,50,3))
-        static.setPosition((-25,25,0))
-        self.statics += [static]
-
-        static = StaticObject(self, "%sr" % 6, size=(1,50,3))
-        static.setPosition((25,25,0))
-        self.statics += [static]
 
         ## setup GUI system
         self.GUIRenderer = CEGUI.OgreCEGUIRenderer(self.renderWindow, 
