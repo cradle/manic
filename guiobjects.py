@@ -21,9 +21,9 @@ class StaticObject(objects.StaticObject):
         self._updateDisplay()
 
     def __del__(self):
-        objects.StaticObject.__del__(self)
         self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('n' + self._name)
-
+        objects.StaticObject.__del__(self)
+        
     def setPosition(self, position):
         super(StaticObject, self).setPosition(position)
         self._updateDisplay()
@@ -95,6 +95,10 @@ class DynamicObject(objects.DynamicObject, StaticObject):
 
         return presses
 
+    def __del__(self):
+        StaticObject.__del__(self)
+        objects.DynamicObject.__del__(self)
+
 class SphereObject(objects.SphereObject, DynamicObject):
     def __init__(self, gameworld, name, size = 0.5, scale = (0.01, 0.01, 0.01), \
                  mesh = 'sphere.mesh', geomFunc = ode.GeomSphere, weight = 10):
@@ -107,6 +111,10 @@ class SphereObject(objects.SphereObject, DynamicObject):
         self.keys['right'] = OIS.KC_NUMPAD6
         self.keys['rotate-left'] = OIS.KC_NUMPAD7
         self.keys['rotate-right'] = OIS.KC_NUMPAD9
+
+    def __del__(self):
+        DynamicObject.__del__(self)
+        objects.SphereObject.__del__(self)
 
 class BulletObject(objects.BulletObject, SphereObject):
     def __init__(self, gameworld, name):
@@ -121,6 +129,10 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.keys['rotate-right'] = OIS.KC_UNASSIGNED
 
         self._body.isDead = False
+
+    def __del__(self):
+        SphereObject.__del__(self)
+        objects.BulletObject.__del__(self)
 
 class Person(objects.Person, SphereObject):
     def __init__(self, gameworld, name, camera = None):
@@ -216,8 +228,8 @@ class Player(Person):
 
         self.disable()
 
-    def setPosition(self, position):
-        Person.setPosition(self, [(x+y)/2 for x,y in zip(position, self._body.getPosition())])
+    #def setPosition(self, position):
+    #    Person.setPosition(self, [(x+y)/2 for x,y in zip(position, self._body.getPosition())])
 
     def setAttributes(self, attributes):
         Person.setAttributes(self, attributes)

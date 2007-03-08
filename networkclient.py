@@ -25,10 +25,11 @@ class NetworkClient(DatagramProtocol):
         self.pingNumber = 0
         self.timeBetweenPings = 0.5
         self.timeUntilNextPing = 0.0
+        self._stats = {}
 
     def ping(self):
         self.pingNumber += 1
-        self.send(["ping", self.pingNumber])
+        self.send(["ping", self.pingNumber, self.roundTripTime])
         self.pings.append(ping(self.pingNumber, time.time()))
         
     def startProtocol(self):
@@ -42,6 +43,8 @@ class NetworkClient(DatagramProtocol):
                     self.roundTripTime = time.time() - ping.time;
                     self.serverOffset = time.time() - (message[2] + self.roundTripTime/2)
                     self.pings = [p for p in self.pings if p.number <= ping.number]
+        elif type(message[0]) == str and message[0] == "stats":
+            self._stats = message[1]
         else:
             self._messages.insert(0,message)
         

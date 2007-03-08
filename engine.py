@@ -11,6 +11,7 @@ class Engine():
         self.timeBetweenChatUpdates = 0.5
         self.timeUntilNextChatUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
+        self._stats = {}
 
     def go(self):
         self._createWorld()
@@ -37,9 +38,10 @@ class Engine():
     def messageListener(self, source, message):
         print "%s: %s" % (source, message)
 
-    def addBullet(self, name, position, direction):
+    def addBullet(self, name, position, direction, owner):
         b = BulletObject(self, name, direction)
         b.setPosition([p + x for p, x in zip(position, direction)])
+        b.setOwnerName(owner._name)
         self.objects.append(b)
         
     def frameEnded(self, frameTime):
@@ -49,30 +51,39 @@ class Engine():
             while self.timeUntilNextChatUpdate <= 0.0:
                 self.timeUntilNextChatUpdate += self.timeBetweenChatUpdates
 
-        self.timeUntilNextEngineUpdate -= frameTime
-        while self.timeUntilNextEngineUpdate <= 0.0:    
-            self.step()        
-            self.timeUntilNextEngineUpdate += self.stepSize
+        self.timeUntilNextEngineUpdate -= frameTime  
+        self.step(frameTime)        
 
         for object in self.objects:
-            object.frameEnded(self.stepSize)
+            object.frameEnded(frameTime)
             
         for object in self.objects:
             if object.isDead():
                 self.objects.remove(object)
+                del object
 
-    def step(self):
-        self.space.collide(0, self.collision_callback)
-        
-        for object in self.objects:
-            object.preStep()
+    def step(self, frameTime):
+        while self.timeUntilNextEngineUpdate <= 0.0:  
+            self.space.collide(0, self.collision_callback)
             
-        self.world.quickStep(self.stepSize)
-        
-        for object in self.objects:
-            object.postStep()
+            for object in self.objects:
+                object.preStep()
+                
+            self.world.quickStep(self.stepSize)
+            
+            for object in self.objects:
+                object.postStep()
 
-        self.contactgroup.empty()
+            self.contactgroup.empty()
+            self.timeUntilNextEngineUpdate += self.stepSize
+
+    def addScore(self, name, amount):
+        if not self._stats.has_key(name):
+            self._stats[name] = {}
+        if not self._stats[name].has_key("score"):
+            self._stats[name]["score"] = 0
+
+        self._stats[name]["score"] += amount
 
     def collision_callback(self, args, geom1, geom2):
         body1 = geom1.getBody()
@@ -90,8 +101,10 @@ class Engine():
             contact.setMu(1.7)
 
             if body1:
-                if body1.objectType == "Bullet" and not body2:
+                if body1.objectType == "Bullet":
                     body1.isDead = True
+                    if body2 and body2.objectType == "Person":
+                        self.addScore(body1.ownerName, 1)
                     
                 # Assume that if collision normal is facing up we are 'on ground'
                 normal = contact.getContactGeomParams()[1]
@@ -99,8 +112,10 @@ class Engine():
                     geom1.isOnGround = True
                     
             if body2:
-                if body2.objectType == "Bullet" and not body1:
+                if body2.objectType == "Bullet":
                     body2.isDead = True
+                    if body1 and body1.objectType == "Person":
+                        self.addScore(body2.ownerName, 1)
                     
                 # Assume that if collision normal is facing up we are 'on ground'
                 normal = contact.getContactGeomParams()[1]

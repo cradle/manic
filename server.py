@@ -17,6 +17,10 @@ class Server(Engine):
         client.player = Person(self, "p%i" % self.clientNumber)
         client.player.setPosition((0.0,20.0,0.0))
         self.objects += [client.player]
+        self._stats[client.player._name] = {}
+        self._stats[client.player._name]["ping"] = 0
+        self._stats[client.player._name]["score"] = 0
+        print "Client", client.player._name, " connected"
 
     def _createWorld(self):
         Engine._createWorld(self)
@@ -57,22 +61,30 @@ class Server(Engine):
         static.setPosition((25,25,0))
         self.statics += [static]
 
-        for i in range(3):
-            for j in range(3):
-                dynamic = SphereObject(self, "%i-%i-ball" % (i,j))
-                dynamic.setPosition((0+i,30+j,0))
-                self.objects += [dynamic]
+        #for i in range(3):
+        #    for j in range(3):
+        #        dynamic = SphereObject(self, "%i-%i-ball" % (i,j))
+        #        dynamic.setPosition((0+i,30+j,0))
+        #        self.objects += [dynamic]
 
     def frameEnded(self, frameTime):
         self.timeUntilNextNetworkUpdate -= frameTime
         if self.timeUntilNextNetworkUpdate <= 0.0:
             self.network.update()
+
+            for client in self.network.clients:
+                self._stats[client.player._name]["ping"] = client.ping
+            
+            for client in self.network.clients:                
+                client.send(["stats", self._stats])
+
             while self.timeUntilNextNetworkUpdate <= 0.0:
                 self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
             for client in self.network.clients:
                 if client.timedOut():
                     print "Client", client.player._name, "timed out, disconnecting"
+                    del self._stats[client.player._name]
                     self.objects.remove(client.player)
                     self.network.clients.remove(client)
 
@@ -86,12 +98,12 @@ class Server(Engine):
                     
                 while client.hasMoreMessages():
                     client.player.inputPresses(client.pop())
+        
+        Engine.frameEnded(self, frameTime)
                     
         time.sleep(min(self.timeUntilNextChatUpdate,
                        self.timeUntilNextNetworkUpdate,
                        self.timeUntilNextEngineUpdate))
-        
-        Engine.frameEnded(self, frameTime)
 
 if __name__ == "__main__":
     engine = Server()

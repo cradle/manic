@@ -442,6 +442,26 @@ class Client(Application, Engine):
         winMgr.getWindow("TextWindow/Editbox1").setText("")
         #eb.subscribeEvent(CEGUI.Window.EventKeyDown, self.blah,"")
 
+        scores = winMgr.createWindow("TaharezLook/StaticText", "ScoreWindow")
+        scores.setPosition(CEGUI.UVector2(cegui_reldim(0.01), cegui_reldim( 0.01)))
+        scores.setSize(CEGUI.UVector2(CEGUI.UDim(0,100), CEGUI.UDim(0,1)))
+        scores.setProperty("HorzFormatting","WordWrapLefteAligned")
+        scores.setProperty("VertFormatting", "TopAligned")
+        self._scoreWindow = scores
+        sheet.addChildWindow(scores)
+
+    def displayScores(self):
+        text = ""
+        scores = [[self._stats[name]["score"],name] for name in self._stats.keys()]
+        scores.sort(reverse=True)
+        for player in [name for score, name in scores]:
+            text += "%s, %i, %.2f\n" % \
+                    (player, self._stats[player]["score"], self._stats[player]["ping"])
+
+        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0,100), CEGUI.UDim(0,10+25*len(self._stats))))
+        self._scoreWindow.setText(text)
+
+
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
         self.frameListener = FrameListener(self, self.renderWindow, self.camera, True)
@@ -455,11 +475,16 @@ class Client(Application, Engine):
         self.timeUntilNextNetworkUpdate -= frameTime
         if self.timeUntilNextNetworkUpdate <= 0.0:
             self.network.update(frameTime)
+
+            self._stats = self.network._stats
+            self.displayScores()
+            
             while self.timeUntilNextNetworkUpdate <= 0.0:
                 self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
             for message in self.network._messages:
                 if message[1] > self.lastServerUpdate:
+                    self.timeUntilNextNetworkUpdate = self.stepSize
                     self.lastServerUpdate = message[1]
 
                     for object in self.objects:
@@ -479,7 +504,6 @@ class Client(Application, Engine):
                                 newObject.enable()
                                 self.player = newObject
                             else:
-
                                 if serverObject[3] == "Person":
                                     newObject = Person(self, serverObject[0])
                                 elif serverObject[3] == "Bullet":
@@ -495,10 +519,9 @@ class Client(Application, Engine):
 
                     for object in self.objects:
                         if not object.existsOnServer:
-                            self.messageListener("Server", object._name + " timed out")
+                            #self.messageListener("Server", object._name + " timed out")
                             self.objects.remove(object)
-                        if object and object.isDead():
-                            self.objects.remove(object)
+                            del object
                         
             self.network._messages = []
             
@@ -507,10 +530,9 @@ class Client(Application, Engine):
             
         Engine.frameEnded(self, frameTime)
 
-    def step(self):
-        pass
-        # TODO: Client side prediction of physics
-        #Engine.step(self)
+    def step(self, frameTime):
+        pass# TODO: Client side prediction of physics
+        #Engine.step(self, frameTime)
     
 if __name__ == "__main__":
     world = Client()

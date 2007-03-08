@@ -11,6 +11,7 @@ class Client():
         self.transport = transport
         self.lastMessageTime = time.time()
         self.timeout = 10.0
+        self.ping = 0.0
 
     def __eq__(self, other):
         return self.address == other.address
@@ -21,6 +22,7 @@ class Client():
     def push(self, data):
         if type(data) == list and len(data) > 0 and data[0] == "ping":
             self.send(["pong", data[1], time.time()])
+            self.ping = data[2]
         else:
             self.messages.insert(0,data)
             

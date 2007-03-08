@@ -5,12 +5,16 @@ class StaticObject(object):
         self._size = size
         self._geometry = geomFunc(gameworld.space, self._size)
         self._name = name
+        self._nick = name
         self._world = gameworld.world
         self._space = gameworld.space
         self._gameworld = gameworld
 
     def __del__(self):
         self._geometry.disable()
+        self._world = None
+        self._space = None
+        self._gameworld = None
 
     def __str__(self):
         return "P=(%2.2f, %2.2f, %2.2f)" % self._geometry.getPosition()
@@ -47,6 +51,7 @@ class DynamicObject(StaticObject):
 
         self._geometry.isOnGround = False
         self._body.objectType = "Dynamic"
+        self._body.name = name
         
         self._moveLeftPressed = False
         self._moveRightPressed = False
@@ -57,6 +62,11 @@ class DynamicObject(StaticObject):
         self._shootPressed = False
         self._pointingDirection = (1.0,0.0,0.0)
 
+
+    def __del__(self):
+        self._body.disable()
+        StaticObject.__del__(self)
+        
     def isDead(self):
         return False
 
@@ -74,7 +84,6 @@ class DynamicObject(StaticObject):
          self.getDirection()]
 
     def setAttributes(self, attributes):
-        # smooth to the server position
         self._body.setPosition(attributes[0])
         self._body.setQuaternion(attributes[1])
         self._body.setAngularVel(attributes[2])
@@ -221,6 +230,9 @@ class BulletObject(SphereObject):
         self._body.isDead = False
         self._body.objectType = "Bullet"
 
+    def setOwnerName(self, name):
+        self._body.ownerName = name
+
     def isDead(self):
         return self._body.isDead
 
@@ -252,6 +264,7 @@ class Person(SphereObject):
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
         self._body.objectType = "Person"
+        self._body.name = name
         self._body._isDead = False
 
         self.timeBetweenShots = 0.1
@@ -295,7 +308,8 @@ class Person(SphereObject):
             self._bulletNum += 1
             self._world.addBullet(self._name + "b" + str(self._bulletNum), \
                                   self._body.getPosition(),
-                                  self.getDirection())
+                                  self.getDirection(),
+                                  self)
             self.timeLeftUntilNextShot = self.timeBetweenShots
         
     def _jump(self):
