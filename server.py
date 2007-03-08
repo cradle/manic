@@ -2,7 +2,7 @@ from engine import Engine
 import networkserver
 import os
 import time
-from objects import Person
+from objects import Person, StaticObject, DynamicObject, SphereObject
 
 class Server(Engine):
     def __init__(self):
@@ -17,6 +17,51 @@ class Server(Engine):
         client.player = Person(self, "p%i" % self.clientNumber)
         client.player.setPosition((0.0,20.0,0.0))
         self.objects += [client.player]
+
+    def _createWorld(self):
+        Engine._createWorld(self)
+        static = StaticObject(self, "bottom", size=(50,1,3))
+        static.setPosition((0,0,0))
+        self.statics += [static]
+  
+        static = StaticObject(self, "back", size=(51,51,3))
+        static.setPosition((0,25,-5))
+        self.statics += [static]
+  
+        static = StaticObject(self, "top", size=(50,1,3))
+        static.setPosition((0,50,0))
+        self.statics += [static]
+            
+        static = StaticObject(self, "%s" % 1, size=(10,1,3))
+        static.setPosition((10,5,0))
+        self.statics += [static]
+        
+        static = StaticObject(self, "%s" % 2, size=(10,1,3))
+        static.setPosition((-10.5,10,0))
+        self.statics += [static]
+            
+        static = StaticObject(self, "%sa" % 3, size=(10,1,3))
+        static.setPosition((20,7.5,0))
+        static.setRotation((-0.84851580858230591,0,0,0.52916997671127319))
+        self.statics += [static]
+            
+        static = StaticObject(self, "%s" % 4, size=(10,1,3))
+        static.setPosition((-15,15,0))
+        self.statics += [static]
+        
+        static = StaticObject(self, "%sl" % 5, size=(1,50,3))
+        static.setPosition((-25,25,0))
+        self.statics += [static]
+
+        static = StaticObject(self, "%sr" % 6, size=(1,50,3))
+        static.setPosition((25,25,0))
+        self.statics += [static]
+
+        for i in range(3):
+            for j in range(3):
+                dynamic = SphereObject(self, "%i-%i-ball" % (i,j))
+                dynamic.setPosition((0+i,30+j,0))
+                self.objects += [dynamic]
 
     def frameEnded(self, frameTime):
         self.timeUntilNextNetworkUpdate -= frameTime

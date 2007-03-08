@@ -5,6 +5,7 @@ import OIS
 import os, time
 from engine import Engine
 from guiobjects import *
+import objects
 import networkclient
 
 def cegui_reldim ( x ) :
@@ -305,11 +306,11 @@ class Client(Application, Engine):
         Application.__init__(self)
         Engine.__init__(self)
         self.chat.registerMessageListener(self.messageListener)
-        address = raw_input("server ('127.0.0.1:9999') :> ")
+        address = raw_input("server ('127.0.0.1:10001') :> ")
         if address != "":
             ip, port = address.split(":")
         else:
-            ip, port = "127.0.0.1", 9999
+            ip, port = "127.0.0.1", 10001
             
         self.network = networkclient.NetworkClient(ip, int(port))
         self.timeBetweenNetworkUpdates = 0.01
@@ -478,13 +479,15 @@ class Client(Application, Engine):
                                 newObject.enable()
                                 self.player = newObject
                             else:
-                                #serverObject[3] is the object "type"
+
                                 if serverObject[3] == "Person":
-                                    print "creating person"
                                     newObject = Person(self, serverObject[0])
                                 elif serverObject[3] == "Bullet":
-                                    print "creating bullet"
                                     newObject = BulletObject(self, serverObject[0])
+                                elif serverObject[3] == "Dynamic":
+                                    newObject = DynamicObject(self, serverObject[0])
+                                elif serverObject[3] == "Sphere":
+                                    newObject = SphereObject(self, serverObject[0])
 
                             newObject.existsOnServer = True        
                             newObject.setAttributes(serverObject[1])
@@ -494,15 +497,18 @@ class Client(Application, Engine):
                         if not object.existsOnServer:
                             self.messageListener("Server", object._name + " timed out")
                             self.objects.remove(object)
-
+                        if object and object.isDead():
+                            self.objects.remove(object)
                         
             self.network._messages = []
-
+            
+        if self.player != None:
+            self.network.send(self.player.input(self.keyboard,  self.mouse));
+            
         Engine.frameEnded(self, frameTime)
 
     def step(self):
-        if self.player != None:
-            self.network.send(self.player.input(self.keyboard,  self.mouse));
+        pass
         # TODO: Client side prediction of physics
         #Engine.step(self)
     

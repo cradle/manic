@@ -39,7 +39,7 @@ class NetworkServer(DatagramProtocol):
     def __init__(self, connectedCallback):
         self.clients = []
         self.reactor = reactor
-        self.reactor.listenUDP(9999, self)
+        self.reactor.listenUDP(10001, self)
         self.connectedCallback = connectedCallback
         
     def datagramReceived(self, data, address):

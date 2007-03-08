@@ -11,7 +11,7 @@ class ping(object):
         self.time = time
 
 class NetworkClient(DatagramProtocol):
-    def __init__(self, serverIP = "127.0.0.1", port = 9999):
+    def __init__(self, serverIP = "127.0.0.1", port = 10001):
         self._messages = []
         self.reactor = reactor
         self.serverIP = serverIP
@@ -48,8 +48,7 @@ class NetworkClient(DatagramProtocol):
     # Possibly invoked if there is no server listening on the
     # address to which we are sending.
     def connectionRefused(self):
-        pass
-        #print "Noone listening"
+        print "No Server"
 
     def send(self, obj):
         self.transport.write(banana.encode(jelly.jelly(obj)))

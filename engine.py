@@ -7,7 +7,7 @@ class Engine():
     def __init__(self):
         self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
         self.chat.registerMessageListener(self.messageListener)
-        self.stepSize = 1.0/100.0
+        self.stepSize = 1.0/85.0
         self.timeBetweenChatUpdates = 0.5
         self.timeUntilNextChatUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
@@ -26,53 +26,21 @@ class Engine():
     def _createWorld(self):
         self.world = ode.World()
         self.world.setGravity((0,-9.81,0))
+        #self.world.setERP(0.2)
+        #self.world.setCFM(0.001)
+        #self.world.setContactMaxCorrectingVel(1000)
         self.space = ode.Space(type=1)
         self.contactgroup = ode.JointGroup()
         self.objects = []
         self.statics = []
-  
-        static = StaticObject(self, "bottom", size=(50,1,3))
-        static.setPosition((0,0,0))
-        self.statics += [static]
-  
-        static = StaticObject(self, "back", size=(51,51,3))
-        static.setPosition((0,25,-5))
-        self.statics += [static]
-  
-        static = StaticObject(self, "top", size=(50,1,3))
-        static.setPosition((0,50,0))
-        self.statics += [static]
-            
-        static = StaticObject(self, "%s" % 1, size=(10,1,3))
-        static.setPosition((10,5,0))
-        self.statics += [static]
-        
-        static = StaticObject(self, "%s" % 2, size=(10,1,3))
-        static.setPosition((-10.5,10,0))
-        self.statics += [static]
-            
-        static = StaticObject(self, "%sa" % 3, size=(10,1,3))
-        static.setPosition((20,7.5,0))
-        static.setRotation((-0.84851580858230591,0,0,0.52916997671127319))
-        self.statics += [static]
-            
-        static = StaticObject(self, "%s" % 4, size=(10,1,3))
-        static.setPosition((-15,15,0))
-        self.statics += [static]
-        
-        static = StaticObject(self, "%sl" % 5, size=(1,50,3))
-        static.setPosition((-25,25,0))
-        self.statics += [static]
-
-        static = StaticObject(self, "%sr" % 6, size=(1,50,3))
-        static.setPosition((25,25,0))
-        self.statics += [static]
             
     def messageListener(self, source, message):
         print "%s: %s" % (source, message)
 
-    def addBullet(self, bullet):
-        self.objects.append(bullet)
+    def addBullet(self, name, position, direction):
+        b = BulletObject(self, name, direction)
+        b.setPosition([p + x for p, x in zip(position, direction)])
+        self.objects.append(b)
         
     def frameEnded(self, frameTime):
         self.timeUntilNextChatUpdate -= frameTime
@@ -82,21 +50,20 @@ class Engine():
                 self.timeUntilNextChatUpdate += self.timeBetweenChatUpdates
 
         self.timeUntilNextEngineUpdate -= frameTime
-        while self.timeUntilNextEngineUpdate <= 0.0:
-            self.space.collide(0, self.collision_callback)
-            self.step()
-            self.contactgroup.empty()
-            for object in self.objects:
-                object.frameEnded(self.stepSize)
+        while self.timeUntilNextEngineUpdate <= 0.0:    
+            self.step()        
             self.timeUntilNextEngineUpdate += self.stepSize
+
+        for object in self.objects:
+            object.frameEnded(self.stepSize)
             
         for object in self.objects:
             if object.isDead():
-                #TODO: Tell client object is dead
-                print "dead", type(object)
                 self.objects.remove(object)
 
-    def step(self):        
+    def step(self):
+        self.space.collide(0, self.collision_callback)
+        
         for object in self.objects:
             object.preStep()
             
@@ -105,28 +72,40 @@ class Engine():
         for object in self.objects:
             object.postStep()
 
+        self.contactgroup.empty()
+
     def collision_callback(self, args, geom1, geom2):
-        if geom1.getBody() and geom1.getBody().objectType == "Bullet" \
-           and geom2.getBody() and geom2.getBody().objectType == "Bullet":
+        body1 = geom1.getBody()
+        body2 = geom2.getBody()
+
+        if body1 and body1.objectType == "Bullet" and body2 and body2.objectType == "Bullet":
             contacts = []
         else:
             contacts = ode.collide(geom1, geom2)
 
-        for contact in contacts: #ode.ContactSoftERP + ode.ContactSoftCFM + 
+        for contact in contacts:
             contact.setMode(ode.ContactBounce + ode.ContactApprox1_1)
             contact.setBounce(0.01)
             contact.setBounceVel(0.0)
             contact.setMu(1.7)
 
-            body = geom1.getBody()
-            if body:
-                if body.objectType == "Bullet" and geom2.getBody() == None:
-                    body.isDead = True
+            if body1:
+                if body1.objectType == "Bullet" and not body2:
+                    body1.isDead = True
                     
                 # Assume that if collision normal is facing up we are 'on ground'
                 normal = contact.getContactGeomParams()[1]
                 if normal[1] > 0.05: # normal.y points "up"
                     geom1.isOnGround = True
-           
+                    
+            if body2:
+                if body2.objectType == "Bullet" and not body1:
+                    body2.isDead = True
+                    
+                # Assume that if collision normal is facing up we are 'on ground'
+                normal = contact.getContactGeomParams()[1]
+                if normal[1] < 0.05: # normal.y points "up"
+                    geom2.isOnGround = True
+                    
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
-            joint.attach(body, geom2.getBody())
+            joint.attach(body1, body2)

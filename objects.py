@@ -57,18 +57,13 @@ class DynamicObject(StaticObject):
         self._shootPressed = False
         self._pointingDirection = (1.0,0.0,0.0)
 
+    def isDead(self):
+        return False
+
     def getDirection(self):
         return self._pointingDirection
 
     def setDirection(self, direction):
-        # Normalise
-        length = math.sqrt(direction[0]*direction[0] + direction[1]*direction[1])
-        
-        if length != 0.0:   
-            direction = (direction[0]/length, direction[1]/length, 0)
-        else:
-            direction = (1.0, 0.0, 0.0)
-            
         self._pointingDirection = direction
 
     def getAttributes(self):
@@ -79,6 +74,7 @@ class DynamicObject(StaticObject):
          self.getDirection()]
 
     def setAttributes(self, attributes):
+        # smooth to the server position
         self._body.setPosition(attributes[0])
         self._body.setQuaternion(attributes[1])
         self._body.setAngularVel(attributes[2])
@@ -86,6 +82,7 @@ class DynamicObject(StaticObject):
         self.setDirection(attributes[4])
 
     def preStep(self):
+            
         if self._moveLeftPressed:
             self._moveLeft()
         if self._moveRightPressed:
@@ -102,11 +99,11 @@ class DynamicObject(StaticObject):
             self._shoot()
 
         # Apply wind friction
-        self._body.addForce([-0.01*x*math.fabs(x)for x in self._body.getLinearVel()])
+        self._body.addForce([-1*0.001*x for x in self._body.getLinearVel()])
 
-        if self._geometry.isOnGround:
-            # Apply rolling friction
-            self._body.addTorque([x*-2.0 for x in self._body.getAngularVel()])
+        #if self._geometry.isOnGround:
+        #    # Apply rolling friction
+        #    self._body.addTorque([x*-0.5 for x in self._body.getAngularVel()])
         
     def postStep(self):
         self._alignToZAxis()
@@ -196,17 +193,18 @@ class DynamicObject(StaticObject):
 
 class SphereObject(DynamicObject):
     def __init__(self, gameworld, name, size = 0.5, geomFunc = ode.GeomSphere, weight = 10):
-        
         DynamicObject.__init__(self, gameworld, name, size, geomFunc, weight)
 
         if type(size) == float or type(size) == int:
             self._body.getMass().setSphereTotal(weight, size)
+            
+        self._body.objectType = "Sphere"
 
 class BulletObject(SphereObject):
-    def __init__(self, gameworld, name, position = None, direction = None):
+    def __init__(self, gameworld, name, direction = None):
         #TODO: When doing graphical, use billboard?
         self.size = (0.05, 0.05, 0.05)
-        self.maxSpeed = 50
+        self.maxSpeed = 50.0
         self.weight = 0.01
         
         SphereObject.__init__(self, gameworld, name, self.size, geomFunc = ode.GeomBox, weight = self.weight)
@@ -214,14 +212,11 @@ class BulletObject(SphereObject):
         if type(self.size) == float or type(self.size) == int:
             self._body.getMass().setSphereTotal(self.weight, self.size)
 
-        if direction:        
+        if direction:
             self._motor.setXParam(ode.ParamVel,  self.maxSpeed * direction[0])
-            self._motor.setXParam(ode.ParamFMax, ode.Infinity)
+            self._motor.setXParam(ode.ParamFMax, 100)#ode.Infinity)
             self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1])
-            self._motor.setYParam(ode.ParamFMax, ode.Infinity)
-
-        if position:
-            self._geometry.setPosition(position)
+            self._motor.setYParam(ode.ParamFMax, 100)#ode.Infinity)
             
         self._body.isDead = False
         self._body.objectType = "Bullet"
@@ -229,8 +224,8 @@ class BulletObject(SphereObject):
     def isDead(self):
         return self._body.isDead
 
-    def _postStep(self):
-        SphereObject._postStep(self)
+    def postStep(self):
+        SphereObject.postStep(self)
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
 
@@ -296,11 +291,11 @@ class Person(SphereObject):
         self.timeLeftUntilNextShot -= time
 
     def _shoot(self):
-        if self.timeLeftUntilNextShot <= 0:
-            direction = self.getDirection()
+        if self.timeLeftUntilNextShot < 0.0:                
             self._bulletNum += 1
-            self._world.addBullet(BulletObject(self._world, self._name + "b" + str(self._bulletNum), \
-                                    self._geometry.getPosition(), direction))
+            self._world.addBullet(self._name + "b" + str(self._bulletNum), \
+                                  self._body.getPosition(),
+                                  self.getDirection())
             self.timeLeftUntilNextShot = self.timeBetweenShots
         
     def _jump(self):
