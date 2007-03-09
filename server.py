@@ -8,14 +8,14 @@ class Server(Engine):
     def __init__(self):
         Engine.__init__(self)
         self.network = networkserver.NetworkServer(self.clientConnected)
-        self.timeBetweenNetworkUpdates = 0.01
+        self.timeBetweenNetworkUpdates = 0.05
         self.timeUntilNextNetworkUpdate = 0.0
         self.clientNumber = 0
 
     def clientConnected(self, client):
         self.clientNumber += 1
         client.player = Person(self, "p%i" % self.clientNumber)
-        client.player.setPosition((0.0,20.0,0.0))
+        client.player.setPosition(self.spawnLocation())
         self.objects += [client.player]
         self._stats[client.player._name] = {}
         self._stats[client.player._name]["ping"] = 0

@@ -1,4 +1,4 @@
-import ode, math
+import ode, math, random
 
 class StaticObject(object):    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), geomFunc = ode.GeomBox):
@@ -52,16 +52,9 @@ class DynamicObject(StaticObject):
         self._geometry.isOnGround = False
         self._body.objectType = "Dynamic"
         self._body.name = name
-        
-        self._moveLeftPressed = False
-        self._moveRightPressed = False
-        self._rotateLeftPressed = False
-        self._rotateRightPressed = False
-        self._crouchPressed = False
-        self._jumpPressed = False
-        self._shootPressed = False
-        self._pointingDirection = (1.0,0.0,0.0)
 
+        self.presses = {}
+        self._pointingDirection = (1.0,0.0,0.0)
 
     def __del__(self):
         self._body.disable()
@@ -91,21 +84,22 @@ class DynamicObject(StaticObject):
         self.setDirection(attributes[4])
 
     def preStep(self):
-            
-        if self._moveLeftPressed:
+        if 'left' in self.presses:
             self._moveLeft()
-        if self._moveRightPressed:
+        if 'right' in self.presses:
             self._moveRight()
-        if self._rotateLeftPressed:
+        if 'rotate-left' in self.presses:
             self._rotateLeft()
-        if self._rotateRightPressed:
+        if 'rotate-right' in self.presses:
             self._rotateRight()
-        if self._crouchPressed:
+        if 'down' in self.presses:
             self._crouch()
-        if self._jumpPressed:
+        if 'up' in self.presses:
             self._jump()
-        if self._shootPressed:
+        if 'shoot' in self.presses:
             self._shoot()
+        if 'reload' in self.presses:
+            self._reload()
 
         # Apply wind friction
         self._body.addForce([-1*0.001*x for x in self._body.getLinearVel()])
@@ -133,6 +127,9 @@ class DynamicObject(StaticObject):
         # http://opende.sourceforge.net/wiki/index.php/HOWTO_constrain_objects_to_2d
 
     def _shoot(self):
+        pass
+
+    def _reload(self):
         pass
     
     def _moveLeft(self):
@@ -170,35 +167,7 @@ class DynamicObject(StaticObject):
 
     def inputPresses(self, presses):
         self.setDirection(presses.pop(0))
-        
-        if 'left' in presses:
-            self._moveLeftPressed = True
-        else:
-            self._moveLeftPressed = False
-        if 'right' in presses:
-            self._moveRightPressed = True
-        else:
-            self._moveRightPressed = False
-        if 'rotate-left' in presses:
-            self._rotateLeftPressed = True
-        else:
-            self._rotateLeftPressed = False
-        if 'rotate-right' in presses:
-            self._rotateRightPressed = True
-        else:
-            self._rotateRightPressed = False
-        if 'down' in presses:
-            self._crouchPressed = True
-        else:
-            self._crouchPressed = False
-        if 'up' in presses:
-            self._jumpPressed = True
-        else:
-            self._jumpPressed = False
-        if 'shoot' in presses:
-            self._shootPressed = True
-        else:
-            self._shootPressed = False
+        self.presses = presses
 
 class SphereObject(DynamicObject):
     def __init__(self, gameworld, name, size = 0.5, geomFunc = ode.GeomSphere, weight = 10):
@@ -210,11 +179,12 @@ class SphereObject(DynamicObject):
         self._body.objectType = "Sphere"
 
 class BulletObject(SphereObject):
-    def __init__(self, gameworld, name, direction = None):
+    def __init__(self, gameworld, name, direction = None, velocity = 50.0, damage = 1.0):
         #TODO: When doing graphical, use billboard?
         self.size = (0.05, 0.05, 0.05)
-        self.maxSpeed = 50.0
+        self.maxSpeed = velocity
         self.weight = 0.01
+        self.damage = damage
         
         SphereObject.__init__(self, gameworld, name, self.size, geomFunc = ode.GeomBox, weight = self.weight)
 
@@ -229,6 +199,7 @@ class BulletObject(SphereObject):
             
         self._body.isDead = False
         self._body.objectType = "Bullet"
+        self._body.damage = damage
 
     def setOwnerName(self, name):
         self._body.ownerName = name
@@ -240,6 +211,14 @@ class BulletObject(SphereObject):
         SphereObject.postStep(self)
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
+
+    def getAttributes(self):
+        return [self._body.getPosition(),
+         self._body.getLinearVel()]
+
+    def setAttributes(self, attributes):
+        self._body.setPosition(attributes[0])
+        self._body.setLinearVel(attributes[1])
 
 class Person(SphereObject):
     def __init__(self, gameworld, name, camera = None):
@@ -258,18 +237,10 @@ class Person(SphereObject):
         self._geometry.setBody(self._body)
         self._motor = ode.Plane2DJoint(gameworld.world)
         self._motor.attach(self._body, ode.environment)
-        self._geometry.isOnGround = False
-
-        self.timeNeededToPrepareJump = 0.1
-        self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
-        self.wantsToJump = False
         self._body.objectType = "Person"
-        self._body.name = name
-        self._body._isDead = False
-
-        self.timeBetweenShots = 0.1
-        self.timeLeftUntilNextShot = self.timeBetweenShots
-        
+        self._body.ownerName = name
+        self._bulletNum = 0
+        self.timeNeededToPrepareJump = 0.1
         self.maxStopForce = 28000
         self.maxSpinForce = 28000
         self.maxSpinVelocity = 10
@@ -277,22 +248,141 @@ class Person(SphereObject):
         self.maxMoveVelocity = 4
         self.maxJumpForce = ode.Infinity
         self.maxJumpVelocity = 11
-
-        self._bulletNum = 0
-        
         self._world = gameworld
+        self.maxHealth = 100
+        self.reset()
         
-        self._moveLeftPressed = False
-        self._moveRightPressed = False
-        self._rotateLeftPressed = False
-        self._rotateRightPressed = False
-        self._crouchPressed = False
-        self._jumpPressed = False
-        self._shootPressed = False
+    def reset(self):
+        self._geometry.isOnGround = False
+        self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
+        self.wantsToJump = False
+        self._body._isDead = False
         self._pointingDirection = (1.0,0.0,0.0)
+        self.presses = {}
+        self.health = self.maxHealth
+
+        self.guns = {
+            'SMPistol':{
+                'maxAmmo':30,
+                'ammo':30,
+                'reloadTime':3.0,
+                'timeLeftUntilNextShot':0.0,
+                'reloading':False,
+                'accuracy':0.6,
+                'timeBetweenShots':0.01,
+                'damage':2,
+                'velocity':20.0
+                },
+            'SMG':{
+                'maxAmmo':50,
+                'ammo':50,
+                'reloadTime':3.0,
+                'timeLeftUntilNextShot':0.0,
+                'reloading':False,
+                'accuracy':0.8,
+                'timeBetweenShots':0.1,
+                'damage':5,
+                'velocity':40.0
+                },
+            'Assault':{
+                'maxAmmo':30,
+                'ammo':30,
+                'reloadTime':5.0,
+                'timeLeftUntilNextShot':0.0,
+                'reloading':False,
+                'accuracy':0.95,
+                'timeBetweenShots':0.2,
+                'damage':15,
+                'velocity':50.0
+                },
+            'Sniper':{
+                'maxAmmo':5,
+                'ammo':5,
+                'reloadTime':5.0,
+                'timeLeftUntilNextShot':0.0,
+                'reloading':False,
+                'accuracy':1.0,
+                'timeBetweenShots':3.0,
+                'damage':100,
+                'velocity':100.0
+                }
+            }
+
+        self.gunName = ""
+        self.setGun("SMG")
+        self.dead = False
+        
+
+    def doDamage(self, damage):
+        self.health -= damage
+        if self.health <= 0:
+            self.health = 0
+            self.dead = True
+
+    def preStep(self):
+        SphereObject.preStep(self)
+        if 'weapon1' in self.presses:
+            self.setGun("SMPistol")
+        if 'weapon2' in self.presses:
+            self.setGun("SMG")
+        if 'weapon3' in self.presses:
+            self.setGun("Assault")
+        if 'weapon4' in self.presses:
+            self.setGun("Sniper")
+
+    def setGun(self, name):
+        #Store Old Gun Stats
+        if self.gunName != "":
+            self.guns[self.gunName]['ammo'] = self.ammo
+            self.guns[self.gunName]['reloading'] = self.reloading
+            self.guns[self.gunName]['timeLeftUntilNextShot'] = self.timeLeftUntilNextShot
+                
+        #Load New Gun Stats
+        if self.gunName != name:
+            self.gunName = name
+            self.maxAmmo = self.guns[name]['maxAmmo']
+            self.ammo = self.guns[name]['ammo']
+            self.reloading = self.guns[self.gunName]['reloading'] 
+            self.reloadTime = self.guns[self.gunName]['reloadTime']
+            self.timeLeftUntilNextShot = self.guns[self.gunName]['timeLeftUntilNextShot']
+            self.timeBetweenShots = self.guns[self.gunName]['timeBetweenShots']
+            self.accuracy = self.guns[self.gunName]['accuracy']
+            self.damage = self.guns[self.gunName]['damage']
+            self.velocity = self.guns[self.gunName]['velocity']
+
+    def getAttributes(self):
+        return SphereObject.getAttributes(self) + \
+               [self.health,
+                self.gunName,
+                self.ammo,
+                self.reloading,
+                self.timeLeftUntilNextShot]
+
+    def setAttributes(self, attributes):
+        SphereObject.setAttributes(self,attributes)
+        self.health = attributes[5]
+        self.setGun(attributes[6])
+        self.ammo = attributes[7]
+        self.reloading = attributes[8]
+        self.timeLeftUntilNextShot = attributes[9]
+
+    def vitals(self):
+        text = " Health: %i/%i\n Weapon: %s" % \
+               (self.health,
+                self.maxHealth,
+                self.gunName)
+
+        if self.reloading:
+            text += "\n Reloading: %3i%%" % (self.timeLeftUntilNextShot * 100 / self.reloadTime)
+        else:
+            text += "\n Ammo: %i/%i" % (self.ammo, self.maxAmmo)
+            if self.timeLeftUntilNextShot > 0:
+                text += " (%3i%%)" % (self.timeLeftUntilNextShot * 100 / self.timeBetweenShots)
+
+        return text
 
     def isDead(self):
-        return False
+        return self.dead
 
     def frameEnded(self, time):
         # TODO: I hate flags!!! 
@@ -303,12 +393,30 @@ class Person(SphereObject):
 
         self.timeLeftUntilNextShot -= time
 
+        if self.timeLeftUntilNextShot <= 0.0 and self.reloading:
+            self.reloading = False
+
+    def _calculateScatter(self):
+        return random.random()*(1-self.accuracy)-0.5*(1-self.accuracy)
+
+    def _reload(self):
+        if not self.reloading and self.ammo != self.maxAmmo:
+            self.ammo = self.maxAmmo
+            self.timeLeftUntilNextShot = self.reloadTime
+            self.reloading = True
+
     def _shoot(self):
-        if self.timeLeftUntilNextShot < 0.0:                
+        if self.timeLeftUntilNextShot < 0.0 and self.ammo > 0:
+            self.ammo -= 1
+            scatter = self._calculateScatter()
             self._bulletNum += 1
             self._world.addBullet(self._name + "b" + str(self._bulletNum), \
                                   self._body.getPosition(),
-                                  self.getDirection(),
+                                  [self.getDirection()[0] + self._calculateScatter(),
+                                   self.getDirection()[1] + self._calculateScatter(),
+                                   0],
+                                  self.velocity,
+                                  self.damage,
                                   self)
             self.timeLeftUntilNextShot = self.timeBetweenShots
         
@@ -332,6 +440,7 @@ class Person(SphereObject):
 
     # TODO: Should be pre-step? Post-collision?
     def postStep(self):
+        
         isOnGround = self._geometry.isOnGround
         SphereObject.postStep(self)
         if isOnGround:

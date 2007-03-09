@@ -56,6 +56,11 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             'right':OIS.KC_J,
             'rotate-left':OIS.KC_O,
             'rotate-right':OIS.KC_U,
+            'reload':OIS.KC_UNASSIGNED,
+            'weapon1':OIS.KC_UNASSIGNED,
+            'weapon2':OIS.KC_UNASSIGNED,
+            'weapon3':OIS.KC_UNASSIGNED,
+            'weapon4':OIS.KC_UNASSIGNED,
             'shoot':None}
 
     def frameEnded(self, frameTime):
@@ -86,9 +91,20 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         if keyboard.isKeyDown(self.keys['down']):
             #self._crouch()
             presses.append("down")
+        if keyboard.isKeyDown(self.keys['reload']):
+            #self._reload()
+            presses.append("reload")
         if keyboard.isKeyDown(self.keys['downdown']):
             #self._prone()
             presses.append("downdown")
+        if keyboard.isKeyDown(self.keys['weapon1']):
+            presses.append("weapon1")
+        if keyboard.isKeyDown(self.keys['weapon2']):
+            presses.append("weapon2")
+        if keyboard.isKeyDown(self.keys['weapon3']):
+            presses.append("weapon3")
+        if keyboard.isKeyDown(self.keys['weapon4']):
+            presses.append("weapon4")
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
             #self._shoot()
             presses.append("shoot")
@@ -162,6 +178,11 @@ class Person(objects.Person, SphereObject):
             'right':OIS.KC_UNASSIGNED,
             'rotate-left':OIS.KC_UNASSIGNED,
             'rotate-right':OIS.KC_UNASSIGNED,
+            'reload':OIS.KC_UNASSIGNED,
+            'weapon1':OIS.KC_UNASSIGNED,
+            'weapon2':OIS.KC_UNASSIGNED,
+            'weapon3':OIS.KC_UNASSIGNED,
+            'weapon4':OIS.KC_UNASSIGNED,
             'shoot':None}
         
         ogre.Animation.setDefaultInterpolationMode(ogre.Animation.IM_SPLINE)
@@ -225,6 +246,11 @@ class Player(Person):
         self.keys['rotate-left'] = OIS.KC_A
         self.keys['rotate-right'] = OIS.KC_D
         self.keys['shoot'] = OIS.MB_Left
+        self.keys['reload'] = OIS.KC_R
+        self.keys['weapon1'] = OIS.KC_1
+        self.keys['weapon2'] = OIS.KC_2
+        self.keys['weapon3'] = OIS.KC_3
+        self.keys['weapon4'] = OIS.KC_4
 
         self.disable()
 

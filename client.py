@@ -409,22 +409,34 @@ class Client(Application, Engine):
         #eb.subscribeEvent(CEGUI.Window.EventKeyDown, self.blah,"")
 
         scores = winMgr.createWindow("TaharezLook/StaticText", "ScoreWindow")
-        scores.setPosition(CEGUI.UVector2(cegui_reldim(0.01), cegui_reldim( 0.01)))
+        scores.setPosition(CEGUI.UVector2(CEGUI.UDim(0,5), CEGUI.UDim(0,5)))
         scores.setSize(CEGUI.UVector2(CEGUI.UDim(0,100), CEGUI.UDim(0,1)))
         scores.setProperty("HorzFormatting","WordWrapLefteAligned")
         scores.setProperty("VertFormatting", "TopAligned")
         self._scoreWindow = scores
         sheet.addChildWindow(scores)
 
+        vitals = winMgr.createWindow("TaharezLook/StaticText", "VitalsWindow")
+        vitals.setPosition(CEGUI.UVector2(CEGUI.UDim(1.0,-200), CEGUI.UDim(1.0,-200)))
+        vitals.setSize(CEGUI.UVector2(CEGUI.UDim(0,200), CEGUI.UDim(0,200)))
+        vitals.setProperty("HorzFormatting","WordWrapLefteAligned")
+        vitals.setProperty("VertFormatting", "TopAligned")
+        self._vitalsWindow = vitals
+        sheet.addChildWindow(vitals)
+
+    def displayVitals(self):
+        if self.player:
+            self._vitalsWindow.setText(self.player.vitals())
+
     def displayScores(self):
         text = ""
         scores = [[self._stats[name]["score"],name] for name in self._stats.keys()]
         scores.sort(reverse=True)
         for player in [name for score, name in scores]:
-            text += "%s, %i, %.2f\n" % \
+            text += " %s, %i, %.2f\n" % \
                     (player, self._stats[player]["score"], self._stats[player]["ping"])
 
-        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0,100), CEGUI.UDim(0,10+25*len(self._stats))))
+        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0,125), CEGUI.UDim(0,20+25*len(self._stats))))
         self._scoreWindow.setText(text)
 
 
@@ -437,13 +449,13 @@ class Client(Application, Engine):
     def frameEnded(self, frameTime, keyboard,  mouse):
         self.keyboard = keyboard
         self.mouse = mouse
-        
         self.timeUntilNextNetworkUpdate -= frameTime
         if self.timeUntilNextNetworkUpdate <= 0.0:
             self.network.update(frameTime)
 
             self._stats = self.network._stats
             self.displayScores()
+            self.displayVitals()
             
             while self.timeUntilNextNetworkUpdate <= 0.0:
                 self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
