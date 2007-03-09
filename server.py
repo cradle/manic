@@ -8,7 +8,7 @@ class Server(Engine):
     def __init__(self):
         Engine.__init__(self)
         self.network = networkserver.NetworkServer(self.clientConnected)
-        self.timeBetweenNetworkUpdates = 0.05
+        self.timeBetweenNetworkUpdates = 0.06
         self.timeUntilNextNetworkUpdate = 0.0
         self.clientNumber = 0
 

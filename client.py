@@ -21,6 +21,7 @@ class Application(object):
         self.renderWindow = None
         self.sceneManager = None
         self.world = None
+        self.debug = True
 
     def go(self):
         "Starts the rendering loop."
@@ -417,8 +418,8 @@ class Client(Application, Engine):
         sheet.addChildWindow(scores)
 
         vitals = winMgr.createWindow("TaharezLook/StaticText", "VitalsWindow")
-        vitals.setPosition(CEGUI.UVector2(CEGUI.UDim(1.0,-200), CEGUI.UDim(1.0,-200)))
-        vitals.setSize(CEGUI.UVector2(CEGUI.UDim(0,200), CEGUI.UDim(0,200)))
+        vitals.setPosition(CEGUI.UVector2(CEGUI.UDim(0.8,0), CEGUI.UDim(0.8,0)))
+        vitals.setSize(CEGUI.UVector2(CEGUI.UDim(0.2,0), CEGUI.UDim(0.2,0)))
         vitals.setProperty("HorzFormatting","WordWrapLefteAligned")
         vitals.setProperty("VertFormatting", "TopAligned")
         self._vitalsWindow = vitals
@@ -436,7 +437,7 @@ class Client(Application, Engine):
             text += " %s, %i, %.2f\n" % \
                     (player, self._stats[player]["score"], self._stats[player]["ping"])
 
-        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0,125), CEGUI.UDim(0,20+25*len(self._stats))))
+        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05*len(self._stats),0)))
         self._scoreWindow.setText(text)
 
 
