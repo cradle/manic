@@ -8,7 +8,7 @@ class Server(Engine):
     def __init__(self):
         Engine.__init__(self)
         self.network = networkserver.NetworkServer(self.clientConnected)
-        self.timeBetweenNetworkUpdates = 0.06
+        self.timeBetweenNetworkUpdates = 0.01
         self.timeUntilNextNetworkUpdate = 0.0
         self.clientNumber = 0
 
@@ -21,6 +21,12 @@ class Server(Engine):
         self._stats[client.player._name]["ping"] = 0
         self._stats[client.player._name]["score"] = 0
         print "Client", client.player._name, " connected"
+
+    def _createWorld(self):
+        Engine._createWorld(self)
+        bot = Person(self, "b1")
+        bot.setPosition(self.spawnLocation())
+        self.objects += [bot]
 
     def frameEnded(self, frameTime):
         self.timeUntilNextNetworkUpdate -= frameTime

@@ -61,6 +61,7 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             'weapon2':OIS.KC_UNASSIGNED,
             'weapon3':OIS.KC_UNASSIGNED,
             'weapon4':OIS.KC_UNASSIGNED,
+            'weapon5':OIS.KC_UNASSIGNED,
             'shoot':None}
 
     def frameEnded(self, frameTime):
@@ -105,6 +106,8 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             presses.append("weapon3")
         if keyboard.isKeyDown(self.keys['weapon4']):
             presses.append("weapon4")
+        if keyboard.isKeyDown(self.keys['weapon5']):
+            presses.append("weapon5")
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
             #self._shoot()
             presses.append("shoot")
@@ -183,11 +186,19 @@ class Person(objects.Person, SphereObject):
             'weapon2':OIS.KC_UNASSIGNED,
             'weapon3':OIS.KC_UNASSIGNED,
             'weapon4':OIS.KC_UNASSIGNED,
+            'weapon5':OIS.KC_UNASSIGNED,
             'shoot':None}
         
         ogre.Animation.setDefaultInterpolationMode(ogre.Animation.IM_SPLINE)
-        self.animation = self._entity.getAnimationState('Walk')
-        self.animation.Enabled = True
+        self.animations = {}
+        self.animations['dead'] = self._entity.getAnimationState('Death1')
+        self.animations['run'] = self._entity.getAnimationState('Stealth')
+        self.animations['idle'] = self._entity.getAnimationState('Idle1')
+        self.animations['crouch'] = self._entity.getAnimationState('Crouch')
+        self.animations['crouch'].setLoop(False)
+        self.animations['crouch'].setLength(self.animations['crouch'].getLength()/2.0)
+        self.animations['jump'] = self._entity.getAnimationState('JumpNoHeight')
+        self.animations['jump'].setLoop(False)
 
     def getDirection(self):
         if self._camera:
@@ -220,11 +231,49 @@ class Person(objects.Person, SphereObject):
         if self._camera:
             self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],40))
             
-        if math.fabs(self._body.getLinearVel()[0]) > 0.1:
+        if not self.isDead() and math.fabs(self._body.getLinearVel()[0]) > 0.1:
             if self.getDirection()[0] <= 0.0: # facing left
-                self.animation.addTime(time * self._body.getLinearVel()[0] * -0.3)
+                self.animations['run'].addTime(time * self._body.getLinearVel()[0] * -0.3)
             else: # "right"
-                self.animation.addTime(time * self._body.getLinearVel()[0] * 0.3)
+                self.animations['run'].addTime(time * self._body.getLinearVel()[0] * 0.3)
+            self.animations['dead'].Enabled = False
+            self.animations['jump'].Enabled = False
+            self.animations['run'].Enabled = True
+            self.animations['idle'].Enabled = False
+            self.animations['crouch'].Enabled = False
+            self.animations['crouch'].setTimePosition(0)
+        elif self.isDead():
+            self.animations['dead'].addTime(time)
+            self.animations['jump'].Enabled = False
+            self.animations['dead'].Enabled = True
+            self.animations['run'].Enabled = False
+            self.animations['idle'].Enabled = False
+            self.animations['crouch'].Enabled = False
+            self.animations['crouch'].setTimePosition(0)
+        elif self.isCrouching:
+            self.animations['crouch'].addTime(time)
+            self.animations['jump'].Enabled = False
+            self.animations['dead'].Enabled = False
+            self.animations['run'].Enabled = False
+            self.animations['idle'].Enabled = False
+            self.animations['crouch'].Enabled = True
+        elif self.isJumping:
+            self.animations['jump'].addTime(time)
+            self.animations['jump'].Enabled = True
+            self.animations['dead'].Enabled = False
+            self.animations['run'].Enabled = False
+            self.animations['idle'].Enabled = False
+            self.animations['crouch'].Enabled = True
+        else:
+            self.animations['idle'].addTime(time)
+            self.animations['jump'].Enabled = False
+            self.animations['dead'].Enabled = False
+            self.animations['run'].Enabled = False
+            self.animations['idle'].Enabled = True
+            self.animations['crouch'].Enabled = False
+            self.animations['crouch'].setTimePosition(0)
+            self.animations['jump'].setTimePosition(0)
+            
 
         self._updateDisplay()
 
@@ -251,6 +300,7 @@ class Player(Person):
         self.keys['weapon2'] = OIS.KC_2
         self.keys['weapon3'] = OIS.KC_3
         self.keys['weapon4'] = OIS.KC_4
+        self.keys['weapon5'] = OIS.KC_5
 
         self.disable()
 

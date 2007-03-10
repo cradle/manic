@@ -50,6 +50,7 @@ class DynamicObject(StaticObject):
         self._motor.attach(self._body, ode.environment)
 
         self._geometry.isOnGround = False
+        self.isJumping = False
         self._body.objectType = "Dynamic"
         self._body.name = name
 
@@ -94,8 +95,12 @@ class DynamicObject(StaticObject):
             self._rotateRight()
         if 'down' in self.presses:
             self._crouch()
+        else:
+            self._unCrouch()
         if 'up' in self.presses:
             self._jump()
+        else:
+            self._unJump()
         if 'shoot' in self.presses:
             self._shoot()
         if 'reload' in self.presses:
@@ -152,10 +157,16 @@ class DynamicObject(StaticObject):
         
     def _jump(self):
         if self._geometry.isOnGround:
+            self.isJumping = True
             self._motor.setYParam(ode.ParamVel,  self.maxMoveVelocity)
             self._motor.setYParam(ode.ParamFMax, self.maxMoveForce)
+            
+    def _unJump(self):
+        self.isJumping = False
 
     def _crouch(self):
+        pass
+    def _unCrouch(self):
         pass
 
     def _prone(self):
@@ -183,7 +194,7 @@ class BulletObject(SphereObject):
         #TODO: When doing graphical, use billboard?
         self.size = (0.05, 0.05, 0.05)
         self.maxSpeed = velocity
-        self.weight = 0.01
+        self.weight = 5.0
         self.damage = damage
         
         SphereObject.__init__(self, gameworld, name, self.size, geomFunc = ode.GeomBox, weight = self.weight)
@@ -193,9 +204,9 @@ class BulletObject(SphereObject):
 
         if direction:
             self._motor.setXParam(ode.ParamVel,  self.maxSpeed * direction[0])
-            self._motor.setXParam(ode.ParamFMax, 100)#ode.Infinity)
+            self._motor.setXParam(ode.ParamFMax, ode.Infinity)
             self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1])
-            self._motor.setYParam(ode.ParamFMax, 100)#ode.Infinity)
+            self._motor.setYParam(ode.ParamFMax, ode.Infinity)
             
         self._body.isDead = False
         self._body.objectType = "Bullet"
@@ -253,6 +264,8 @@ class Person(SphereObject):
         self.reset()
         
     def reset(self):
+        self.isCrouching = False
+        self.isJumping = False
         self._geometry.isOnGround = False
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
@@ -269,9 +282,10 @@ class Person(SphereObject):
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
                 'accuracy':0.6,
-                'timeBetweenShots':0.01,
-                'damage':2,
-                'velocity':20.0
+                'timeBetweenShots':0.02,
+                'damage':3.5,
+                'velocity':20.0,
+                'type':'single'
                 },
             'SMG':{
                 'maxAmmo':50,
@@ -282,7 +296,21 @@ class Person(SphereObject):
                 'accuracy':0.8,
                 'timeBetweenShots':0.1,
                 'damage':5,
-                'velocity':40.0
+                'velocity':40.0,
+                'type':'single'
+                },
+            'Shotgun':{
+                'maxAmmo':2,
+                'ammo':2,
+                'reloadTime':3.0,
+                'timeLeftUntilNextShot':0.0,
+                'reloading':False,
+                'accuracy':0.75,
+                'timeBetweenShots':0.3,
+                'damage':15,
+                'velocity':30.0,
+                'type':'scatter',
+                'bulletsPerShot':7
                 },
             'Assault':{
                 'maxAmmo':30,
@@ -293,18 +321,21 @@ class Person(SphereObject):
                 'accuracy':0.95,
                 'timeBetweenShots':0.2,
                 'damage':15,
-                'velocity':50.0
+                'velocity':50.0,
+                'type':'burst',
+                'bulletsPerShot':3
                 },
             'Sniper':{
                 'maxAmmo':5,
                 'ammo':5,
-                'reloadTime':5.0,
+                'reloadTime':10.0,
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
-                'accuracy':1.0,
-                'timeBetweenShots':3.0,
+                'accuracy':0.95,
+                'timeBetweenShots':5.0,
                 'damage':100,
-                'velocity':100.0
+                'velocity':70.0,
+                'type':'single'
                 }
             }
 
@@ -326,8 +357,10 @@ class Person(SphereObject):
         if 'weapon2' in self.presses:
             self.setGun("SMG")
         if 'weapon3' in self.presses:
-            self.setGun("Assault")
+            self.setGun("Shotgun")
         if 'weapon4' in self.presses:
+            self.setGun("Assault")
+        if 'weapon5' in self.presses:
             self.setGun("Sniper")
 
     def setGun(self, name):
@@ -356,7 +389,9 @@ class Person(SphereObject):
                 self.gunName,
                 self.ammo,
                 self.reloading,
-                self.timeLeftUntilNextShot]
+                self.timeLeftUntilNextShot,
+                self.isCrouching,
+                self.isJumping]
 
     def setAttributes(self, attributes):
         SphereObject.setAttributes(self,attributes)
@@ -365,6 +400,8 @@ class Person(SphereObject):
         self.ammo = attributes[7]
         self.reloading = attributes[8]
         self.timeLeftUntilNextShot = attributes[9]
+        self.isCrouching = attributes[10]
+        self.isJumping = attributes[11]
 
     def vitals(self):
         text = " Health: %i/%i\n Weapon: %s" % \
@@ -397,27 +434,42 @@ class Person(SphereObject):
             self.reloading = False
 
     def _calculateScatter(self):
-        return random.random()*(1-self.accuracy)-0.5*(1-self.accuracy)
+        a = self.accuracy
+        if self.isCrouching and self._geometry.isOnGround:
+            a = (a + 1.0)/2.0
+        return random.random()*(1-a)-0.5*(1-a)
 
     def _reload(self):
         if not self.reloading and self.ammo != self.maxAmmo:
             self.ammo = self.maxAmmo
             self.timeLeftUntilNextShot = self.reloadTime
             self.reloading = True
+            
+    def _crouch(self):
+        self.isCrouching = True
+        
+    def _unCrouch(self):
+        self.isCrouching = False
 
     def _shoot(self):
         if self.timeLeftUntilNextShot < 0.0 and self.ammo > 0:
+            numShots = 1
+            if self.guns[self.gunName]['type'] == "scatter":
+                numShots = self.guns[self.gunName]['bulletsPerShot']
+
+            for i in range(numShots):
+                scatter = self._calculateScatter()
+                self._bulletNum += 1
+                self._world.addBullet(self._name + "b" + str(self._bulletNum), \
+                                      self._body.getPosition(),
+                                      [self.getDirection()[0] + self._calculateScatter(),
+                                       self.getDirection()[1] + self._calculateScatter(),
+                                       0],
+                                      self.velocity,
+                                      self.damage,
+                                      self)
+                
             self.ammo -= 1
-            scatter = self._calculateScatter()
-            self._bulletNum += 1
-            self._world.addBullet(self._name + "b" + str(self._bulletNum), \
-                                  self._body.getPosition(),
-                                  [self.getDirection()[0] + self._calculateScatter(),
-                                   self.getDirection()[1] + self._calculateScatter(),
-                                   0],
-                                  self.velocity,
-                                  self.damage,
-                                  self)
             self.timeLeftUntilNextShot = self.timeBetweenShots
         
     def _jump(self):
@@ -427,6 +479,7 @@ class Person(SphereObject):
             self.wantsToJump = False
         elif self._geometry.isOnGround:
             self.wantsToJump = True
+            self.isJumping = True
         else:
             self.wantsToJump = False
 
