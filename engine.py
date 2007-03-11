@@ -34,6 +34,7 @@ class Engine():
         self.space = ode.Space(type=1)
         self.contactgroup = ode.JointGroup()
         self.objects = []
+        self.limboObjects = []
         self.statics = []
 
         f = open('dm_arena.lvl', 'r')
@@ -70,15 +71,6 @@ class Engine():
 
         for object in self.objects:
             object.frameEnded(frameTime)
-            
-        for object in self.objects:
-            if object.isDead():
-                if type(object) != Person:
-                    self.objects.remove(object)
-                    del object
-                else:
-                    object.reset()
-                    object.setPosition(self.spawnLocation())
 
     def spawnLocation(self):
         return random.choice([
@@ -134,17 +126,19 @@ class Engine():
 
             if body1:
                 if body1.objectType == "Bullet":
-                    body1.isDead = True
+                    body1._isDead = True
                     if body2 and body2.objectType == "Person":
                         recepient = self.findObjectByName(body2.ownerName)
-                        recepient.doDamage(body1.damage)
-                        if recepient.isDead():
-                            if body1.ownerName == body2.ownerName:
-                                self.messageListener(">",body1.ownerName + " committed suicide")
-                                self.addScore(body1.ownerName, -1)
-                            else:
-                                self.messageListener(">",body1.ownerName + " killed " + body2.ownerName)
-                                self.addScore(body1.ownerName, 1)
+                        if not recepient.isDead():
+                            recepient.doDamage(body1.damage)
+                            if recepient.isDead():
+                                recepient.setSpawnPosition(self.spawnLocation())
+                                if body1.ownerName == body2.ownerName:
+                                    self.messageListener(">",body1.ownerName + " committed suicide")
+                                    self.addScore(body1.ownerName, -1)
+                                else:
+                                    self.messageListener(">",body1.ownerName + " killed " + body2.ownerName)
+                                    self.addScore(body1.ownerName, 1)
                     
                 # Assume that if collision normal is facing up we are 'on ground'
                 normal = contact.getContactGeomParams()[1]
@@ -153,17 +147,18 @@ class Engine():
                     
             if body2:
                 if body2.objectType == "Bullet":
-                    body2.isDead = True
+                    body2._isDead = True
                     if body1 and body1.objectType == "Person":
                         recepient = self.findObjectByName(body1.ownerName)
-                        recepient.doDamage(body2.damage)
-                        if recepient.isDead():
-                            if body1.ownerName == body1.ownerName:
-                                self.messageListener(">",body2.ownerName + " committed suicide")
-                                self.addScore(body2.ownerName, -1)
-                            else:
-                                self.messageListener(">",body2.ownerName + " killed " + body1.ownerName)
-                                self.addScore(body2.ownerName, 1)
+                        if not recepient.isDead():
+                            recepient.doDamage(body2.damage)
+                            if recepient.isDead():
+                                if body1.ownerName == body1.ownerName:
+                                    self.messageListener(">",body2.ownerName + " committed suicide")
+                                    self.addScore(body2.ownerName, -1)
+                                else:
+                                    self.messageListener(">",body2.ownerName + " killed " + body1.ownerName)
+                                    self.addScore(body2.ownerName, 1)
                     
                 # Assume that if collision normal is facing up we are 'on ground'
                 normal = contact.getContactGeomParams()[1]

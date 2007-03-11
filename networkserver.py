@@ -12,6 +12,7 @@ class Client():
         self.lastMessageTime = time.time()
         self.timeout = 10.0
         self.ping = 0.0
+        self.packetNumber = 0
 
     def __eq__(self, other):
         return self.address == other.address
@@ -54,7 +55,6 @@ class NetworkServer(DatagramProtocol):
             client = self.clients[self.clients.index(client)]
 
         client.push(jelly.unjelly(banana.decode(data)))
-        
 
     def update(self):
         self.reactor.doIteration(0)

@@ -8,7 +8,7 @@ class Server(Engine):
     def __init__(self):
         Engine.__init__(self)
         self.network = networkserver.NetworkServer(self.clientConnected)
-        self.timeBetweenNetworkUpdates = 0.01
+        self.timeBetweenNetworkUpdates = 1.0/15.0
         self.timeUntilNextNetworkUpdate = 0.0
         self.clientNumber = 0
 
@@ -53,18 +53,30 @@ class Server(Engine):
                 client.send([[[o._name,
                                o.getAttributes(),
                                o._name == client.player._name,
-                               o._body.objectType] for o in self.objects],
+                               o._body.objectType,
+                               o.getEvents()] for o in self.objects],
                             time.time()])
                 #parameter above is whether or not the player is the current player
+                
                     
                 while client.hasMoreMessages():
                     client.player.inputPresses(client.pop())
+
+            [o.clearEvents() for o in self.objects]
         
         Engine.frameEnded(self, frameTime)
                     
         time.sleep(min(self.timeUntilNextChatUpdate,
                        self.timeUntilNextNetworkUpdate,
                        self.timeUntilNextEngineUpdate))
+
+    def step(self, frameTime):
+        Engine.step(self, frameTime)
+        for object in self.objects:
+            if object.isDead():
+                if object._body.objectType != "Person":
+                    self.objects.remove(object)
+                    del object
 
 if __name__ == "__main__":
     engine = Server()

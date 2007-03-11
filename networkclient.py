@@ -46,7 +46,8 @@ class NetworkClient(DatagramProtocol):
         elif type(message[0]) == str and message[0] == "stats":
             self._stats = message[1]
         else:
-            self._messages.insert(0,message)
+            #self._messages.insert(0,message)
+            self._messages += [message]
         
     # Possibly invoked if there is no server listening on the
     # address to which we are sending.

@@ -1,8 +1,8 @@
-import ode, math
+import ode, math, os, time
 import Ogre as ogre
 import CEGUI as CEGUI
+import OgreAL
 import OIS
-import os, time
 from engine import Engine
 from guiobjects import *
 import objects
@@ -60,16 +60,15 @@ class Application(object):
         """This sets up Ogre's resources, which are required to be in
         resources.cfg."""
         config = ogre.ConfigFile()
-        config.load('resources.cfg' ) #, '', False )
+        config.load('resources.cfg' ) 
         seci = config.getSectionIterator()
-        while (seci.hasMoreElements()):
-            secName = seci.peekNextKey()
-            settings = seci.getNext()
-            ## Note that getMultiMapSettings is a Python-Ogre extension to return a multimap in a list of tuples
-            settingslist = config.getMultiMapSettings ( settings )
-            for typeName, archName in settingslist:
-                ogre.ResourceGroupManager.getSingleton().addResourceLocation(archName, typeName, secName)
-                    
+        while seci.hasMoreElements():
+            SectionName = seci.peekNextKey()
+            Section = seci.getNext()
+            for item in Section:
+                ogre.ResourceGroupManager.getSingleton().\
+                    addResourceLocation(item.value, item.key, SectionName)
+                
     def _createResourceListener(self):
         """This method is here if you want to add a resource listener to check
         the status of resources loading."""
@@ -95,7 +94,7 @@ class Application(object):
         self.sceneManager = self.root.createSceneManager(ogre.ST_GENERIC,"ExampleSMInstance")
 
     def _isPsycoEnabled(self):
-        return True
+        return False
 
     def _activatePsyco(self):        
        try:
@@ -307,14 +306,14 @@ class Client(Application, Engine):
         Application.__init__(self)
         Engine.__init__(self)
         self.chat.registerMessageListener(self.messageListener)
-        address = raw_input("server ('127.0.0.1:10001') :> ")
+        address = raw_input("server ('59.167.153.157:10001') :> ")
         if address != "":
             ip, port = address.split(":")
         else:
-            ip, port = "127.0.0.1", 10001
+            ip, port = "59.167.153.157", 10001
             
         self.network = networkclient.NetworkClient(ip, int(port))
-        self.timeBetweenNetworkUpdates = 0.01
+        self.timeBetweenNetworkUpdates = 0.02
         self.timeUntilNextNetworkUpdate = 0.0
         self.serverRoundTripTime = 0.0
         self.lastServerUpdate = time.time()
@@ -377,12 +376,15 @@ class Client(Application, Engine):
         sheet = winMgr.createWindow("DefaultWindow", "root_wnd")
         ## attach this to the 'real' root
         background.addChildWindow(sheet)
+        
+        self.soundManager  = OgreAL.SoundManager()
+        self.soundManager.getListener().setDirection((0,25,75))
             
         ##
         ## Build a window with some text and formatting options via radio buttons etc
         ##
         textwnd = winMgr.createWindow("TaharezLook/FrameWindow", "TextWindow")
-        sheet.addChildWindow(textwnd)
+        #sheet.addChildWindow(textwnd)
         textwnd.setPosition(CEGUI.UVector2(cegui_reldim(0.2), cegui_reldim( 0.8)))
         #textwnd.setMaxSize(CEGUI.UVector2(cegui_reldim(0.4), cegui_reldim( 0.2)))
         #textwnd.setMinSize(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.1)))
@@ -468,13 +470,14 @@ class Client(Application, Engine):
 
                     for object in self.objects:
                         object.existsOnServer = False
-                        
+
                     for serverObject in message[0]:
                         hasObject = False
                         for object in self.objects:
                             if serverObject[0] == object._name:
                                 hasObject = True
                                 object.setAttributes(serverObject[1])
+                                object.setEvents(serverObject[4])
                                 object.existsOnServer = True
                         if not hasObject:
                             newObject = None
@@ -494,6 +497,7 @@ class Client(Application, Engine):
 
                             newObject.existsOnServer = True        
                             newObject.setAttributes(serverObject[1])
+                            newObject.setEvents(serverObject[4])
                             self.objects += [newObject]
 
                     for object in self.objects:
@@ -511,7 +515,7 @@ class Client(Application, Engine):
 
     def step(self, frameTime):
         pass# TODO: Client side prediction of physics
-        #Engine.step(self, frameTime)
+        Engine.step(self, frameTime)
     
 if __name__ == "__main__":
     world = Client()

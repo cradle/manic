@@ -1,4 +1,4 @@
-import ode, math, random
+import ode, math, random, time
 
 class StaticObject(object):    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), geomFunc = ode.GeomBox):
@@ -20,7 +20,8 @@ class StaticObject(object):
         return "P=(%2.2f, %2.2f, %2.2f)" % self._geometry.getPosition()
 
     def setPosition(self, position):
-        self._geometry.setPosition(position)
+        if position:
+            self._geometry.setPosition(position)
 
     def setRotation(self, quaternion):
         self._geometry.setQuaternion(quaternion)
@@ -60,6 +61,26 @@ class DynamicObject(StaticObject):
     def __del__(self):
         self._body.disable()
         StaticObject.__del__(self)
+    
+    def disable(self):
+        self._body.disable()
+        self._geometry.disable()
+        self.enabled = False
+
+    def enable(self):
+        self._body.enable()
+        self._geometry.enable()
+        self.enabled = True
+
+
+    def getEvents(self):
+        return []
+
+    def clearEvents(self):
+        pass
+
+    def setEvents(self, position):
+        pass
         
     def isDead(self):
         return False
@@ -107,7 +128,7 @@ class DynamicObject(StaticObject):
             self._reload()
 
         # Apply wind friction
-        self._body.addForce([-1*0.001*x for x in self._body.getLinearVel()])
+        self._body.addForce([-1*0.000001*math.fabs(x)*x for x in self._body.getLinearVel()])
 
         #if self._geometry.isOnGround:
         #    # Apply rolling friction
@@ -208,7 +229,7 @@ class BulletObject(SphereObject):
             self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1])
             self._motor.setYParam(ode.ParamFMax, ode.Infinity)
             
-        self._body.isDead = False
+        self._body._isDead = False
         self._body.objectType = "Bullet"
         self._body.damage = damage
 
@@ -216,12 +237,15 @@ class BulletObject(SphereObject):
         self._body.ownerName = name
 
     def isDead(self):
-        return self._body.isDead
+        return self._body._isDead
 
     def postStep(self):
         SphereObject.postStep(self)
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
+        
+        if self.isDead():
+            self.disable()
 
     def getAttributes(self):
         return [self._body.getPosition(),
@@ -251,7 +275,7 @@ class Person(SphereObject):
         self._body.objectType = "Person"
         self._body.ownerName = name
         self._bulletNum = 0
-        self.timeNeededToPrepareJump = 0.1
+        self.timeNeededToPrepareJump = 0.0
         self.maxStopForce = 28000
         self.maxSpinForce = 28000
         self.maxSpinVelocity = 10
@@ -261,6 +285,11 @@ class Person(SphereObject):
         self.maxJumpVelocity = 11
         self._world = gameworld
         self.maxHealth = 100
+        self.spawnPosition = None
+        self.respawnTime = 3.0
+        self._body._isDead = False
+        self.timeUntilRespawn = 0.0
+        self.isShooting = False
         self.reset()
         
     def reset(self):
@@ -269,7 +298,6 @@ class Person(SphereObject):
         self._geometry.isOnGround = False
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
-        self._body._isDead = False
         self._pointingDirection = (1.0,0.0,0.0)
         self.presses = {}
         self.health = self.maxHealth
@@ -282,9 +310,9 @@ class Person(SphereObject):
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
                 'accuracy':0.6,
-                'timeBetweenShots':0.02,
+                'timeBetweenShots':0.01,
                 'damage':3.5,
-                'velocity':20.0,
+                'velocity':25.0,
                 'type':'single'
                 },
             'SMG':{
@@ -307,10 +335,10 @@ class Person(SphereObject):
                 'reloading':False,
                 'accuracy':0.75,
                 'timeBetweenShots':0.3,
-                'damage':15,
-                'velocity':30.0,
+                'damage':11.12,
+                'velocity':25.0,
                 'type':'scatter',
-                'bulletsPerShot':7
+                'bulletsPerShot':9
                 },
             'Assault':{
                 'maxAmmo':30,
@@ -341,27 +369,34 @@ class Person(SphereObject):
 
         self.gunName = ""
         self.setGun("SMG")
-        self.dead = False
         
-
     def doDamage(self, damage):
-        self.health -= damage
-        if self.health <= 0:
-            self.health = 0
-            self.dead = True
-
+        if not self.isDead():
+            self.health -= damage
+            if self.health <= 0:
+                self.health = 0
+                self._body._isDead = True
+                self.timeUntilRespawn = self.respawnTime
+            
     def preStep(self):
-        SphereObject.preStep(self)
-        if 'weapon1' in self.presses:
-            self.setGun("SMPistol")
-        if 'weapon2' in self.presses:
-            self.setGun("SMG")
-        if 'weapon3' in self.presses:
-            self.setGun("Shotgun")
-        if 'weapon4' in self.presses:
-            self.setGun("Assault")
-        if 'weapon5' in self.presses:
-            self.setGun("Sniper")
+        if not self.isDead():
+            SphereObject.preStep(self)
+            if 'weapon1' in self.presses:
+                self.setGun("SMPistol")
+            if 'weapon2' in self.presses:
+                self.setGun("SMG")
+            if 'weapon3' in self.presses:
+                self.setGun("Shotgun")
+            if 'weapon4' in self.presses:
+                self.setGun("Assault")
+            if 'weapon5' in self.presses:
+                self.setGun("Sniper")
+        else:
+            if self.timeUntilRespawn <= 0:
+                self._body._isDead = False
+                self.enable()
+                self.reset()
+                self.setPosition(self.spawnPosition)
 
     def setGun(self, name):
         #Store Old Gun Stats
@@ -391,7 +426,9 @@ class Person(SphereObject):
                 self.reloading,
                 self.timeLeftUntilNextShot,
                 self.isCrouching,
-                self.isJumping]
+                self.isJumping,
+                self.isDead(),
+                self.timeUntilRespawn]
 
     def setAttributes(self, attributes):
         SphereObject.setAttributes(self,attributes)
@@ -402,6 +439,21 @@ class Person(SphereObject):
         self.timeLeftUntilNextShot = attributes[9]
         self.isCrouching = attributes[10]
         self.isJumping = attributes[11]
+        self._body._isDead = attributes[12]
+        self.timeUntilRespawn = attributes[13]
+
+    def getEvents(self):
+        events = SphereObject.getEvents(self)
+        if self.isShooting:
+            events += ['shoot']
+        return events
+
+    def clearEvents(self):
+        SphereObject.clearEvents(self)
+        self.isShooting = False
+
+    def setSpawnPosition(self, position):
+        self.spawnPosition = position
 
     def vitals(self):
         text = " Health: %i/%i\n Weapon: %s" % \
@@ -419,9 +471,11 @@ class Person(SphereObject):
         return text
 
     def isDead(self):
-        return self.dead
+        return self._body._isDead
 
     def frameEnded(self, time):
+        self.timeUntilRespawn -= time
+        
         # TODO: I hate flags!!! 
         if self.wantsToJump:
             self.timeLeftUntilCanJump -= time
@@ -453,6 +507,7 @@ class Person(SphereObject):
 
     def _shoot(self):
         if self.timeLeftUntilNextShot < 0.0 and self.ammo > 0:
+            self.isShooting = True
             numShots = 1
             if self.guns[self.gunName]['type'] == "scatter":
                 numShots = self.guns[self.gunName]['bulletsPerShot']
@@ -493,10 +548,15 @@ class Person(SphereObject):
 
     # TODO: Should be pre-step? Post-collision?
     def postStep(self):
-        
         isOnGround = self._geometry.isOnGround
         SphereObject.postStep(self)
         if isOnGround:
             # People have a lot of friction against movement, if we aren't moving. Slam on the brakes
             self._motor.setAngleParam(ode.ParamFMax, self.maxStopForce)
             self._motor.setAngleParam(ode.ParamVel, 0)
+            
+    def isEnabled(self):
+        return self.enabled
+
+    def isDisabled(self):
+        return not self.enabled

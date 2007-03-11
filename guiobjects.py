@@ -3,7 +3,8 @@ import Ogre as ogre
 import ode
 import OIS
 import CEGUI
-import math
+import OgreAL
+import math, random
 
 class StaticObject(objects.StaticObject):    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
@@ -45,8 +46,6 @@ class DynamicObject(objects.DynamicObject, StaticObject):
                  scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox, weight = 50):
         StaticObject.__init__(self, gameworld, name, size, scale, mesh, geomFunc)
         objects.DynamicObject.__init__(self, gameworld, name, size, geomFunc, weight)
-
-        #print self._geometry.isOnGround
 
         self.keys = {
             'up':OIS.KC_I,
@@ -113,6 +112,14 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             presses.append("shoot")
 
         return presses
+    
+    def disable(self):
+        objects.DynamicObject.disable(self)
+        self._entity.setVisible(False)
+
+    def enable(self):
+        objects.DynamicObject.enable(self)
+        self._entity.setVisible(True)
 
     def __del__(self):
         StaticObject.__del__(self)
@@ -138,18 +145,39 @@ class SphereObject(objects.SphereObject, DynamicObject):
 class BulletObject(objects.BulletObject, SphereObject):
     def __init__(self, gameworld, name):
         objects.BulletObject.__init__(self, gameworld, name, direction = None)
-        SphereObject.__init__(self, gameworld, name, self.size, geomFunc = ode.GeomBox, weight = self.weight)
-    
-        self.keys['up'] = OIS.KC_UNASSIGNED
-        self.keys['down'] = OIS.KC_UNASSIGNED
-        self.keys['left'] = OIS.KC_UNASSIGNED
-        self.keys['right'] = OIS.KC_UNASSIGNED
-        self.keys['rotate-left'] = OIS.KC_UNASSIGNED
-        self.keys['rotate-right'] = OIS.KC_UNASSIGNED
 
-        self._body.isDead = False
+        self.keys = {
+            'up':OIS.KC_I,
+            'down':OIS.KC_K,
+            'downdown':OIS.KC_Z,
+            'left':OIS.KC_L,
+            'right':OIS.KC_J,
+            'rotate-left':OIS.KC_O,
+            'rotate-right':OIS.KC_U,
+            'reload':OIS.KC_UNASSIGNED,
+            'weapon1':OIS.KC_UNASSIGNED,
+            'weapon2':OIS.KC_UNASSIGNED,
+            'weapon3':OIS.KC_UNASSIGNED,
+            'weapon4':OIS.KC_UNASSIGNED,
+            'weapon5':OIS.KC_UNASSIGNED,
+            'shoot':None}
+        
+        self.name = name
+        self._entity = gameworld.sceneManager.createBillboardSet("bb" + name)
+        self._entity.setDefaultDimensions(0.1,0.1)
 
+        self.billboard = ogre.Billboard()
+        self._entity.createBillboard(0,0,0)
+                
+        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
+        self._node.attachObject(self._entity)
+
+        self._updateDisplay()
+
+        self.gameworld = gameworld
+        
     def __del__(self):
+        self.gameworld.sceneManager.destroyBillboardSet("bb" + self.name)
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 
@@ -164,14 +192,33 @@ class Person(objects.Person, SphereObject):
         
         # Entity
         self._entity = gameworld.sceneManager.createEntity('e' + name, 'ninja.mesh')
+        self._entity.setMaterialName(random.choice(["white-ninja",
+                                                    "grey-ninja",
+                                                    "green-ninja",
+                                                    "red-ninja",
+                                                    "blue-ninja",
+                                                    "yellow-ninja"]))
         # Scene -> Node
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.setScale(scale*self._size[0],scale*self._size[1],scale*self._size[2])
         # Node -> Entity
         self._node.attachObject(self._entity)
+        
+        self.soundManager = gameworld.soundManager
+
+        self.guns['SMPistol']['sound'] = self.soundManager.createSound("SMPistol-" + name, "smg.wav", False)
+        self.guns['SMG']['sound'] = self.soundManager.createSound("SMG-" + name, "bolter.wav", False)
+        self.guns['Assault']['sound'] = self.soundManager.createSound("Assault-" + name, "assault.wav", False)
+        self.guns['Shotgun']['sound'] = self.soundManager.createSound("Shotgun-" + name, "shotgun.wav", False)
+        self.guns['Sniper']['sound'] = self.soundManager.createSound("Sniper-" + name, "sniper.wav", False)
+        
+        self.noAmmoSound = self.soundManager.createSound("empty-" + name, "verschluss.wav", False)
+
+        for sound in [self.guns[name]['sound'] for name in self.guns]:
+            self._node.attachObject(sound)
 
         self.setDirection((1.0,0.0,0.0))
-        self._camera = camera     
+        self._camera = camera
 
         self.keys = {
             'up':OIS.KC_UNASSIGNED,
@@ -192,6 +239,7 @@ class Person(objects.Person, SphereObject):
         ogre.Animation.setDefaultInterpolationMode(ogre.Animation.IM_SPLINE)
         self.animations = {}
         self.animations['dead'] = self._entity.getAnimationState('Death1')
+        self.animations['dead'].setLoop(False)
         self.animations['run'] = self._entity.getAnimationState('Stealth')
         self.animations['idle'] = self._entity.getAnimationState('Idle1')
         self.animations['crouch'] = self._entity.getAnimationState('Crouch')
@@ -199,6 +247,18 @@ class Person(objects.Person, SphereObject):
         self.animations['crouch'].setLength(self.animations['crouch'].getLength()/2.0)
         self.animations['jump'] = self._entity.getAnimationState('JumpNoHeight')
         self.animations['jump'].setLoop(False)
+
+    def __del__(self):
+        objects.Person.__del__(self)
+        for sound in [self.guns[name]['sound'] for name in self.guns]:
+            self.audioManager.destroySound(sound)
+
+    def _shootSound(self):
+        pass
+        if self.guns[self.gunName]['sound'].isPlaying():
+            self.guns[self.gunName]['sound'].stop()
+
+        self.guns[self.gunName]['sound'].play()
 
     def getDirection(self):
         if self._camera:
@@ -216,20 +276,23 @@ class Person(objects.Person, SphereObject):
 
     def setDirection(self, direction):
         super(Person, self).setDirection(direction)
-        
-        left = ogre.Quaternion(ogre.Degree(90), ogre.Vector3.UNIT_Y)
-        right = ogre.Quaternion(ogre.Degree(-90), ogre.Vector3.UNIT_Y)
-        
-        if direction[0] < 0.0:
-            self._node.setOrientation(left)
-        elif direction[0] >= 0.0:
-            self._node.setOrientation(right)
+        if not self.isDead():
+            left = ogre.Quaternion(ogre.Degree(90), ogre.Vector3.UNIT_Y)
+            right = ogre.Quaternion(ogre.Degree(-90), ogre.Vector3.UNIT_Y)
+            
+            if direction[0] < 0.0:
+                self._node.setOrientation(left)
+            elif direction[0] >= 0.0:
+                self._node.setOrientation(right)
 
-    def frameEnded(self, time):
-        super(Person, self).frameEnded(time)
+    def setEvents(self, events):
+        if 'shoot' in events:
+            self._shootSound()
 
+    def frameEnded(self, time):     
         if self._camera:
             self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],40))
+            self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],40))
             
         if not self.isDead() and math.fabs(self._body.getLinearVel()[0]) > 0.1:
             if self.getDirection()[0] <= 0.0: # facing left
@@ -242,6 +305,8 @@ class Person(objects.Person, SphereObject):
             self.animations['idle'].Enabled = False
             self.animations['crouch'].Enabled = False
             self.animations['crouch'].setTimePosition(0)
+            self.animations['jump'].setTimePosition(0)
+            self.animations['dead'].setTimePosition(0)
         elif self.isDead():
             self.animations['dead'].addTime(time)
             self.animations['jump'].Enabled = False
@@ -250,6 +315,7 @@ class Person(objects.Person, SphereObject):
             self.animations['idle'].Enabled = False
             self.animations['crouch'].Enabled = False
             self.animations['crouch'].setTimePosition(0)
+            self.animations['jump'].setTimePosition(0)
         elif self.isCrouching:
             self.animations['crouch'].addTime(time)
             self.animations['jump'].Enabled = False
@@ -257,6 +323,8 @@ class Person(objects.Person, SphereObject):
             self.animations['run'].Enabled = False
             self.animations['idle'].Enabled = False
             self.animations['crouch'].Enabled = True
+            self.animations['jump'].setTimePosition(0)
+            self.animations['dead'].setTimePosition(0)
         elif self.isJumping:
             self.animations['jump'].addTime(time)
             self.animations['jump'].Enabled = True
@@ -264,6 +332,8 @@ class Person(objects.Person, SphereObject):
             self.animations['run'].Enabled = False
             self.animations['idle'].Enabled = False
             self.animations['crouch'].Enabled = True
+            self.animations['crouch'].setTimePosition(0)
+            self.animations['dead'].setTimePosition(0)
         else:
             self.animations['idle'].addTime(time)
             self.animations['jump'].Enabled = False
@@ -273,8 +343,10 @@ class Person(objects.Person, SphereObject):
             self.animations['crouch'].Enabled = False
             self.animations['crouch'].setTimePosition(0)
             self.animations['jump'].setTimePosition(0)
+            self.animations['dead'].setTimePosition(0)
             
 
+        super(Person, self).frameEnded(time)
         self._updateDisplay()
 
     def _updateDisplay(self):
@@ -302,8 +374,6 @@ class Player(Person):
         self.keys['weapon4'] = OIS.KC_4
         self.keys['weapon5'] = OIS.KC_5
 
-        self.disable()
-
     #def setPosition(self, position):
     #    Person.setPosition(self, [(x+y)/2 for x,y in zip(position, self._body.getPosition())])
 
@@ -311,21 +381,3 @@ class Player(Person):
         Person.setAttributes(self, attributes)
         if self.isDisabled():
             self.enable()
-
-    def isEnabled(self):
-        return self.enabled
-
-    def isDisabled(self):
-        return not self.enabled
-    
-    def disable(self):
-        self._body.disable()
-        self._geometry.disable()
-        self._node.setVisible(False)
-        self.enabled = False
-
-    def enable(self):
-        self._body.enable()
-        self._geometry.enable()
-        self._node.setVisible(True)
-        self.enabled = True
