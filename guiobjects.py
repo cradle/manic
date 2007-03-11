@@ -166,7 +166,7 @@ class BulletObject(objects.BulletObject, SphereObject):
         self._entity = gameworld.sceneManager.createBillboardSet("bb" + name)
         self._entity.setDefaultDimensions(0.1,0.1)
 
-        self.billboard = ogre.Billboard()
+        #self.billboard = ogre.Billboard()
         self._entity.createBillboard(0,0,0)
                 
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
@@ -293,7 +293,7 @@ class Person(objects.Person, SphereObject):
         if self._camera:
             camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
             self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
-            self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],40))
+            self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
             
         if not self.isDead() and math.fabs(self._body.getLinearVel()[0]) > 0.1:
             if self.getDirection()[0] <= 0.0: # facing left

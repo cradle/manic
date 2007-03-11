@@ -219,7 +219,6 @@ class SphereObject(DynamicObject):
 
 class BulletObject(SphereObject):
     def __init__(self, gameworld, name, direction = None, velocity = 50.0, damage = 1.0):
-        #TODO: When doing graphical, use billboard?
         self.size = (0.05, 0.05, 0.05)
         self.maxSpeed = velocity
         self.weight = 5.0
@@ -268,7 +267,7 @@ class BulletObject(SphereObject):
             self._body.setLinearVel(self.to3d(attributes[1]))
 
     def clearEvents(self):
-        self.hasSentToClients = True
+        self.hasSentToClients = True  
         
 
 class Person(SphereObject):
