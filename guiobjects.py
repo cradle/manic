@@ -75,41 +75,41 @@ class DynamicObject(objects.DynamicObject, StaticObject):
 
         if keyboard.isKeyDown(self.keys['left']):
             #self._moveLeft()
-            presses.append("left")
+            presses.append("l")
         if keyboard.isKeyDown(self.keys['right']):
             #self._moveRight()
-            presses.append("right")
+            presses.append("r")
         if keyboard.isKeyDown(self.keys['rotate-left']):
             #self._rotateLeft()
-            presses.append("rotate-left")
+            presses.append("rl")
         if keyboard.isKeyDown(self.keys['rotate-right']):
             #self._rotateRight()
-            presses.append("rotate-right")
+            presses.append("rr")
         if keyboard.isKeyDown(self.keys['up']):
             #self._jump()
-            presses.append("up")
+            presses.append("u")
         if keyboard.isKeyDown(self.keys['down']):
             #self._crouch()
-            presses.append("down")
+            presses.append("d")
         if keyboard.isKeyDown(self.keys['reload']):
             #self._reload()
-            presses.append("reload")
+            presses.append("a")
         if keyboard.isKeyDown(self.keys['downdown']):
             #self._prone()
-            presses.append("downdown")
+            presses.append("p")
         if keyboard.isKeyDown(self.keys['weapon1']):
-            presses.append("weapon1")
+            presses.append("1")
         if keyboard.isKeyDown(self.keys['weapon2']):
-            presses.append("weapon2")
+            presses.append("2")
         if keyboard.isKeyDown(self.keys['weapon3']):
-            presses.append("weapon3")
+            presses.append("3")
         if keyboard.isKeyDown(self.keys['weapon4']):
-            presses.append("weapon4")
+            presses.append("4")
         if keyboard.isKeyDown(self.keys['weapon5']):
-            presses.append("weapon5")
+            presses.append("5")
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
             #self._shoot()
-            presses.append("shoot")
+            presses.append("s")
 
         return presses
     
@@ -206,15 +206,16 @@ class Person(objects.Person, SphereObject):
         
         self.soundManager = gameworld.soundManager
 
-        self.guns['SMPistol']['sound'] = self.soundManager.createSound("SMPistol-" + name, "smg.wav", False)
-        self.guns['SMG']['sound'] = self.soundManager.createSound("SMG-" + name, "bolter.wav", False)
-        self.guns['Assault']['sound'] = self.soundManager.createSound("Assault-" + name, "assault.wav", False)
-        self.guns['Shotgun']['sound'] = self.soundManager.createSound("Shotgun-" + name, "shotgun.wav", False)
-        self.guns['Sniper']['sound'] = self.soundManager.createSound("Sniper-" + name, "sniper.wav", False)
+        self.sounds = {}
+        self.sounds['SMPistol'] = self.soundManager.createSound("SMPistol-" + name, "smg.wav", False)
+        self.sounds['SMG'] = self.soundManager.createSound("SMG-" + name, "bolter.wav", False)
+        self.sounds['Assault'] = self.soundManager.createSound("Assault-" + name, "assault.wav", False)
+        self.sounds['Shotgun'] = self.soundManager.createSound("Shotgun-" + name, "shotgun.wav", False)
+        self.sounds['Sniper'] = self.soundManager.createSound("Sniper-" + name, "sniper.wav", False)
         
         self.noAmmoSound = self.soundManager.createSound("empty-" + name, "verschluss.wav", False)
 
-        for sound in [self.guns[name]['sound'] for name in self.guns]:
+        for sound in [self.sounds[name] for name in self.sounds]:
             self._node.attachObject(sound)
 
         self.setDirection((1.0,0.0,0.0))
@@ -254,11 +255,10 @@ class Person(objects.Person, SphereObject):
             self.audioManager.destroySound(sound)
 
     def _shootSound(self):
-        pass
-        if self.guns[self.gunName]['sound'].isPlaying():
-            self.guns[self.gunName]['sound'].stop()
+        if self.sounds[self.gunName].isPlaying():
+            self.sounds[self.gunName].stop()
 
-        self.guns[self.gunName]['sound'].play()
+        self.sounds[self.gunName].play()
 
     def getDirection(self):
         if self._camera:
@@ -291,7 +291,8 @@ class Person(objects.Person, SphereObject):
 
     def frameEnded(self, time):     
         if self._camera:
-            self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],40))
+            camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
+            self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
             self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],40))
             
         if not self.isDead() and math.fabs(self._body.getLinearVel()[0]) > 0.1:

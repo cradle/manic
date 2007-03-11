@@ -91,40 +91,46 @@ class DynamicObject(StaticObject):
     def setDirection(self, direction):
         self._pointingDirection = direction
 
+    def to2d(self, vector):
+        return ([0 if x == 0.0 else x for x in vector[0:-1]])
+
+    def to3d(self, vector):
+        return vector + [0]
+
     def getAttributes(self):
-        return [self._body.getPosition(),
-         self._body.getQuaternion(),
-         self._body.getAngularVel(),
-         self._body.getLinearVel(),
-         self.getDirection()]
+        return [self.to2d(self._body.getPosition()),
+         self.to2d(self._body.getQuaternion()),
+         self.to2d(self._body.getAngularVel()),
+         self.to2d(self._body.getLinearVel()),
+         self.to2d(self.getDirection())]
 
     def setAttributes(self, attributes):
-        self._body.setPosition(attributes[0])
-        self._body.setQuaternion(attributes[1])
-        self._body.setAngularVel(attributes[2])
-        self._body.setLinearVel(attributes[3])
-        self.setDirection(attributes[4])
+        self._body.setPosition(self.to3d(attributes[0]))
+        self._body.setQuaternion(self.to3d(attributes[1]))
+        self._body.setAngularVel(self.to3d(attributes[2]))
+        self._body.setLinearVel(self.to3d(attributes[3]))
+        self.setDirection(self.to3d(attributes[4]))
 
     def preStep(self):
-        if 'left' in self.presses:
+        if 'l' in self.presses:
             self._moveLeft()
-        if 'right' in self.presses:
+        if 'r' in self.presses:
             self._moveRight()
-        if 'rotate-left' in self.presses:
+        if 'rl' in self.presses:
             self._rotateLeft()
-        if 'rotate-right' in self.presses:
+        if 'rr' in self.presses:
             self._rotateRight()
-        if 'down' in self.presses:
+        if 'd' in self.presses:
             self._crouch()
         else:
             self._unCrouch()
-        if 'up' in self.presses:
+        if 'u' in self.presses:
             self._jump()
         else:
             self._unJump()
-        if 'shoot' in self.presses:
+        if 's' in self.presses:
             self._shoot()
-        if 'reload' in self.presses:
+        if 'a' in self.presses:
             self._reload()
 
         # Apply wind friction
@@ -187,6 +193,7 @@ class DynamicObject(StaticObject):
 
     def _crouch(self):
         pass
+    
     def _unCrouch(self):
         pass
 
@@ -252,25 +259,13 @@ class BulletObject(SphereObject):
         if self.hasSentToClients:
             return []
         else:
-            return [self.getPositionAttribute(),
-                    self.getLinearVelAttribute()]
+            return [self.to2d(self._body.getPosition()),
+                    self.to2d(self._body.getLinearVel())]
 
     def setAttributes(self, attributes):
         if len(attributes) != 0:
-            self.setPositionAttribute(attributes[0])
-            self.setLinearVelAttribute(attributes[1])
-
-    def getPositionAttribute(self):
-        return (self._body.getPosition()[0], self._body.getPosition()[1])
-
-    def setPositionAttribute(self, position):
-        self._body.setPosition((position[0], position[1], 0))
-
-    def getLinearVelAttribute(self):
-        return (self._body.getLinearVel()[0], self._body.getLinearVel()[1])
-
-    def setLinearVelAttribute(self, vel):
-        self._body.setLinearVel((vel[0], vel[1], 0))
+            self._body.setPosition(self.to3d(attributes[0]))
+            self._body.setLinearVel(self.to3d(attributes[1]))
 
     def clearEvents(self):
         self.hasSentToClients = True
@@ -334,7 +329,8 @@ class Person(SphereObject):
                 'timeBetweenShots':0.01,
                 'damage':3.5,
                 'velocity':25.0,
-                'type':'single'
+                'type':'single',
+                'zoom':30
                 },
             'SMG':{
                 'maxAmmo':50,
@@ -346,7 +342,8 @@ class Person(SphereObject):
                 'timeBetweenShots':0.1,
                 'damage':5,
                 'velocity':40.0,
-                'type':'single'
+                'type':'single',
+                'zoom':40
                 },
             'Shotgun':{
                 'maxAmmo':5,
@@ -359,7 +356,8 @@ class Person(SphereObject):
                 'damage':7,
                 'velocity':25.0,
                 'type':'scatter',
-                'bulletsPerShot':11
+                'bulletsPerShot':11,
+                'zoom':35
                 },
             'Assault':{
                 'maxAmmo':30,
@@ -372,7 +370,8 @@ class Person(SphereObject):
                 'damage':15,
                 'velocity':50.0,
                 'type':'burst',
-                'bulletsPerShot':3
+                'bulletsPerShot':3,
+                'zoom':60
                 },
             'Sniper':{
                 'maxAmmo':5,
@@ -384,7 +383,8 @@ class Person(SphereObject):
                 'timeBetweenShots':5.0,
                 'damage':100,
                 'velocity':70.0,
-                'type':'single'
+                'type':'single',
+                'zoom':80
                 }
             }
 
@@ -402,15 +402,15 @@ class Person(SphereObject):
     def preStep(self):
         if not self.isDead():
             SphereObject.preStep(self)
-            if 'weapon1' in self.presses:
+            if '1' in self.presses:
                 self.setGun("SMPistol")
-            if 'weapon2' in self.presses:
+            if '2' in self.presses:
                 self.setGun("SMG")
-            if 'weapon3' in self.presses:
+            if '3' in self.presses:
                 self.setGun("Shotgun")
-            if 'weapon4' in self.presses:
+            if '4' in self.presses:
                 self.setGun("Assault")
-            if 'weapon5' in self.presses:
+            if '5' in self.presses:
                 self.setGun("Sniper")
         else:
             if self.timeUntilRespawn <= 0:
@@ -444,24 +444,26 @@ class Person(SphereObject):
                [self.health,
                 self.gunName,
                 self.ammo,
-                self.reloading,
                 self.timeLeftUntilNextShot,
-                self.isCrouching,
-                self.isJumping,
-                self.isDead(),
-                self.timeUntilRespawn]
+                self.timeUntilRespawn,
+                (1 if self.reloading else 0 |
+                2 if self.isCrouching else 0 |
+                4 if self.isJumping else 0 |
+                8 if self.isDead() else 0)
+                ]
 
     def setAttributes(self, attributes):
         SphereObject.setAttributes(self,attributes)
         self.health = attributes[5]
         self.setGun(attributes[6])
         self.ammo = attributes[7]
-        self.reloading = attributes[8]
-        self.timeLeftUntilNextShot = attributes[9]
-        self.isCrouching = attributes[10]
-        self.isJumping = attributes[11]
-        self._body._isDead = attributes[12]
-        self.timeUntilRespawn = attributes[13]
+        self.timeLeftUntilNextShot = attributes[8]
+        self.timeUntilRespawn = attributes[9]
+        state = attributes[10]
+        self.reloading = (state & 1 == 1)
+        self.isCrouching = (state & 2 == 2)
+        self.isJumping = (state & 4 == 4)
+        self._body._isDead = (state & 8 == 8)
 
     def getEvents(self):
         events = SphereObject.getEvents(self)
