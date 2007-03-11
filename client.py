@@ -2,6 +2,7 @@ import ode, math, os, time
 import Ogre as ogre
 import CEGUI as CEGUI
 import OgreAL
+import OgreOde
 import OIS
 from engine import Engine
 from guiobjects import *
@@ -306,7 +307,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         self.keylistener.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard)
         self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
         return True
-    
+
 class Client(Application, Engine):
     def __init__(self):
         Application.__init__(self)
@@ -356,9 +357,46 @@ class Client(Application, Engine):
     def createStaticObject(self, size):
         return StaticObject(self, "s%s" % len(self.statics), size=size)
     
+    def createStaticTriangleMesh(self, ent, space):
+        vertdata=[]
+        facedata=[]
+        node = ent.parentNode
+        for i in range(ent.mesh.numSubMeshes):
+            #if not ent.mesh.getSubMesh(i).useSharedVertices:
+            for v in ( ent.mesh.getSubMesh(i).getVertices(node.position, node.orientation, node.scale)):
+                vertdata.append(v)             
+            for f in (ent.mesh.getSubMesh(i).indices):
+                facedata.append(f)
+
+        data = ode.TriMeshData()
+        data.build(vertdata, facedata)
+        geom = ode.GeomTriMesh(data, space)
+        del vertdata
+        del facedata
+        return geom
+    
     def _createScene(self):
         Engine._createWorld(self)
         self.sceneManager.setAmbientLight((0.75, 0.75, 0.75))
+
+        #entity = self.sceneManager.createEntity('bgE', 'game.mesh')
+        #entity.setNormaliseNormals(True)
+        # Scene -> Node
+        #node = self.sceneManager.rootSceneNode.createChildSceneNode('bgN')
+        #node.setScale(scale*self._size[0],scale*self._size[1],scale*self._size[2])
+        # Node -> Entity
+        #node.attachObject(entity)
+        #node.setPosition(0,0,0)
+        #node.setDirection(0,0,-1)
+        #node.setScale(0.5,0.5,0.5)
+        #node.setVisible(True)
+        #tempWorld = OgreOde.World(self.sceneManager)
+        #ei = OgreOde.EntityInformer(entity, node._getFullTransform())
+        #self.createStaticTriangleMesh(entity, self.space)
+        #geom = ei.createStaticTriangleMesh(tempWorld)Ogre
+        #print type(geom)
+        #geom = self.createStaticTriangleMesh(entity, self.space) 
+        
 
         ## setup GUI system
         self.GUIRenderer = CEGUI.OgreCEGUIRenderer(self.renderWindow, 

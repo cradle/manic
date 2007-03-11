@@ -251,7 +251,7 @@ class Person(objects.Person, SphereObject):
 
     def __del__(self):
         objects.Person.__del__(self)
-        for sound in [self.guns[name]['sound'] for name in self.guns]:
+        for sound in [self.sounds[name] for name in self.sounds]:
             self.audioManager.destroySound(sound)
 
     def _shootSound(self):
