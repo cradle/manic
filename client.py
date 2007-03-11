@@ -182,18 +182,24 @@ class GameMouseListener(OIS.MouseListener):
         d = self.game.camera.getDirection()
         # TODO: Make circular?
         # TODO: Swing camera on circular path away from directly in front of character?
-        if d.x >= 0.35:
-            d.x = 0.35
-        if d.x <= -0.35:
-            d.x = -0.35
-        if d.y >= 0.39:
-            d.y = 0.39
-        if d.y <= -0.39:
-            d.y = -0.39
+        maxMouseLook = 0.39
+        angle = 0
+        
+        if d.x != 0.0:
+            angle = math.atan2(d.y,d.x)
+            
+        maxY = math.sin(angle)*maxMouseLook
+        maxX = math.cos(angle)*maxMouseLook
+        
+        if math.fabs(d.x) >= math.fabs(maxX):
+            d.x = maxX
+        if math.fabs(d.y) >= math.fabs(maxY):
+            d.y = maxY
+            
         self.game.camera.setDirection(d)
         CEGUI.System.getSingleton().injectMousePosition( \
-            ((d.x + 0.35)/(0.35*2))*arg.get_state().width, \
-            ((1.0 - ((d.y + 0.39))/(0.39*2)))*arg.get_state().height )
+            ((d.x + maxMouseLook)/(maxMouseLook*2))*arg.get_state().width, \
+            ((1.0 - ((d.y + maxMouseLook))/(maxMouseLook*2)))*arg.get_state().height )
         
         
     def mousePressed(  self, arg, id ):
@@ -366,7 +372,8 @@ class Client(Application, Engine):
         winMgr = CEGUI.WindowManager.getSingleton()
         ## load scheme and set up defaults
         CEGUI.SchemeManager.getSingleton().loadScheme("TaharezLook.scheme") 
-        self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow") 
+        self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow")
+        cursor = self.GUIsystem.getDefaultMouseCursor() 
         CEGUI.FontManager.getSingleton().createFont("Commonwealth-10.font")
         background = winMgr.createWindow("TaharezLook/StaticImage", "background_wnd")
         background.setProperty("FrameEnabled", "false")
@@ -450,6 +457,9 @@ class Client(Application, Engine):
         self.root.addFrameListener(self.frameListener)
         
     def frameEnded(self, frameTime, keyboard,  mouse):
+            
+        Engine.frameEnded(self, frameTime)
+        
         self.keyboard = keyboard
         self.mouse = mouse
         self.timeUntilNextNetworkUpdate -= frameTime
@@ -510,8 +520,6 @@ class Client(Application, Engine):
             
         if self.player != None:
             self.network.send(self.player.input(self.keyboard,  self.mouse));
-            
-        Engine.frameEnded(self, frameTime)
 
     def step(self, frameTime):
         pass# TODO: Client side prediction of physics
