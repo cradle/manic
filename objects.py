@@ -232,6 +232,7 @@ class BulletObject(SphereObject):
         self._body._isDead = False
         self._body.objectType = "Bullet"
         self._body.damage = damage
+        self.hasSentToClients = False
 
     def setOwnerName(self, name):
         self._body.ownerName = name
@@ -248,12 +249,32 @@ class BulletObject(SphereObject):
             self.disable()
 
     def getAttributes(self):
-        return [self._body.getPosition(),
-         self._body.getLinearVel()]
+        if self.hasSentToClients:
+            return []
+        else:
+            return [self.getPositionAttribute(),
+                    self.getLinearVelAttribute()]
 
     def setAttributes(self, attributes):
-        self._body.setPosition(attributes[0])
-        self._body.setLinearVel(attributes[1])
+        if len(attributes) != 0:
+            self.setPositionAttribute(attributes[0])
+            self.setLinearVelAttribute(attributes[1])
+
+    def getPositionAttribute(self):
+        return (self._body.getPosition()[0], self._body.getPosition()[1])
+
+    def setPositionAttribute(self, position):
+        self._body.setPosition((position[0], position[1], 0))
+
+    def getLinearVelAttribute(self):
+        return (self._body.getLinearVel()[0], self._body.getLinearVel()[1])
+
+    def setLinearVelAttribute(self, vel):
+        self._body.setLinearVel((vel[0], vel[1], 0))
+
+    def clearEvents(self):
+        self.hasSentToClients = True
+        
 
 class Person(SphereObject):
     def __init__(self, gameworld, name, camera = None):
@@ -328,17 +349,17 @@ class Person(SphereObject):
                 'type':'single'
                 },
             'Shotgun':{
-                'maxAmmo':2,
-                'ammo':2,
+                'maxAmmo':5,
+                'ammo':5,
                 'reloadTime':3.0,
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
                 'accuracy':0.75,
-                'timeBetweenShots':0.3,
-                'damage':11.12,
+                'timeBetweenShots':0.6,
+                'damage':7,
                 'velocity':25.0,
                 'type':'scatter',
-                'bulletsPerShot':9
+                'bulletsPerShot':11
                 },
             'Assault':{
                 'maxAmmo':30,

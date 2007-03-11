@@ -36,6 +36,7 @@ class NetworkClient(DatagramProtocol):
         self.transport.connect(self.serverIP, self.port)
 
     def datagramReceived(self, data, (host, port)):
+        print len(data)
         message = jelly.unjelly(banana.decode(data))
         if type(message[0]) == str and message[0] == "pong":
             for ping in self.pings:
