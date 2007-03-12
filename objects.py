@@ -287,9 +287,9 @@ class Person(SphereObject):
         self._gameworld = gameworld
 
         # The size of the movement ball
-        self.feetSize = 0.5 # Sphere
-        torsoSize = (0.5, 0.5, 0.5) # Box
-        headSize = (0.25 ,0.25 ,0.25 )# Box
+        self.feetSize = 0.45 # Sphere
+        torsoSize = (0.5, 0.7, 0.5) # Box
+        headSize = (0.3 ,0.5 ,0.3 )# Box
         weight = 70
         self._name = name        
         self._size = self.feetSize
@@ -311,7 +311,7 @@ class Person(SphereObject):
         self._torsoGeometry = ode.GeomBox(lengths=torsoSize)
         self._torsoGeometry.objectName = self._name
         ## Moving up only feetSize (not *2) so that it overlaps the feet
-        self._torsoGeometry.setPosition((0,self.feetSize+torsoSize[1],0))
+        self._torsoGeometry.setPosition((0,self.feetSize,0))
         self._torsoGeometry.setQuaternion((0.707,0,0,0.707))
 
         self._torsoTransform = ode.GeomTransform(gameworld.space)
@@ -322,13 +322,23 @@ class Person(SphereObject):
         # Head
         self._headGeometry = ode.GeomBox(lengths=headSize)
         self._headGeometry.objectName = self._name
-        self._headGeometry.setPosition((0,self.feetSize+torsoSize[1]+headSize[1],0))
+        self._headGeometry.setPosition((0,self.feetSize+torsoSize[1]-0.1,0))
         self._headGeometry.setQuaternion((0.707,0,0,0.707))
 
         self._headTransform = ode.GeomTransform(gameworld.space)
         self._headTransform.setGeom(self._headGeometry)
         self._headTransform.location = "Head"
         self._headTransform.objectName = self._name
+        
+        #self._torsoBody = ode.Body(gameworld.world)
+        #self._torsoBody.setMass(mass)
+        #self._torsoBody.setGravityMode(False)
+        self._headTransform.setBody(self._body)
+        self._torsoTransform.setBody(self._body)
+        
+        #self._hinge = ode.HingeJoint(gameworld.world)
+        #self._hinge.attach(self._body, self._torsoBody)
+        #self._hinge.setAxis((1,0,0))
         
         self.type = "Person"
         self.ownerName = name
@@ -372,6 +382,19 @@ class Person(SphereObject):
         self.health = self.maxHealth
 
         self.guns = {
+            'Test':{
+                'maxAmmo':999,
+                'ammo':999,
+                'reloadTime':0.0,
+                'timeLeftUntilNextShot':0.0,
+                'reloading':False,
+                'accuracy':1.0,
+                'timeBetweenShots':0.1,
+                'damage':0.0,
+                'velocity':70.0,
+                'type':'single',
+                'zoom':30
+                },
             'SMPistol':{
                 'maxAmmo':30,
                 'ammo':30,
@@ -442,7 +465,7 @@ class Person(SphereObject):
             }
 
         self.gunName = ""
-        self.setGun("SMG")
+        self.setGun("Test")
         
     def doDamage(self, damage):
         if not self.isDead():
@@ -454,6 +477,8 @@ class Person(SphereObject):
             
     def preStep(self):
         if not self.isDead():
+            #self._body.addForce(self._torsoBody.getForce())
+            
             SphereObject.preStep(self)
             if '1' in self.presses:
                 self.setGun("SMPistol")
@@ -618,6 +643,7 @@ class Person(SphereObject):
     def _rotateRight(self):
         if self.isOnGround:
             SphereObject._rotateRight(self)
+        
             
     def postStep(self):
         # Temp variable to prevent clobbering
@@ -627,8 +653,8 @@ class Person(SphereObject):
             # People have a lot of friction against movement, if we aren't moving. Slam on the brakes
             self._motor.setAngleParam(ode.ParamFMax, self.maxStopForce)
             self._motor.setAngleParam(ode.ParamVel, 0)
-        self._torsoTransform.setPosition(self._body.getPosition())
-        self._headTransform.setPosition(self._body.getPosition())
+        self._torsoTransform.setQuaternion((1,0,0,0))
+        self._headTransform.setQuaternion((1,0,0,0))
         
     def isEnabled(self):
         return self.enabled

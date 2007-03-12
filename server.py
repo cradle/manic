@@ -47,6 +47,7 @@ class Server(Engine):
                     print "Client", client.player._name, "timed out, disconnecting"
                     del self._stats[client.player._name]
                     self.objects.remove(client.player)
+                    del client.player
                     self.network.clients.remove(client)
 
             for client in self.network.clients:                

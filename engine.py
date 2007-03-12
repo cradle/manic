@@ -161,4 +161,4 @@ class Engine():
                 o1.isOnGround = True
                     
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
-            joint.attach(o1.getBody(), o2.getBody())
+            joint.attach(geom1.getBody(), geom2.getBody())

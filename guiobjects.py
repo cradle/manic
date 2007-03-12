@@ -209,6 +209,7 @@ class Person(objects.Person, SphereObject):
         self.sounds = {}
         self.sounds['SMPistol'] = self.soundManager.createSound("SMPistol-" + name, "smg.wav", False)
         self.sounds['SMG'] = self.soundManager.createSound("SMG-" + name, "bolter.wav", False)
+        self.sounds['Test'] = self.soundManager.createSound("Test-" + name, "pbeampistol.wav", False)
         self.sounds['Assault'] = self.soundManager.createSound("Assault-" + name, "assault.wav", False)
         self.sounds['Shotgun'] = self.soundManager.createSound("Shotgun-" + name, "shotgun.wav", False)
         self.sounds['Sniper'] = self.soundManager.createSound("Sniper-" + name, "sniper.wav", False)
