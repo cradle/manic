@@ -14,7 +14,7 @@ class Server(Engine):
 
     def clientConnected(self, client):
         self.clientNumber += 1
-        client.player = createPerson(self, "p%i" % self.clientNumber)
+        client.player = self.createPerson("p%i" % self.clientNumber)
         client.player.setPosition(self.spawnLocation())
         self.objects += [client.player]
         self._stats[client.player._name] = {}

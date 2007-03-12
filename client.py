@@ -309,15 +309,21 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         return True
 
 class Client(Application, Engine):
-    def __init__(self):
+    def __init__(self, autoConnect = False):
         Application.__init__(self)
         Engine.__init__(self)
+        ip, port = "59.167.153.157", 10001
         self.chat.registerMessageListener(self.messageListener)
-        address = raw_input("server ('59.167.153.157:10001') :> ")
-        if address != "":
-            ip, port = address.split(":")
-        else:
-            ip, port = "59.167.153.157", 10001
+
+        if not autoConnect:
+            address = raw_input("server ('59.167.153.157:10001') :> ")
+            
+            if address != "":
+                split = address.split(":")
+                ip = split[0]
+                if len(split) == 2:
+                    port = split[1]
+            
             
         self.network = networkclient.NetworkClient(ip, int(port))
         self.timeBetweenNetworkUpdates = 0.02
@@ -357,8 +363,8 @@ class Client(Application, Engine):
     def createStaticObject(self, size):
         return StaticObject(self, "s%s" % len(self.statics), size=size)
 
-    def createBulletObject(self, name, direction, velocity, damage):
-        return BulletObject(self, name, direction, velocity, damage)
+    def createBulletObject(self, name):
+        return BulletObject(self, name)
 
     def createPerson(self, name):
         return Person(self, name)
@@ -537,7 +543,7 @@ class Client(Application, Engine):
                                 self.player = newObject
                             else:
                                 if serverObject[3] == "Person":
-                                    newObject = createPerson(self, serverObject[0])
+                                    newObject = self.createPerson(serverObject[0])
                                 elif serverObject[3] == "Bullet":
                                     newObject = BulletObject(self, serverObject[0])
                                 elif serverObject[3] == "Dynamic":

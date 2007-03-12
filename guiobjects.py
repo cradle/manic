@@ -143,7 +143,7 @@ class SphereObject(objects.SphereObject, DynamicObject):
         objects.SphereObject.__del__(self)
 
 class BulletObject(objects.BulletObject, SphereObject):
-    def __init__(self, gameworld, name, direction = None, velocity = None, damage = None):
+    def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
         objects.BulletObject.__init__(self, gameworld, name, direction, velocity, damage)
 
         self.keys = {
