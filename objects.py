@@ -103,6 +103,11 @@ class DynamicObject(StaticObject):
     def setDirection(self, direction):
         self._pointingDirection = direction
 
+    def setPosition(self, position):
+        StaticObject.setPosition(self, position)
+        if position:
+            self._body.setPosition(position)
+
     def to2d(self, vector):
         return ([0 if x == 0.0 else x for x in vector[0:-1]])
 
@@ -117,8 +122,7 @@ class DynamicObject(StaticObject):
          self.to2d(self.getDirection())]
 
     def setAttributes(self, attributes):
-        print attributes
-        self._body.setPosition(self.to3d(attributes[0]))
+        self.setPosition(self.to3d(attributes[0]))
         self._body.setQuaternion(self.to3d(attributes[1]))
         self._body.setAngularVel(self.to3d(attributes[2]))
         self._body.setLinearVel(self.to3d(attributes[3]))
@@ -615,7 +619,7 @@ class Person(SphereObject):
                 scatter = self._calculateScatter()
                 self._bulletNum += 1
                 self._world.addBullet(self._name + "b" + str(self._bulletNum), \
-                                      self._body.getPosition(),
+                                      [a+b for a,b in zip(self._body.getPosition(), [0,0.5,0])],
                                       [self.getDirection()[0] + self._calculateScatter(),
                                        self.getDirection()[1] + self._calculateScatter(),
                                        0],

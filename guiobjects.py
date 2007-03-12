@@ -251,6 +251,7 @@ class Person(objects.Person, SphereObject):
         self.animations['jump'].setLoop(False)
 
     def __del__(self):
+        SphereObject.__del__(self)
         objects.Person.__del__(self)
         for sound in [self.sounds[name] for name in self.sounds]:
             self.audioManager.destroySound(sound)
@@ -362,9 +363,11 @@ class Player(Person):
         self.keys['weapon3'] = OIS.KC_3
         self.keys['weapon4'] = OIS.KC_4
         self.keys['weapon5'] = OIS.KC_5
-
-    #def setPosition(self, position):
-    #    Person.setPosition(self, [(x+y)/2 for x,y in zip(position, self._body.getPosition())])
+        
+    def setPosition(self, position):
+        if position:
+            position = [(x+y)/2 for x,y in zip(position, self._body.getPosition())]
+        Person.setPosition(self, position)
 
     def setAttributes(self, attributes):
         Person.setAttributes(self, attributes)

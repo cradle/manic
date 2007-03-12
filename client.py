@@ -181,7 +181,6 @@ class GameMouseListener(OIS.MouseListener):
         self.game.camera.yaw(ogre.Radian(- arg.get_state().X.rel * 0.06))
         self.game.camera.pitch(ogre.Radian(- arg.get_state().Y.rel * 0.11))
         d = self.game.camera.getDirection()
-        # TODO: Make circular?
         # TODO: Swing camera on circular path away from directly in front of character?
         maxMouseLook = 0.39
         angle = 0
@@ -214,7 +213,7 @@ class GameMouseListener(OIS.MouseListener):
 class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
     """A default frame listener, which takes care of basic mouse and keyboard
     input."""
-    def __init__(self, game, renderWindow, camera, bufferedKeys = False, bufferedMouse = True, bufferedJoy = False):
+    def __init__(self, game, renderWindow, camera):
         ogre.FrameListener.__init__(self)
         ogre.WindowEventListener.__init__(self)
         self.game = game
@@ -231,9 +230,6 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         self.moveSpeed = 100.0
         self.rotationSpeed = 8.0
         self.displayCameraDetails = False
-        self.bufferedKeys = bufferedKeys
-        self.bufferedMouse = bufferedMouse
-        self.bufferedJoy = bufferedJoy
         self.MenuMode = False   # lets understand a simple menu function
 
         self._setupInput()
@@ -254,10 +250,10 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
              OIS.createPythonInputSystem([("WINDOW",str(windowHnd))])
          
          #Create all devices (We only catch joystick exceptions here, as, most people have Key/Mouse)
-         self.Keyboard = self.InputManager.createInputObjectKeyboard( OIS.OISKeyboard, self.bufferedKeys )
-         self.Mouse = self.InputManager.createInputObjectMouse( OIS.OISMouse, self.bufferedMouse )
+         self.Keyboard = self.InputManager.createInputObjectKeyboard( OIS.OISKeyboard, False )
+         self.Mouse = self.InputManager.createInputObjectMouse( OIS.OISMouse, True )
          try :
-            self.Joy = self.InputManager.createInputObjectJoyStick( OIS.OISJoyStick, bufferedJoy )
+            self.Joy = self.InputManager.createInputObjectJoyStick( OIS.OISJoyStick, True )
          except:
             self.Joy = False
          
@@ -499,7 +495,7 @@ class Client(Application, Engine):
 
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
-        self.frameListener = FrameListener(self, self.renderWindow, self.camera, True)
+        self.frameListener = FrameListener(self, self.renderWindow, self.camera)
         self.keylistener = GameKeyListener(self)
         self.root.addFrameListener(self.frameListener)
         
