@@ -356,6 +356,12 @@ class Client(Application, Engine):
 
     def createStaticObject(self, size):
         return StaticObject(self, "s%s" % len(self.statics), size=size)
+
+    def createBulletObject(self, name, direction, velocity, damage):
+        return BulletObject(self, name, direction, velocity, damage)
+
+    def createPerson(self, name):
+        return Person(self, name)
     
     def createStaticTriangleMesh(self, ent, space):
         vertdata=[]
@@ -379,24 +385,21 @@ class Client(Application, Engine):
         Engine._createWorld(self)
         self.sceneManager.setAmbientLight((0.75, 0.75, 0.75))
 
-        #entity = self.sceneManager.createEntity('bgE', 'game.mesh')
-        #entity.setNormaliseNormals(True)
-        # Scene -> Node
-        #node = self.sceneManager.rootSceneNode.createChildSceneNode('bgN')
-        #node.setScale(scale*self._size[0],scale*self._size[1],scale*self._size[2])
-        # Node -> Entity
-        #node.attachObject(entity)
-        #node.setPosition(0,0,0)
-        #node.setDirection(0,0,-1)
-        #node.setScale(0.5,0.5,0.5)
-        #node.setVisible(True)
-        #tempWorld = OgreOde.World(self.sceneManager)
-        #ei = OgreOde.EntityInformer(entity, node._getFullTransform())
-        #self.createStaticTriangleMesh(entity, self.space)
-        #geom = ei.createStaticTriangleMesh(tempWorld)Ogre
-        #print type(geom)
-        #geom = self.createStaticTriangleMesh(entity, self.space) 
-        
+##        entity = self.sceneManager.createEntity('bgE', 'game.mesh')
+##        entity.setNormaliseNormals(True)
+##        # Scene -> Node
+##        node = self.sceneManager.rootSceneNode.createChildSceneNode('bgN')
+##        node.setScale(scale*self._size[0],scale*self._size[1],scale*self._size[2])
+##        # Node -> Entity
+##        node.attachObject(entity)
+##        node.setPosition(0,0,0)
+##        node.setDirection(0,0,-1)
+##        node.setScale(0.5,0.5,0.5)
+##        node.setVisible(True)
+##        tempWorld = OgreOde.World(self.sceneManager)
+##        self.createStaticTriangleMesh(entity, self.space)
+##        geom = self.createStaticTriangleMesh(entity, self.space) 
+##        print type(geom)
 
         ## setup GUI system
         self.GUIRenderer = CEGUI.OgreCEGUIRenderer(self.renderWindow, 
@@ -534,7 +537,7 @@ class Client(Application, Engine):
                                 self.player = newObject
                             else:
                                 if serverObject[3] == "Person":
-                                    newObject = Person(self, serverObject[0])
+                                    newObject = createPerson(self, serverObject[0])
                                 elif serverObject[3] == "Bullet":
                                     newObject = BulletObject(self, serverObject[0])
                                 elif serverObject[3] == "Dynamic":
@@ -557,10 +560,6 @@ class Client(Application, Engine):
             
         if self.player != None:
             self.network.send(self.player.input(self.keyboard,  self.mouse))
-
-    def step(self, frameTime):
-        pass# TODO: Client side prediction of physics
-        Engine.step(self, frameTime)
     
 if __name__ == "__main__":
     world = Client()

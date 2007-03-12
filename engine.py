@@ -49,12 +49,18 @@ class Engine():
 
     def createStaticObject(self, size):
         return StaticObject(self, "s%s" % len(self.statics), size=size)
+
+    def createBulletObject(self, name, direction, velocity, damage):
+        return BulletObject(self, name, direction, velocity, damage)
+
+    def createPerson(self, name):
+        return Person(self, name)
     
     def messageListener(self, source, message):
         print "%s: %s" % (source, message)
 
     def addBullet(self, name, position, direction, velocity, damage, owner):
-        b = BulletObject(self, name, direction, velocity, damage)
+        b = self.createBulletObject(name, direction, velocity, damage)
         b.setPosition([p + x for p, x in zip(position, direction)])
         b.setOwnerName(owner._name)
         self.objects.append(b)

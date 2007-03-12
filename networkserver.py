@@ -56,5 +56,5 @@ class NetworkServer(DatagramProtocol):
 
         client.push(jelly.unjelly(banana.decode(data)))
 
-    def update(self):
+    def update(self, time = 0):
         self.reactor.doIteration(0)
