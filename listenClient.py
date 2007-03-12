@@ -1,16 +1,16 @@
 from client import Client
 from server import Server
-from guiobjects import Player
+import guiobjects
 
 class ListenClient(Client, Server):
     def __init__(self):
-        Client.__init__(self)
+        Client.__init__(self, True)
         Server.__init__(self)
 
     def _createScene(self):
         Client._createScene(self)
         self.clientNumber += 1
-        self.player = Player(self, "p%i" % self.clientNumber, self.camera)
+        self.player = guiobjects.Player(self, "p%i" % self.clientNumber, self.camera)
         self.player.setPosition(self.spawnLocation())
         self.objects += [self.player]
         self._stats[self.player._name] = {}
@@ -18,7 +18,7 @@ class ListenClient(Client, Server):
         self._stats[self.player._name]["score"] = 0
         print "Self", self.player._name, "connected"
         
-    def frameEnded(self, frameTime, keyboard,  mouse):
+    def frameEnded(self, frameTime, keyboard, mouse):
         Server.frameEnded(self, frameTime)
         self.displayScores()
         self.displayVitals()

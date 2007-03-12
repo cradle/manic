@@ -261,20 +261,6 @@ class Person(objects.Person, SphereObject):
 
         self.sounds[self.gunName].play()
 
-    def getDirection(self):
-        if self._camera:
-            direction = self._camera.getDirection()
-            direction.z = 0.0
-            direction.normalise()
-            direction = (direction[0], direction[1], 0)
-        else:
-            direction = (1.0,0.0,0)
-
-        if direction == (0.0,0.0,0.0):
-            direction = (1.0,0.0,0)
-            
-        return direction
-
     def setDirection(self, direction):
         super(Person, self).setDirection(direction)
         if not self.isDead():
@@ -384,3 +370,17 @@ class Player(Person):
         Person.setAttributes(self, attributes)
         if self.isDisabled():
             self.enable()
+
+    def getDirection(self):
+        if self._camera:
+            direction = self._camera.getDirection()
+            direction.z = 0.0
+            direction.normalise()
+            direction = (direction[0], direction[1], 0)
+        else:
+            direction = (1.0,0.0,0)
+
+        if direction == (0.0,0.0,0.0):
+            direction = (1.0,0.0,0)
+            
+        return direction

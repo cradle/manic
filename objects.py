@@ -117,6 +117,7 @@ class DynamicObject(StaticObject):
          self.to2d(self.getDirection())]
 
     def setAttributes(self, attributes):
+        print attributes
         self._body.setPosition(self.to3d(attributes[0]))
         self._body.setQuaternion(self.to3d(attributes[1]))
         self._body.setAngularVel(self.to3d(attributes[2]))

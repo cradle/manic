@@ -363,8 +363,8 @@ class Client(Application, Engine):
     def createStaticObject(self, size):
         return StaticObject(self, "s%s" % len(self.statics), size=size)
 
-    def createBulletObject(self, name):
-        return BulletObject(self, name)
+    def createBulletObject(self, name, direction = None, velocity = None, damage = 1):
+        return BulletObject(self, name, direction, velocity, damage)
 
     def createPerson(self, name):
         return Person(self, name)
@@ -543,7 +543,7 @@ class Client(Application, Engine):
                                 self.player = newObject
                             else:
                                 if serverObject[3] == "Person":
-                                    newObject = self.createPerson(serverObject[0])
+                                    newObject = Person(self, serverObject[0])
                                 elif serverObject[3] == "Bullet":
                                     newObject = BulletObject(self, serverObject[0])
                                 elif serverObject[3] == "Dynamic":

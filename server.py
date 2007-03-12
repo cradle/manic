@@ -61,7 +61,9 @@ class Server(Engine):
                 
                     
                 while client.hasMoreMessages():
-                    client.player.inputPresses(client.pop())
+                    m = client.pop()
+                    print m
+                    client.player.inputPresses(m)
 
             [o.clearEvents() for o in self.objects]
         
