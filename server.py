@@ -53,7 +53,7 @@ class Server(Engine):
                 client.send([[[o._name,
                                o.getAttributes(),
                                o._name == client.player._name,
-                               o._body.objectType,
+                               o.type,
                                o.getEvents()] for o in self.objects],
                             time.time()])
                 #parameter above is whether or not the player is the current player
@@ -70,13 +70,6 @@ class Server(Engine):
                        self.timeUntilNextNetworkUpdate,
                        self.timeUntilNextEngineUpdate))
 
-    def step(self, frameTime):
-        Engine.step(self, frameTime)
-        for object in self.objects:
-            if object.isDead():
-                if object._body.objectType != "Person":
-                    self.objects.remove(object)
-                    del object
 
 if __name__ == "__main__":
     engine = Server()

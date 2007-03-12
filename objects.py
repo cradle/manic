@@ -4,11 +4,17 @@ class StaticObject(object):
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), geomFunc = ode.GeomBox):
         self._size = size
         self._geometry = geomFunc(gameworld.space, self._size)
+        self._geometry.location = "Torso"
+        self._geometry.objectName = name
         self._name = name
         self._nick = name
         self._world = gameworld.world
         self._space = gameworld.space
         self._gameworld = gameworld
+        self.type = "Static"
+
+    def getBody(self):
+        return None
 
     def __del__(self):
         self._geometry.disable()
@@ -50,13 +56,23 @@ class DynamicObject(StaticObject):
         self._motor = ode.Plane2DJoint(gameworld.world)
         self._motor.attach(self._body, ode.environment)
 
-        self._geometry.isOnGround = False
+        self.isOnGround = False
         self.isJumping = False
-        self._body.objectType = "Dynamic"
+        self.type = "Dynamic"
         self._body.name = name
 
         self.presses = {}
         self._pointingDirection = (1.0,0.0,0.0)
+        self.setDead(False)
+
+    def getBody(self):
+        return self._body
+
+    def setDead(self, dead = True):
+        self.dead = dead
+
+    def isDead(self):
+        return self.dead
 
     def __del__(self):
         self._body.disable()
@@ -72,7 +88,6 @@ class DynamicObject(StaticObject):
         self._geometry.enable()
         self.enabled = True
 
-
     def getEvents(self):
         return []
 
@@ -81,9 +96,6 @@ class DynamicObject(StaticObject):
 
     def setEvents(self, position):
         pass
-        
-    def isDead(self):
-        return False
 
     def getDirection(self):
         return self._pointingDirection
@@ -136,7 +148,7 @@ class DynamicObject(StaticObject):
         # Apply wind friction
         self._body.addForce([-1*0.000001*math.fabs(x)*x for x in self._body.getLinearVel()])
 
-        #if self._geometry.isOnGround:
+        #if self.isOnGround:
         #    # Apply rolling friction
         #    self._body.addTorque([x*-0.5 for x in self._body.getAngularVel()])
         
@@ -145,17 +157,20 @@ class DynamicObject(StaticObject):
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
         self._motor.setAngleParam(ode.ParamFMax, 0)
-        self._geometry.isOnGround = False
+        self.isOnGround = False
 
     def frameEnded(self, frameTime):
         pass
 
     def _alignToZAxis(self):
-        rot = self._body.getAngularVel()
-        old_quat = self._body.getQuaternion()
+        self._alignBodyToZAxis(self._body)
+
+    def _alignBodyToZAxis(self, body):
+        rot = body.getAngularVel()
+        old_quat = body.getQuaternion()
         quat_len = math.sqrt( old_quat[0] * old_quat[0] + old_quat[3] * old_quat[3] )
-        self._body.setQuaternion((old_quat[0] / quat_len, 0, 0, old_quat[3] / quat_len))
-        self._body.setAngularVel((0,0,rot[2]))
+        body.setQuaternion((old_quat[0] / quat_len, 0, 0, old_quat[3] / quat_len))
+        body.setAngularVel((0,0,rot[2]))
         # http://opende.sourceforge.net/wiki/index.php/HOWTO_constrain_objects_to_2d
 
     def _shoot(self):
@@ -183,7 +198,7 @@ class DynamicObject(StaticObject):
         self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
         
     def _jump(self):
-        if self._geometry.isOnGround:
+        if self.isOnGround:
             self.isJumping = True
             self._motor.setYParam(ode.ParamVel,  self.maxMoveVelocity)
             self._motor.setYParam(ode.ParamFMax, self.maxMoveForce)
@@ -215,16 +230,16 @@ class SphereObject(DynamicObject):
         if type(size) == float or type(size) == int:
             self._body.getMass().setSphereTotal(weight, size)
             
-        self._body.objectType = "Sphere"
+        self.type = "Sphere"
 
 class BulletObject(SphereObject):
     def __init__(self, gameworld, name, direction = None, velocity = 50.0, damage = 1.0):
-        self.size = (0.05, 0.05, 0.05)
+        self.size = 0.025
         self.maxSpeed = velocity
         self.weight = 5.0
         self.damage = damage
         
-        SphereObject.__init__(self, gameworld, name, self.size, geomFunc = ode.GeomBox, weight = self.weight)
+        SphereObject.__init__(self, gameworld, name, self.size, geomFunc = ode.GeomSphere, weight = self.weight)
 
         if type(self.size) == float or type(self.size) == int:
             self._body.getMass().setSphereTotal(self.weight, self.size)
@@ -235,16 +250,13 @@ class BulletObject(SphereObject):
             self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1])
             self._motor.setYParam(ode.ParamFMax, ode.Infinity)
             
-        self._body._isDead = False
-        self._body.objectType = "Bullet"
-        self._body.damage = damage
+        self.setDead(False)
+        self.type = "Bullet"
+        self.damage = damage
         self.hasSentToClients = False
 
     def setOwnerName(self, name):
-        self._body.ownerName = name
-
-    def isDead(self):
-        return self._body._isDead
+        self.ownerName = name
 
     def postStep(self):
         SphereObject.postStep(self)
@@ -274,26 +286,57 @@ class Person(SphereObject):
     def __init__(self, gameworld, name, camera = None):
         self._gameworld = gameworld
 
-        # The size of the bounding box
-        size = (1.0, 1.0, 1.0)
+        # The size of the movement ball
+        self.feetSize = 0.5 # Sphere
+        torsoSize = (0.5, 0.5, 0.5) # Box
+        headSize = (0.25 ,0.25 ,0.25 )# Box
         weight = 70
         self._name = name        
-        self._size = size
-        self._geometry = ode.GeomSphere(gameworld.space, min(self._size))
+        self._size = self.feetSize
+        
+        self._geometry = ode.GeomSphere(gameworld.space, self.feetSize)
         self._body = ode.Body(gameworld.world)
         mass = ode.Mass()
-        mass.setBoxTotal(weight, size[0], size[1], size[2])
+        mass.setSphereTotal(weight,self.feetSize)
         self._body.setMass(mass)
         self._geometry.setBody(self._body)
+        self._geometry.objectName = name
+        
         self._motor = ode.Plane2DJoint(gameworld.world)
         self._motor.attach(self._body, ode.environment)
-        self._body.objectType = "Person"
-        self._body.ownerName = name
+
+        self._geometry.location = "Legs"
+
+        # Torso
+        self._torsoGeometry = ode.GeomBox(lengths=torsoSize)
+        self._torsoGeometry.objectName = self._name
+        ## Moving up only feetSize (not *2) so that it overlaps the feet
+        self._torsoGeometry.setPosition((0,self.feetSize+torsoSize[1],0))
+        self._torsoGeometry.setQuaternion((0.707,0,0,0.707))
+
+        self._torsoTransform = ode.GeomTransform(gameworld.space)
+        self._torsoTransform.setGeom(self._torsoGeometry)
+        self._torsoTransform.location = "Torso"
+        self._torsoTransform.objectName = self._name
+
+        # Head
+        self._headGeometry = ode.GeomBox(lengths=headSize)
+        self._headGeometry.objectName = self._name
+        self._headGeometry.setPosition((0,self.feetSize+torsoSize[1]+headSize[1],0))
+        self._headGeometry.setQuaternion((0.707,0,0,0.707))
+
+        self._headTransform = ode.GeomTransform(gameworld.space)
+        self._headTransform.setGeom(self._headGeometry)
+        self._headTransform.location = "Head"
+        self._headTransform.objectName = self._name
+        
+        self.type = "Person"
+        self.ownerName = name
         self._bulletNum = 0
         self.timeNeededToPrepareJump = 0.0
-        self.maxStopForce = 28000
-        self.maxSpinForce = 28000
-        self.maxSpinVelocity = 10
+        self.maxStopForce = 28000/self.feetSize
+        self.maxSpinForce = 28000/self.feetSize
+        self.maxSpinVelocity = 10/self.feetSize
         self.maxMoveForce = 1500
         self.maxMoveVelocity = 4
         self.maxJumpForce = ode.Infinity
@@ -302,15 +345,26 @@ class Person(SphereObject):
         self.maxHealth = 100
         self.spawnPosition = None
         self.respawnTime = 3.0
-        self._body._isDead = False
+        self.setDead(False)
         self.timeUntilRespawn = 0.0
         self.isShooting = False
         self.reset()
+
+    def __del__(self):
+        self._torsoGeometry.disable()
+        self._torsoTransform.disable()
+        self._headGeometry.disable()
+        self._headTransform.disable()
+        SphereObject.__del__()
+        del self._torsoGeometry
+        del self._torsoTransform
+        del self._headGeometry
+        del self._headTransform
         
     def reset(self):
         self.isCrouching = False
         self.isJumping = False
-        self._geometry.isOnGround = False
+        self.isOnGround = False
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
         self._pointingDirection = (1.0,0.0,0.0)
@@ -395,7 +449,7 @@ class Person(SphereObject):
             self.health -= damage
             if self.health <= 0:
                 self.health = 0
-                self._body._isDead = True
+                self.setDead()
                 self.timeUntilRespawn = self.respawnTime
             
     def preStep(self):
@@ -413,7 +467,7 @@ class Person(SphereObject):
                 self.setGun("Sniper")
         else:
             if self.timeUntilRespawn <= 0:
-                self._body._isDead = False
+                self.setDead(False)
                 self.enable()
                 self.reset()
                 self.setPosition(self.spawnPosition)
@@ -462,7 +516,7 @@ class Person(SphereObject):
         self.reloading = (state & 1 == 1)
         self.isCrouching = (state & 2 == 2)
         self.isJumping = (state & 4 == 4)
-        self._body._isDead = (state & 8 == 8)
+        self.setDead((state & 8 == 8))
 
     def getEvents(self):
         events = SphereObject.getEvents(self)
@@ -492,9 +546,6 @@ class Person(SphereObject):
 
         return text
 
-    def isDead(self):
-        return self._body._isDead
-
     def frameEnded(self, time):
         self.timeUntilRespawn -= time
         
@@ -511,7 +562,7 @@ class Person(SphereObject):
 
     def _calculateScatter(self):
         a = self.accuracy
-        if self.isCrouching and self._geometry.isOnGround:
+        if self.isCrouching and self.isOnGround:
             a = (a + 1.0)/2.0
         return random.random()*(1-a)-0.5*(1-a)
 
@@ -550,33 +601,35 @@ class Person(SphereObject):
             self.timeLeftUntilNextShot = self.timeBetweenShots
         
     def _jump(self):
-        if self._geometry.isOnGround and self.timeLeftUntilCanJump <= 0:
+        if self.isOnGround and self.timeLeftUntilCanJump <= 0:
             self._motor.setYParam(ode.ParamVel,  self.maxJumpVelocity)
             self._motor.setYParam(ode.ParamFMax, self.maxJumpForce)
             self.wantsToJump = False
-        elif self._geometry.isOnGround:
+        elif self.isOnGround:
             self.wantsToJump = True
             self.isJumping = True
         else:
             self.wantsToJump = False
 
     def _rotateLeft(self):
-        if self._geometry.isOnGround:
+        if self.isOnGround:
             SphereObject._rotateLeft(self)
 
     def _rotateRight(self):
-        if self._geometry.isOnGround:
+        if self.isOnGround:
             SphereObject._rotateRight(self)
-
-    # TODO: Should be pre-step? Post-collision?
+            
     def postStep(self):
-        isOnGround = self._geometry.isOnGround
+        # Temp variable to prevent clobbering
+        isOnGround = self.isOnGround
         SphereObject.postStep(self)
         if isOnGround:
             # People have a lot of friction against movement, if we aren't moving. Slam on the brakes
             self._motor.setAngleParam(ode.ParamFMax, self.maxStopForce)
             self._motor.setAngleParam(ode.ParamVel, 0)
-            
+        self._torsoTransform.setPosition(self._body.getPosition())
+        self._headTransform.setPosition(self._body.getPosition())
+        
     def isEnabled(self):
         return self.enabled
 

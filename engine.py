@@ -93,6 +93,10 @@ class Engine():
             
             for object in self.objects:
                 object.postStep()
+                if object.isDead():
+                    if object.type != "Person":
+                        self.objects.remove(object)
+                        del object
 
             self.contactgroup.empty()
             self.timeUntilNextEngineUpdate += self.stepSize
@@ -107,13 +111,22 @@ class Engine():
         self._stats[name]["score"] += amount
 
     def findObjectByName(self, name):
-        return [o for o in self.objects if o._name == name][0]
+        if len([o for o in (self.objects + self.statics) if o._name == name]) == 0:
+            print "DEBUG: No object of name", name
+            return None
+        else:
+            return [o for o in (self.objects + self.statics) if o._name == name][0]
+
 
     def collision_callback(self, args, geom1, geom2):
-        body1 = geom1.getBody()
-        body2 = geom2.getBody()
+        o1 = self.findObjectByName(geom1.objectName)
+        o2 = self.findObjectByName(geom2.objectName)\
 
-        if body1 and body1.objectType == "Bullet" and body2 and body2.objectType == "Bullet":
+        if o1 == None or o2 == None:
+            print type(geom1), type(geom2)
+            return
+
+        if (o1.type == "Bullet" and o2.type == "Bullet") or (o1 == o2):
             contacts = []
         else:
             contacts = ode.collide(geom1, geom2)
@@ -123,47 +136,29 @@ class Engine():
             contact.setBounce(0.01)
             contact.setBounceVel(0.0)
             contact.setMu(1.7)
-
-            if body1:
-                if body1.objectType == "Bullet":
-                    body1._isDead = True
-                    if body2 and body2.objectType == "Person":
-                        recepient = self.findObjectByName(body2.ownerName)
-                        if not recepient.isDead():
-                            recepient.doDamage(body1.damage)
-                            if recepient.isDead():
-                                recepient.setSpawnPosition(self.spawnLocation())
-                                if body1.ownerName == body2.ownerName:
-                                    self.messageListener(">",body1.ownerName + " committed suicide")
-                                    self.addScore(body1.ownerName, -1)
+        
+            for a,b,geom in [[o1,o2,geom2],[o2,o1,geom1]]:
+                if a.type == "Bullet":
+                    a.setDead()
+                    if b.type == "Person":
+                        print "Hit",b._name, "on the", geom.location
+                        if not b.isDead():
+                            b.doDamage(a.damage)
+                            if b.isDead():
+                                b.setSpawnPosition(self.spawnLocation())
+                                if a == b:
+                                    self.messageListener(">",a.ownerName + " committed suicide")
+                                    self.addScore(a.ownerName, -1)
                                 else:
-                                    self.messageListener(">",body1.ownerName + " killed " + body2.ownerName)
-                                    self.addScore(body1.ownerName, 1)
+                                    self.messageListener(">",a.ownerName + " killed " + b.ownerName)
+                                    self.addScore(a.ownerName, 1)
                     
-                # Assume that if collision normal is facing up we are 'on ground'
-                normal = contact.getContactGeomParams()[1]
-                if normal[1] > 0.05: # normal.y points "up"
-                    geom1.isOnGround = True
-                    
-            if body2:
-                if body2.objectType == "Bullet":
-                    body2._isDead = True
-                    if body1 and body1.objectType == "Person":
-                        recepient = self.findObjectByName(body1.ownerName)
-                        if not recepient.isDead():
-                            recepient.doDamage(body2.damage)
-                            if recepient.isDead():
-                                if body1.ownerName == body1.ownerName:
-                                    self.messageListener(">",body2.ownerName + " committed suicide")
-                                    self.addScore(body2.ownerName, -1)
-                                else:
-                                    self.messageListener(">",body2.ownerName + " killed " + body1.ownerName)
-                                    self.addScore(body2.ownerName, 1)
-                    
-                # Assume that if collision normal is facing up we are 'on ground'
-                normal = contact.getContactGeomParams()[1]
-                if normal[1] < 0.05: # normal.y points "up"
-                    geom2.isOnGround = True
+            # Assume that if collision normal is facing up we are 'on ground'
+            normal = contact.getContactGeomParams()[1]
+            if normal[1] < 0.0: # normal.y points "up"
+                o2.isOnGround = True
+            if normal[1] > 0.0: # normal.y points "up"
+                o1.isOnGround = True
                     
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
-            joint.attach(body1, body2)
+            joint.attach(o1.getBody(), o2.getBody())

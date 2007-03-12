@@ -508,12 +508,11 @@ class Client(Application, Engine):
             self.displayScores()
             self.displayVitals()
             
-            while self.timeUntilNextNetworkUpdate <= 0.0:
-                self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
+            self.timeUntilNextNetworkUpdate = self.timeBetweenNetworkUpdates
 
             for message in self.network._messages:
                 if message[1] > self.lastServerUpdate:
-                    self.timeUntilNextNetworkUpdate = self.stepSize
+                    self.timeUntilNextEngineUpdate = 0
                     self.lastServerUpdate = message[1]
 
                     for object in self.objects:
@@ -557,7 +556,7 @@ class Client(Application, Engine):
             self.network._messages = []
             
         if self.player != None:
-            self.network.send(self.player.input(self.keyboard,  self.mouse));
+            self.network.send(self.player.input(self.keyboard,  self.mouse))
 
     def step(self, frameTime):
         pass# TODO: Client side prediction of physics

@@ -187,7 +187,7 @@ class Person(objects.Person, SphereObject):
 
         # The scale to scale the model by
         scale = 0.01
-        offset = (0.0, -1.0, 0.0)
+        offset = (0.0, -self.feetSize, 0.0)
         self._nodeOffset = offset
         
         # Entity
@@ -200,7 +200,7 @@ class Person(objects.Person, SphereObject):
                                                     "yellow-ninja"]))
         # Scene -> Node
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
-        self._node.setScale(scale*self._size[0],scale*self._size[1],scale*self._size[2])
+        self._node.setScale(scale,scale,scale)
         # Node -> Entity
         self._node.attachObject(self._entity)
         
@@ -351,6 +351,7 @@ class Person(objects.Person, SphereObject):
         self._updateDisplay()
 
     def _updateDisplay(self):
+        # Todo: Exchange for attaching body to node and using transforms
         p = self._geometry.getPosition()
         o = self._nodeOffset
         self._node.setPosition(p[0]+o[0], p[1]+o[1], p[2]+o[2])
