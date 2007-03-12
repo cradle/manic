@@ -288,8 +288,8 @@ class Person(SphereObject):
 
         # The size of the movement ball
         self.feetSize = 0.45 # Sphere
-        torsoSize = (0.5, 0.7, 0.5) # Box
-        headSize = (0.3 ,0.5 ,0.3 )# Box
+        torsoSize = (0.5, 1.2, 0.5) # Box
+        headSize = (0.35 ,0.6 ,0.3 )# Box
         weight = 70
         self._name = name        
         self._size = self.feetSize
@@ -322,7 +322,7 @@ class Person(SphereObject):
         # Head
         self._headGeometry = ode.GeomBox(lengths=headSize)
         self._headGeometry.objectName = self._name
-        self._headGeometry.setPosition((0,self.feetSize+torsoSize[1]-0.1,0))
+        self._headGeometry.setPosition((0,torsoSize[1]-0.3,0))
         self._headGeometry.setQuaternion((0.707,0,0,0.707))
 
         self._headTransform = ode.GeomTransform(gameworld.space)
