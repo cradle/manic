@@ -18,7 +18,7 @@ class StaticObject(object):
         return None
 
     def __del__(self):
-        del self._geometry.object #= self
+        del self._geometry.object #= None
         self._geometry.disable()
         self._world = None
         self._space = None

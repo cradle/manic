@@ -185,10 +185,12 @@ class LaserSightListener(ogre.RaySceneQueryListener):
     def __init__(self):
         ogre.RaySceneQueryListener.__init__(self)
         self.distance = None
+        self.entity = None
         
-    def queryResult(self, world, distance):
+    def queryResult(self, entity, distance):
         if self.distance == None or self.distance > distance:
             self.distance = distance
+            self.entity = entity
         return True
 
 class Person(objects.Person, SphereObject):
@@ -208,11 +210,13 @@ class Person(objects.Person, SphereObject):
                                                     "red-ninja",
                                                     "blue-ninja",
                                                     "yellow-ninja"]))
+
         # Scene -> Node
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.setScale(scale,scale,scale)
         # Node -> Entity
         self._node.attachObject(self._entity)
+        self.gameworld = gameworld
 
         self.sceneQuery = gameworld.sceneManager.createRayQuery(ogre.Ray())
         self.sceneQuery.setSortByDistance(True)
@@ -317,15 +321,25 @@ class Person(objects.Person, SphereObject):
                                              self._body.getPosition(),
                                              self.getDirection())]
 
-            ray = ogre.Ray(startPoint, self.getDirection())
+            direction = self.getDirection()
+            ray = ogre.Ray(startPoint, direction)
             
             self.sceneQuery.setRay(ray)
             l = LaserSightListener()
             result = self.sceneQuery.execute(l)
+
+
+            geomRay = ode.GeomRay(self.gameworld.space, (l.distance+10)*2)
+            geomRay.set(startPoint, direction)
+            print l.entity.getName(), l.entity.getMesh().getName()
+            c = ode.collide(geomRay, l.entity.geometry)
+            endPoint = ray.getPoint(l.distance)
+            if len(c) == 1:
+                endPoint = c[0].pos
               
             self.laserSight.begin("BaseRed", ogre.RenderOperation.OT_LINE_LIST )
             self.laserSight.position( startPoint )
-            self.laserSight.position( ray.getPoint(l.distance) )
+            self.laserSight.position( endPoint )
             self.laserSight.end()
 
             self.laserSightNode.attachObject(self.laserSight)
