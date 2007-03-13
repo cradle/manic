@@ -181,18 +181,6 @@ class BulletObject(objects.BulletObject, SphereObject):
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 
-class LaserSightListener(ogre.RaySceneQueryListener):
-    def __init__(self):
-        ogre.RaySceneQueryListener.__init__(self)
-        self.distance = None
-        self.entity = None
-        
-    def queryResult(self, entity, distance):
-        if self.distance == None or self.distance > distance:
-            self.distance = distance
-            self.entity = entity
-        return True
-
 class Person(objects.Person, SphereObject):
     def __init__(self, gameworld, name, camera = None):
         super(Person, self).__init__(gameworld, name, camera)
@@ -217,11 +205,6 @@ class Person(objects.Person, SphereObject):
         # Node -> Entity
         self._node.attachObject(self._entity)
         self.gameworld = gameworld
-
-        self.sceneQuery = gameworld.sceneManager.createRayQuery(ogre.Ray())
-        self.sceneQuery.setSortByDistance(True)
-        self.laserSightNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode()
-        self.laserSight = ogre.ManualObject( "__LASER_SIGHT__" )
         
         self.soundManager = gameworld.soundManager
 
@@ -304,45 +287,6 @@ class Person(objects.Person, SphereObject):
             camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
             self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
             self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
-            
-            self.laserSightNode.detachAllObjects()
-            self.laserSight.clear()
-            
-            #mouse = CEGUI.MouseCursor.getSingleton().getPosition()
-            #rend = CEGUI.System.getSingleton().getRenderer()
-            
-            #mx = mouse.d_x / rend.getWidth()
-            #my = mouse.d_y / rend.getHeight()
-            #camray = self._camera.getCameraToViewportRay( mx, my )
-        
-            #campt = camray.getPoint( camPosZ )
-
-            startPoint = [a+b+c*1.5 for a,b,c in zip(self.getShootOffset(),
-                                             self._body.getPosition(),
-                                             self.getDirection())]
-
-            direction = self.getDirection()
-            ray = ogre.Ray(startPoint, direction)
-            
-            self.sceneQuery.setRay(ray)
-            l = LaserSightListener()
-            result = self.sceneQuery.execute(l)
-
-
-            geomRay = ode.GeomRay(self.gameworld.space, (l.distance+10)*2)
-            geomRay.set(startPoint, direction)
-            print l.entity.getName(), l.entity.getMesh().getName()
-            c = ode.collide(geomRay, l.entity.geometry)
-            endPoint = ray.getPoint(l.distance)
-            if len(c) == 1:
-                endPoint = c[0].pos
-              
-            self.laserSight.begin("BaseRed", ogre.RenderOperation.OT_LINE_LIST )
-            self.laserSight.position( startPoint )
-            self.laserSight.position( endPoint )
-            self.laserSight.end()
-
-            self.laserSightNode.attachObject(self.laserSight)
             
         if not self.isDead() and math.fabs(self._body.getLinearVel()[0]) > 0.1:
             if self.getDirection()[0] <= 0.0: # facing left
