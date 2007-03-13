@@ -116,17 +116,9 @@ class Engine():
 
         self._stats[name]["score"] += amount
 
-    def findObjectByName(self, name):
-        if len([o for o in (self.objects + self.statics) if o._name == name]) == 0:
-            print "DEBUG: No object of name", name
-            return None
-        else:
-            return [o for o in (self.objects + self.statics) if o._name == name][0]
-
-
     def collision_callback(self, args, geom1, geom2):
-        o1 = self.findObjectByName(geom1.objectName)
-        o2 = self.findObjectByName(geom2.objectName)\
+        o1 = geom1.object
+        o2 = geom2.object
 
         if o1 == None or o2 == None:
             print type(geom1), type(geom2)

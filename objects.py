@@ -6,6 +6,7 @@ class StaticObject(object):
         self._geometry = geomFunc(gameworld.space, self._size)
         self._geometry.location = "Torso"
         self._geometry.objectName = name
+        self._geometry.object = self
         self._name = name
         self._nick = name
         self._world = gameworld.world
@@ -17,6 +18,7 @@ class StaticObject(object):
         return None
 
     def __del__(self):
+        del self._geometry.object #= self
         self._geometry.disable()
         self._world = None
         self._space = None
@@ -306,6 +308,7 @@ class Person(SphereObject):
         self._body.setMass(mass)
         self._geometry.setBody(self._body)
         self._geometry.objectName = name
+        self._geometry.object = self
         
         self._motor = ode.Plane2DJoint(gameworld.world)
         self._motor.attach(self._body, ode.environment)
@@ -323,6 +326,7 @@ class Person(SphereObject):
         self._torsoTransform.setGeom(self._torsoGeometry)
         self._torsoTransform.location = "Torso"
         self._torsoTransform.objectName = self._name
+        self._torsoTransform.object = self
 
         # Head
         self._headGeometry = ode.GeomBox(lengths=headSize)
@@ -334,16 +338,10 @@ class Person(SphereObject):
         self._headTransform.setGeom(self._headGeometry)
         self._headTransform.location = "Head"
         self._headTransform.objectName = self._name
+        self._headTransform.object = self
         
-        #self._torsoBody = ode.Body(gameworld.world)
-        #self._torsoBody.setMass(mass)
-        #self._torsoBody.setGravityMode(False)
         self._headTransform.setBody(self._body)
         self._torsoTransform.setBody(self._body)
-        
-        #self._hinge = ode.HingeJoint(gameworld.world)
-        #self._hinge.attach(self._body, self._torsoBody)
-        #self._hinge.setAxis((1,0,0))
         
         self.type = "Person"
         self.ownerName = name
@@ -366,6 +364,9 @@ class Person(SphereObject):
         self.reset()
 
     def __del__(self):
+        del self._geometry.object
+        del self._torsoTransform.object
+        del self._headTransform.object
         self._torsoGeometry.disable()
         self._torsoTransform.disable()
         self._headGeometry.disable()
@@ -608,6 +609,9 @@ class Person(SphereObject):
     def _unCrouch(self):
         self.isCrouching = False
 
+    def getShootOffset(self):
+        return [0,0.5,0]
+
     def _shoot(self):
         if self.timeLeftUntilNextShot < 0.0 and self.ammo > 0:
             self.isShooting = True
@@ -619,7 +623,7 @@ class Person(SphereObject):
                 scatter = self._calculateScatter()
                 self._bulletNum += 1
                 self._world.addBullet(self._name + "b" + str(self._bulletNum), \
-                                      [a+b for a,b in zip(self._body.getPosition(), [0,0.5,0])],
+                                      [a+b for a,b in zip(self._body.getPosition(), self.getShootOffset())],
                                       [self.getDirection()[0] + self._calculateScatter(),
                                        self.getDirection()[1] + self._calculateScatter(),
                                        0],

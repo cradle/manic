@@ -181,6 +181,16 @@ class BulletObject(objects.BulletObject, SphereObject):
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 
+class LaserSightListener(ogre.RaySceneQueryListener):
+    def __init__(self):
+        ogre.RaySceneQueryListener.__init__(self)
+        self.distance = None
+        
+    def queryResult(self, world, distance):
+        if self.distance == None or self.distance > distance:
+            self.distance = distance
+        return True
+
 class Person(objects.Person, SphereObject):
     def __init__(self, gameworld, name, camera = None):
         super(Person, self).__init__(gameworld, name, camera)
@@ -203,6 +213,11 @@ class Person(objects.Person, SphereObject):
         self._node.setScale(scale,scale,scale)
         # Node -> Entity
         self._node.attachObject(self._entity)
+
+        self.sceneQuery = gameworld.sceneManager.createRayQuery(ogre.Ray())
+        self.sceneQuery.setSortByDistance(True)
+        self.laserSightNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode()
+        self.laserSight = ogre.ManualObject( "__LASER_SIGHT__" )
         
         self.soundManager = gameworld.soundManager
 
@@ -250,6 +265,8 @@ class Person(objects.Person, SphereObject):
         self.animations['jump'] = self._entity.getAnimationState('JumpNoHeight')
         self.animations['jump'].setLoop(False)
 
+
+
     def __del__(self):
         SphereObject.__del__(self)
         objects.Person.__del__(self)
@@ -277,11 +294,41 @@ class Person(objects.Person, SphereObject):
         if 'shoot' in events:
             self._shootSound()
 
-    def frameEnded(self, time):     
+    def frameEnded(self, time):
+        
         if self._camera:
             camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
             self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
             self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
+            
+            self.laserSightNode.detachAllObjects()
+            self.laserSight.clear()
+            
+            #mouse = CEGUI.MouseCursor.getSingleton().getPosition()
+            #rend = CEGUI.System.getSingleton().getRenderer()
+            
+            #mx = mouse.d_x / rend.getWidth()
+            #my = mouse.d_y / rend.getHeight()
+            #camray = self._camera.getCameraToViewportRay( mx, my )
+        
+            #campt = camray.getPoint( camPosZ )
+
+            startPoint = [a+b+c*1.5 for a,b,c in zip(self.getShootOffset(),
+                                             self._body.getPosition(),
+                                             self.getDirection())]
+
+            ray = ogre.Ray(startPoint, self.getDirection())
+            
+            self.sceneQuery.setRay(ray)
+            l = LaserSightListener()
+            result = self.sceneQuery.execute(l)
+              
+            self.laserSight.begin("BaseRed", ogre.RenderOperation.OT_LINE_LIST )
+            self.laserSight.position( startPoint )
+            self.laserSight.position( ray.getPoint(l.distance) )
+            self.laserSight.end()
+
+            self.laserSightNode.attachObject(self.laserSight)
             
         if not self.isDead() and math.fabs(self._body.getLinearVel()[0]) > 0.1:
             if self.getDirection()[0] <= 0.0: # facing left
