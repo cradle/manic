@@ -1,1 +1,1 @@
-python setup.py py2exe
+python setup-win32.py py2exe

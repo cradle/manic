@@ -15,8 +15,8 @@ class NetworkClient(DatagramProtocol):
         self._messages = []
         self.reactor = reactor
         self.serverIP = None
-        self.reactor.resolve(host).addCallback(self.gotIP)
         self.port = port
+        self.reactor.resolve(host).addCallback(self.gotIP)
         self._pingSendTime = time.time()
         self.roundTripTime = 0.0
         self.serverOffset = 0.0
@@ -32,26 +32,28 @@ class NetworkClient(DatagramProtocol):
         self.reactor.listenUDP(0, self)
 
     def ping(self):
-        self.pingNumber += 1
-        self.send(["ping", self.pingNumber, self.roundTripTime])
-        self.pings.append(ping(self.pingNumber, time.time()))
+        if self.serverIP != None:
+            self.pingNumber += 1
+            self.send(["ping", self.pingNumber, self.roundTripTime])
+            self.pings.append(ping(self.pingNumber, time.time()))
         
     def startProtocol(self):
         self.transport.connect(self.serverIP, self.port)
-
+        
     def datagramReceived(self, data, (host, port)):
-        message = jelly.unjelly(banana.decode(data))
-        if type(message[0]) == str and message[0] == "pong":
-            for ping in self.pings:
-                if ping.number == message[1]:
-                    self.roundTripTime = time.time() - ping.time;
-                    self.serverOffset = time.time() - (message[2] + self.roundTripTime/2)
-                    self.pings = [p for p in self.pings if p.number <= ping.number]
-        elif type(message[0]) == str and message[0] == "stats":
-            self._stats = message[1]
-        else:
-            #self._messages.insert(0,message)
-            self._messages += [message]
+        if self.serverIP != None:
+            message = jelly.unjelly(banana.decode(data))
+            if type(message[0]) == str and message[0] == "pong":
+                for ping in self.pings:
+                    if ping.number == message[1]:
+                        self.roundTripTime = time.time() - ping.time;
+                        self.serverOffset = time.time() - (message[2] + self.roundTripTime/2)
+                        self.pings = [p for p in self.pings if p.number <= ping.number]
+            elif type(message[0]) == str and message[0] == "stats":
+                self._stats = message[1]
+            else:
+                #self._messages.insert(0,message)
+                self._messages += [message]
         
     # Possibly invoked if there is no server listening on the
     # address to which we are sending.
@@ -62,11 +64,12 @@ class NetworkClient(DatagramProtocol):
         self.transport.write(banana.encode(jelly.jelly(obj)))
 
     def update(self, elapsedTime):
-        self.timeUntilNextPing -= elapsedTime
-        if self.timeUntilNextPing <= 0.0:
-            self.ping()
-            while self.timeUntilNextPing <= 0.0:
-                self.timeUntilNextPing += self.timeBetweenPings
+        if self.serverIP != None:
+            self.timeUntilNextPing -= elapsedTime
+            if self.timeUntilNextPing <= 0.0:
+                self.ping()
+                while self.timeUntilNextPing <= 0.0:
+                    self.timeUntilNextPing += self.timeBetweenPings
                 
         self.reactor.doIteration(0)
 
