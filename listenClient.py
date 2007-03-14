@@ -18,14 +18,16 @@ class ListenClient(Client, Server):
         self._stats[self.player._name]["score"] = 0
         print "Self", self.player._name, "connected"
         
-    def frameEnded(self, frameTime, keyboard, mouse):
+    def frameEnded(self, frameTime, keyboard, mouse):            
         Server.frameEnded(self, frameTime)
         self.displayScores()
         self.displayVitals()
         self.player.inputPresses(self.player.input(keyboard, mouse))
+        
+    def networkUpdate(self):
         self.player.setEvents(self.player.getEvents())
-        self.player.clearEvents()
-
+        Server.networkUpdate(self)
+        
     def sleep(self):
         # We don't want to sleep on the listen client
         pass

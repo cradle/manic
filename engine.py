@@ -83,7 +83,11 @@ class Engine:
             ])
 
     def step(self, frameTime):
-        while self.timeUntilNextEngineUpdate <= 0.0:  
+        while self.timeUntilNextEngineUpdate <= 0.0: 
+            
+            for object in self.objects:
+                object.preCollide() 
+                
             self.space.collide(0, self.collision_callback)
             
             for object in self.objects:

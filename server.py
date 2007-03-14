@@ -28,41 +28,46 @@ class Server(Engine):
         bot.setPosition(self.spawnLocation())
         self.objects += [bot]
 
+    def networkUpdate(self):
+        self.network.update()
+
+        for client in self.network.clients:
+            self._stats[client.player._name]["ping"] = client.ping
+        
+        for client in self.network.clients:                
+            client.send(["stats", self._stats])
+
+        while self.timeUntilNextNetworkUpdate <= 0.0:
+            self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
+
+        for client in self.network.clients:
+            if client.timedOut():
+                print "Client", client.player._name, "timed out, disconnecting"
+                del self._stats[client.player._name]
+                self.objects.remove(client.player)
+                self.network.clients.remove(client)
+
+        for client in self.network.clients:                
+            client.send([[[o._name,
+                           o.getAttributes(),
+                           o._name == client.player._name,
+                           o.type,
+                           o.getEvents()] for o in self.objects],
+                        time.time()])
+            #parameter above is whether or not the player is the current player
+            client.player.setEvents(client.player.getEvents())
+            
+                
+            while client.hasMoreMessages():
+                client.player.inputPresses(client.pop())
+
+        for o in self.objects:
+            o.clearEvents()
+
     def frameEnded(self, frameTime):
         self.timeUntilNextNetworkUpdate -= frameTime
         if self.timeUntilNextNetworkUpdate <= 0.0:
-            self.network.update()
-
-            for client in self.network.clients:
-                self._stats[client.player._name]["ping"] = client.ping
-            
-            for client in self.network.clients:                
-                client.send(["stats", self._stats])
-
-            while self.timeUntilNextNetworkUpdate <= 0.0:
-                self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
-
-            for client in self.network.clients:
-                if client.timedOut():
-                    print "Client", client.player._name, "timed out, disconnecting"
-                    del self._stats[client.player._name]
-                    self.objects.remove(client.player)
-                    self.network.clients.remove(client)
-
-            for client in self.network.clients:                
-                client.send([[[o._name,
-                               o.getAttributes(),
-                               o._name == client.player._name,
-                               o.type,
-                               o.getEvents()] for o in self.objects],
-                            time.time()])
-                #parameter above is whether or not the player is the current player
-                
-                    
-                while client.hasMoreMessages():
-                    client.player.inputPresses(client.pop())
-
-            [o.clearEvents() for o in self.objects]
+            self.networkUpdate()
         
         Engine.frameEnded(self, frameTime)
 

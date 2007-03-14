@@ -416,7 +416,7 @@ class Client(Application, Engine):
         ## load scheme and set up defaults
         CEGUI.SchemeManager.getSingleton().loadScheme("TaharezLook.scheme") 
         self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow")
-        cursor = self.GUIsystem.getDefaultMouseCursor() 
+        CEGUI.MouseCursor.getSingleton().setVisible(False)
         CEGUI.FontManager.getSingleton().createFont("Commonwealth-10.font")
         background = winMgr.createWindow("TaharezLook/StaticImage", "background_wnd")
         background.setProperty("FrameEnabled", "false")
@@ -556,6 +556,7 @@ class Client(Application, Engine):
                         if not object.existsOnServer:
                             #self.messageListener("Server", object._name + " timed out")
                             self.objects.remove(object)
+                            object.close()
                             del object
                         
             self.network._messages = []

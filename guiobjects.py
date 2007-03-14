@@ -175,7 +175,6 @@ class BulletObject(objects.BulletObject, SphereObject):
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.attachObject(self._entity)
 
-
         self._updateDisplay()
 
         self.gameworld = gameworld
@@ -302,12 +301,7 @@ class Person(objects.Person, SphereObject):
             self._shootSound()
 
     def frameEnded(self, time):
-        
-        if self._camera:
-            camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
-            self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
-            self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
-            
+
         if not self.isDead() and math.fabs(self._body.getLinearVel()[0]) > 0.1:
             if self.getDirection()[0] <= 0.0: # facing left
                 self.animations['run'].addTime(time * self._body.getLinearVel()[0] * -0.3)
@@ -372,6 +366,8 @@ class Person(objects.Person, SphereObject):
 class Player(Person):
     def __init__(self, gameworld, name, camera):
         super(Player, self).__init__(gameworld, name, camera)
+
+        self.cursor = CEGUI.MouseCursor.getSingleton()
         
         self.keys['up'] = OIS.KC_W
         self.keys['down'] = OIS.KC_S
@@ -389,6 +385,10 @@ class Player(Person):
         self.keys['weapon4'] = OIS.KC_4
         self.keys['weapon5'] = OIS.KC_5
         
+        self.cursorNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
+        self.cursorLines = ogre.ManualObject( "__CURSOR__" + name)
+        self.cursorNode.attachObject(self.cursorLines)
+        
     def setPosition(self, position):
         if position:
             position = [(x+y)/2 for x,y in zip(position, self._body.getPosition())]
@@ -398,6 +398,53 @@ class Player(Person):
         Person.setAttributes(self, attributes)
         if self.isDisabled():
             self.enable()
+
+    def frameEnded(self, frameTime):
+        camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
+        self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
+        self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
+        
+        mouse = CEGUI.MouseCursor.getSingleton().getPosition()
+        rend = CEGUI.System.getSingleton().getRenderer()
+        
+        mx = mouse.d_x / rend.getWidth()
+        my = mouse.d_y / rend.getHeight()
+        camray = self._camera.getCameraToViewportRay( mx, my )
+    
+        campt = camray.getPoint(camray.intersects(ogre.Plane(ogre.Vector3(0,0,1), 0)).second)
+        campt = self.addLists(campt, (0,0,2)) # Zoom Offset
+        campt = self.addLists(campt, self.getShootOffset())
+        self.cursorLines.clear()
+        self.cursorLines.begin("Red", ogre.RenderOperation.OT_LINE_LIST)
+
+        selfPos = self._geometry.getPosition()
+        xd = campt[0] - selfPos[0]
+        yd = campt[1] - selfPos[1]
+        distance = math.sqrt(xd*xd + yd*yd)
+
+        radius = (1-self.getAccuracy())*distance/2
+        r = 0.3/(40/camPosZ)
+        # Static Crosshair
+        self.cursorLines.position( self.addLists(campt, (-r,0,0) ))
+        self.cursorLines.position( self.addLists(campt, (r,0,0) ))
+        self.cursorLines.position( self.addLists(campt, (0,r,0) ))
+        self.cursorLines.position( self.addLists(campt, (0,-r,0) ))
+        # Accuracy Crosshair
+        s = 0.1
+        self.cursorLines.position( self.addLists(campt, (radius,radius,0) ))
+        self.cursorLines.position( self.addLists(campt, (radius-s,radius-s,0) ))
+        self.cursorLines.position( self.addLists(campt, (radius,-radius,0) ))
+        self.cursorLines.position( self.addLists(campt, (radius-s,-radius+s,0) ))
+        self.cursorLines.position( self.addLists(campt, (-radius,-radius,0) ))
+        self.cursorLines.position( self.addLists(campt, (-radius+s,-radius+s,0) ))
+        self.cursorLines.position( self.addLists(campt, (-radius,radius,0) ))
+        self.cursorLines.position( self.addLists(campt, (-radius+s,radius-s,0) ))
+        self.cursorLines.end()
+
+        Person.frameEnded(self, frameTime)
+
+    def addLists(self, a, b):
+        return [a+b for a,b in zip(a,b)]
 
     def getDirection(self):
         if self._camera:

@@ -132,6 +132,9 @@ class DynamicObject(StaticObject):
         self._body.setLinearVel(self.to3d(attributes[3]))
         self.setDirection(self.to3d(attributes[4]))
 
+    def preCollide(self):
+        self.isOnGround = False
+
     def preStep(self):
         if 'l' in self.presses:
             self._moveLeft()
@@ -166,7 +169,6 @@ class DynamicObject(StaticObject):
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
         self._motor.setAngleParam(ode.ParamFMax, 0)
-        self.isOnGround = False
 
     def frameEnded(self, frameTime):
         pass
@@ -265,7 +267,6 @@ class BulletObject(SphereObject):
         self.hasSentToClients = False
 
     def __del__(self):
-        print "Deleting Bullet"
         SphereObject.__del__(self)
 
     def setOwnerName(self, name):
@@ -366,8 +367,9 @@ class Person(SphereObject):
         self.respawnTime = 3.0
         self.setDead(False)
         self.timeUntilRespawn = 0.0
-        self.isShooting = False
+        self.events = []
         self.reset()
+        self._instability = 0.0
 
     def close(self):
         self._geometry.object = None
@@ -407,7 +409,8 @@ class Person(SphereObject):
                 'damage':0.0,
                 'velocity':70.0,
                 'type':'single',
-                'zoom':30
+                'zoom':30,
+                'recoil':0.0
                 },
             'SMPistol':{
                 'maxAmmo':30,
@@ -415,12 +418,13 @@ class Person(SphereObject):
                 'reloadTime':3.0,
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
-                'accuracy':0.6,
+                'accuracy':0.7,
                 'timeBetweenShots':0.01,
                 'damage':3.5,
                 'velocity':25.0,
                 'type':'single',
-                'zoom':30
+                'zoom':30,
+                'recoil':0.1
                 },
             'SMG':{
                 'maxAmmo':50,
@@ -433,7 +437,8 @@ class Person(SphereObject):
                 'damage':5,
                 'velocity':40.0,
                 'type':'single',
-                'zoom':40
+                'zoom':40,
+                'recoil':0.15
                 },
             'Shotgun':{
                 'maxAmmo':5,
@@ -447,7 +452,8 @@ class Person(SphereObject):
                 'velocity':25.0,
                 'type':'scatter',
                 'bulletsPerShot':11,
-                'zoom':35
+                'zoom':35,
+                'recoil':0.0
                 },
             'Assault':{
                 'maxAmmo':30,
@@ -461,7 +467,8 @@ class Person(SphereObject):
                 'velocity':50.0,
                 'type':'burst',
                 'bulletsPerShot':3,
-                'zoom':60
+                'zoom':60,
+                'recoil':0.05
                 },
             'Sniper':{
                 'maxAmmo':5,
@@ -474,7 +481,8 @@ class Person(SphereObject):
                 'damage':100,
                 'velocity':70.0,
                 'type':'single',
-                'zoom':80
+                'zoom':80,
+                'recoil':1.0
                 }
             }
 
@@ -527,9 +535,11 @@ class Person(SphereObject):
             self.reloadTime = self.guns[self.gunName]['reloadTime']
             self.timeLeftUntilNextShot = self.guns[self.gunName]['timeLeftUntilNextShot']
             self.timeBetweenShots = self.guns[self.gunName]['timeBetweenShots']
-            self.accuracy = self.guns[self.gunName]['accuracy']
+            self._accuracy = self.guns[self.gunName]['accuracy']
+            self._maxAccuracy = self.guns[self.gunName]['accuracy']
             self.damage = self.guns[self.gunName]['damage']
             self.velocity = self.guns[self.gunName]['velocity']
+            self.recoil = self.guns[self.gunName]['recoil']
 
     def getAttributes(self):
         return SphereObject.getAttributes(self) + \
@@ -557,15 +567,29 @@ class Person(SphereObject):
         self.isJumping = (state & 4 == 4)
         self.setDead((state & 8 == 8))
 
+    def _calculateAccuracy(self):
+            
+        self._accuracy -= self._instability
+        self._instability /= 1.75
+
+        recoveryWeight = 2.5
+
+        if self.isCrouching and self.isOnGround:
+            self._accuracy  = (self._accuracy*recoveryWeight + ((self._maxAccuracy+1.0)/2.0) )/(recoveryWeight+1)
+        elif self.isOnGround:
+            self._accuracy  = (self._accuracy*recoveryWeight + self._maxAccuracy)/(recoveryWeight+1)
+        else:
+            self._accuracy  = (self._accuracy*recoveryWeight + self._maxAccuracy * 0.75)/(recoveryWeight + 1)
+            
+
+    def getAccuracy(self):
+        return self._accuracy
+
     def getEvents(self):
-        events = SphereObject.getEvents(self)
-        if self.isShooting:
-            events += ['shoot']
-        return events
+        return self.events
 
     def clearEvents(self):
-        SphereObject.clearEvents(self)
-        self.isShooting = False
+        self.events = []
 
     def setSpawnPosition(self, position):
         self.spawnPosition = position
@@ -600,9 +624,7 @@ class Person(SphereObject):
             self.reloading = False
 
     def _calculateScatter(self):
-        a = self.accuracy
-        if self.isCrouching and self.isOnGround:
-            a = (a + 1.0)/2.0
+        a = self.getAccuracy()
         return random.random()*(1-a)-0.5*(1-a)
 
     def _reload(self):
@@ -622,7 +644,6 @@ class Person(SphereObject):
 
     def _shoot(self):
         if self.timeLeftUntilNextShot < 0.0 and self.ammo > 0:
-            self.isShooting = True
             numShots = 1
             if self.guns[self.gunName]['type'] == "scatter":
                 numShots = self.guns[self.gunName]['bulletsPerShot']
@@ -640,7 +661,9 @@ class Person(SphereObject):
                                       self)
                 
             self.ammo -= 1
+            self.events += ['shoot']
             self.timeLeftUntilNextShot = self.timeBetweenShots
+            self._instability += self.recoil
         
     def _jump(self):
         if self.isOnGround and self.timeLeftUntilCanJump <= 0:
@@ -664,12 +687,12 @@ class Person(SphereObject):
             
     def postStep(self):
         # Temp variable to prevent clobbering
-        isOnGround = self.isOnGround
         SphereObject.postStep(self)
-        if isOnGround:
+        if self.isOnGround:
             # People have a lot of friction against movement, if we aren't moving. Slam on the brakes
             self._motor.setAngleParam(ode.ParamFMax, self.maxStopForce)
             self._motor.setAngleParam(ode.ParamVel, 0)
+        self._calculateAccuracy()
         self._torsoTransform.setQuaternion((1,0,0,0))
         self._headTransform.setQuaternion((1,0,0,0))
         
