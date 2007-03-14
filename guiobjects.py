@@ -109,6 +109,10 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             presses.append("6")
         if keyboard.isKeyDown(self.keys['weapon7']):
             presses.append("7")
+        if keyboard.isKeyDown(self.keys['weapon8']):
+            presses.append("8")
+        if keyboard.isKeyDown(self.keys['weapon9']):
+            presses.append("9")
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
             presses.append("s")
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['previous']):

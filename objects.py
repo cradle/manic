@@ -21,6 +21,7 @@ class StaticObject(object):
         self._geometry.object = None
 
     def __del__(self):
+        print "Deleting", type(self)
         self._geometry.disable()
         self._world = None
         self._space = None
@@ -385,7 +386,7 @@ class Person(SphereObject):
         self._torsoTransform.disable()
         self._headGeometry.disable()
         self._headTransform.disable()
-        SphereObject.__del__()
+        SphereObject.__del__(self)
         del self._torsoGeometry
         del self._torsoTransform
         del self._headGeometry

@@ -8,6 +8,7 @@ from engine import Engine
 from guiobjects import *
 import objects
 import networkclient
+import gamenet
 
 def cegui_reldim ( x ) :
     return CEGUI.UDim((x),0)
@@ -137,6 +138,7 @@ class GameKeyListener(OIS.KeyListener):
                     self.keyToRepeat['time'] -= self.timeBetweenRepeats
                     CEGUI.System.getSingleton().injectKeyDown( key )
                     CEGUI.System.getSingleton().injectChar( self.keyToRepeat['text'] )
+        return True # Keep running
 
     def keyPressed(self, arg):
         self.keyToRepeat = {'mode':'waiting', 'time':0.0, 'text':arg.text, 'key':arg.key}
@@ -235,7 +237,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         self._setupInput()
 
         self.keylistener = GameKeyListener(self.game)
-        self.Keyboard.setEventCallback(self.keylistener)
+        self.BufferedKeyboard.setEventCallback(self.keylistener)
 
         self.mouselistener = GameMouseListener(self.game)
         self.Mouse.setEventCallback(self.mouselistener)
@@ -251,6 +253,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
          
          #Create all devices (We only catch joystick exceptions here, as, most people have Key/Mouse)
          self.Keyboard = self.InputManager.createInputObjectKeyboard( OIS.OISKeyboard, False )
+         self.BufferedKeyboard = self.InputManager.createInputObjectKeyboard( OIS.OISKeyboard, True )
          self.Mouse = self.InputManager.createInputObjectMouse( OIS.OISMouse, True )
          try :
             self.Joy = self.InputManager.createInputObjectJoyStick( OIS.OISJoyStick, True )
@@ -292,7 +295,8 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
             return False
         
         ##Need to capture/update each device - this will also trigger any listeners
-        self.Keyboard.capture()    
+        self.BufferedKeyboard.capture()
+        self.Keyboard.capture()
         self.Mouse.capture()
         if( self.Joy ):
             self.Joy.capture()
@@ -300,16 +304,17 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         return True
 
     def frameEnded(self, frameEvent):
-        self.keylistener.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard)
-        self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
-        return True
+        keepGoing = True
+        keepGoing = keepGoing and self.keylistener.frameEnded(frameEvent.timeSinceLastFrame, self.BufferedKeyboard)
+        keepGoing = keepGoing and self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
+        return keepGoing
+            
 
 class Client(Application, Engine):
     def __init__(self, autoConnect = False):
         Application.__init__(self)
         Engine.__init__(self)
         ip, port = "cradle.dyndns.org", 10001
-        self.chat.registerMessageListener(self.messageListener)
 
         if not autoConnect:
             address = raw_input("server ('cradle.dyndns.org:10001') :> ")
@@ -319,7 +324,11 @@ class Client(Application, Engine):
                 ip = split[0]
                 if len(split) == 2:
                     port = split[1]
-            
+
+        self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
+        self.chat.registerMessageListener(self.messageListener)
+        self.timeBetweenChatUpdates = 0.5
+        self.timeUntilNextChatUpdate = 0.0            
             
         self.network = networkclient.NetworkClient(ip, int(port))
         self.timeBetweenNetworkUpdates = 0.02
@@ -434,7 +443,7 @@ class Client(Application, Engine):
         ## Build a window with some text and formatting options via radio buttons etc
         ##
         textwnd = winMgr.createWindow("TaharezLook/FrameWindow", "TextWindow")
-        #sheet.addChildWindow(textwnd)
+        sheet.addChildWindow(textwnd)
         textwnd.setPosition(CEGUI.UVector2(cegui_reldim(0.2), cegui_reldim( 0.8)))
         #textwnd.setMaxSize(CEGUI.UVector2(cegui_reldim(0.4), cegui_reldim( 0.2)))
         #textwnd.setMinSize(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.1)))
@@ -502,6 +511,12 @@ class Client(Application, Engine):
     def frameEnded(self, frameTime, keyboard,  mouse):
             
         Engine.frameEnded(self, frameTime)
+
+        self.timeUntilNextChatUpdate -= frameTime
+        if self.timeUntilNextChatUpdate <= 0.0:
+            self.chat.update()
+            while self.timeUntilNextChatUpdate <= 0.0:
+                self.timeUntilNextChatUpdate += self.timeBetweenChatUpdates
         
         self.keyboard = keyboard
         self.mouse = mouse
@@ -563,6 +578,8 @@ class Client(Application, Engine):
             
         if self.player != None:
             self.network.send(self.player.input(self.keyboard,  self.mouse))
+
+        return True # Keep running
     
 if __name__ == "__main__":
     world = Client()

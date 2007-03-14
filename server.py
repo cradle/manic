@@ -44,6 +44,7 @@ class Server(Engine):
             if client.timedOut():
                 print "Client", client.player._name, "timed out, disconnecting"
                 del self._stats[client.player._name]
+                client.player.close()
                 self.objects.remove(client.player)
                 self.network.clients.remove(client)
 
@@ -72,10 +73,10 @@ class Server(Engine):
         Engine.frameEnded(self, frameTime)
 
         self.sleep()
+        return True
 
     def sleep(self):
-        time.sleep(min(self.timeUntilNextChatUpdate,
-                       self.timeUntilNextNetworkUpdate,
+        time.sleep(min(self.timeUntilNextNetworkUpdate,
                        self.timeUntilNextEngineUpdate))
 
 

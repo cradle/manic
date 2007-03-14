@@ -5,11 +5,7 @@ import time, random
 
 class Engine:    
     def __init__(self):
-        self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
-        self.chat.registerMessageListener(self.messageListener)
         self.stepSize = 1.0/85.0
-        self.timeBetweenChatUpdates = 0.5
-        self.timeUntilNextChatUpdate = 0.0
         self.timeUntilNextEngineUpdate = 0.0
         self._stats = {}
         random.seed(time.time())
@@ -17,10 +13,10 @@ class Engine:
     def go(self):
         self._createWorld()
         lastFrame = time.time()
-        while self.chat.reactor.running:
+        timeSinceLastFrame = 0.0
+        while self.frameEnded(timeSinceLastFrame):
             timeSinceLastFrame = time.time() - lastFrame
             lastFrame += timeSinceLastFrame
-            self.frameEnded(timeSinceLastFrame)
     
     def _createWorld(self):
         self.world = ode.World()
@@ -60,17 +56,13 @@ class Engine:
         self.objects.append(b)
         
     def frameEnded(self, frameTime):
-        self.timeUntilNextChatUpdate -= frameTime
-        if self.timeUntilNextChatUpdate <= 0.0:
-            self.chat.update()
-            while self.timeUntilNextChatUpdate <= 0.0:
-                self.timeUntilNextChatUpdate += self.timeBetweenChatUpdates
-
         self.timeUntilNextEngineUpdate -= frameTime  
         self.step(frameTime)        
 
         for object in self.objects:
             object.frameEnded(frameTime)
+
+        return True # Keep going
 
     def spawnLocation(self):
         return random.choice([
