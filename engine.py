@@ -3,7 +3,7 @@ from objects import *
 import gamenet
 import time, random
 
-class Engine():    
+class Engine:    
     def __init__(self):
         self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
         self.chat.registerMessageListener(self.messageListener)
@@ -17,20 +17,14 @@ class Engine():
     def go(self):
         self._createWorld()
         lastFrame = time.time()
-        while True:
+        while self.chat.reactor.running:
             timeSinceLastFrame = time.time() - lastFrame
             lastFrame += timeSinceLastFrame
             self.frameEnded(timeSinceLastFrame)
-
-            #for object in self.objects:
-            #    print object
     
     def _createWorld(self):
         self.world = ode.World()
         self.world.setGravity((0,-9.81,0))
-        #self.world.setERP(0.2)
-        #self.world.setCFM(0.001)
-        #self.world.setContactMaxCorrectingVel(1000)
         self.space = ode.Space(type=1)
         self.contactgroup = ode.JointGroup()
         self.objects = []
