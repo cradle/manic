@@ -164,20 +164,40 @@ class BulletObject(objects.BulletObject, SphereObject):
         
         self.name = name
         self._entity = gameworld.sceneManager.createBillboardSet("bb" + name)
-        self._entity.setDefaultDimensions(0.1,0.1)
+        self._entity.setDefaultDimensions(0.05,0.05)
 
-        #self.billboard = ogre.Billboard()
         self._entity.createBillboard(0,0,0)
+        
+        self.trailNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
+        self.trail = ogre.ManualObject( "__TRAIL__" + name)
+        self.trailNode.attachObject(self.trail)
                 
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.attachObject(self._entity)
 
+
         self._updateDisplay()
 
         self.gameworld = gameworld
+
+    def frameEnded(self, time):
+        objects.BulletObject.frameEnded(self, time)
+        SphereObject.frameEnded(self, time)
+        
+        self.trail.clear()
+        self.trailNode.detachAllObjects()
+        self.trail.begin("Red", ogre.RenderOperation.OT_LINE_LIST)
+        self.trail.position( self._body.getPosition() )
+        self.trail.position(
+            [a-(b*time) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
+        self.trail.end()
+        self.trailNode.attachObject(self.trail)
         
     def __del__(self):
         self.gameworld.sceneManager.destroyBillboardSet("bb" + self.name)
+        self.trailNode.detachAllObjects()
+        self.trail.clear()
+        self.gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('t' + self.name)
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 

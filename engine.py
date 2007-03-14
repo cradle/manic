@@ -96,6 +96,7 @@ class Engine:
                 if object.isDead():
                     if object.type != "Person":
                         self.objects.remove(object)
+                        object.close()
                         del object
 
             self.contactgroup.empty()

@@ -17,8 +17,10 @@ class StaticObject(object):
     def getBody(self):
         return None
 
+    def close(self):
+        self._geometry.object = None
+
     def __del__(self):
-        del self._geometry.object #= None
         self._geometry.disable()
         self._world = None
         self._space = None
@@ -262,6 +264,10 @@ class BulletObject(SphereObject):
         self.damage = damage
         self.hasSentToClients = False
 
+    def __del__(self):
+        print "Deleting Bullet"
+        SphereObject.__del__(self)
+
     def setOwnerName(self, name):
         self.ownerName = name
 
@@ -363,10 +369,12 @@ class Person(SphereObject):
         self.isShooting = False
         self.reset()
 
+    def close(self):
+        self._geometry.object = None
+        self._torsoTransform.object = None
+        self._headTransform.object = None
+
     def __del__(self):
-        del self._geometry.object
-        del self._torsoTransform.object
-        del self._headTransform.object
         self._torsoGeometry.disable()
         self._torsoTransform.disable()
         self._headGeometry.disable()
