@@ -8,7 +8,7 @@ Usage:
 from setuptools import setup
 
 APP = ['server.py']
-DATA_FILES = []
+DATA_FILES = ['dm_arena.lvl']
 OPTIONS = {'argv_emulation': True}
 
 setup(
