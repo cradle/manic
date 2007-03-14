@@ -308,11 +308,11 @@ class Client(Application, Engine):
     def __init__(self, autoConnect = False):
         Application.__init__(self)
         Engine.__init__(self)
-        ip, port = "59.167.153.157", 10001
+        ip, port = "cradle.dyndns.org", 10001
         self.chat.registerMessageListener(self.messageListener)
 
         if not autoConnect:
-            address = raw_input("server ('59.167.153.157:10001') :> ")
+            address = raw_input("server ('cradle.dyndns.org:10001') :> ")
             
             if address != "":
                 split = address.split(":")

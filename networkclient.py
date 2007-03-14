@@ -11,12 +11,12 @@ class ping(object):
         self.time = time
 
 class NetworkClient(DatagramProtocol):
-    def __init__(self, serverIP = "127.0.0.1", port = 10001):
+    def __init__(self, host = "127.0.0.1", port = 10001):
         self._messages = []
         self.reactor = reactor
-        self.serverIP = serverIP
+        self.serverIP = None
+        self.reactor.resolve(host).addCallback(self.gotIP)
         self.port = port
-        self.reactor.listenUDP(0, self)
         self._pingSendTime = time.time()
         self.roundTripTime = 0.0
         self.serverOffset = 0.0
@@ -26,6 +26,10 @@ class NetworkClient(DatagramProtocol):
         self.timeBetweenPings = 0.5
         self.timeUntilNextPing = 0.0
         self._stats = {}
+
+    def gotIP(self, ip):
+        self.serverIP = ip
+        self.reactor.listenUDP(0, self)
 
     def ping(self):
         self.pingNumber += 1

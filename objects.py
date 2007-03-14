@@ -357,8 +357,8 @@ class Person(SphereObject):
         self.maxStopForce = 28000/self.feetSize
         self.maxSpinForce = 28000/self.feetSize
         self.maxSpinVelocity = 10/self.feetSize
-        self.maxMoveForce = 1500
-        self.maxMoveVelocity = 4
+        self.maxMoveForce = 400
+        self.maxMoveVelocity = 2
         self.maxJumpForce = ode.Infinity
         self.maxJumpVelocity = 11
         self._world = gameworld
