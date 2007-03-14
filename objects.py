@@ -405,6 +405,21 @@ class Person(SphereObject):
         self.health = self.maxHealth
 
         self.guns = {
+            'Pistol':{
+                'maxAmmo':7,
+                'ammo':7,
+                'reloadTime':1.5,
+                'timeLeftUntilNextShot':0.0,
+                'reloading':False,
+                'accuracy':0.95,
+                'timeBetweenShots':0.05,
+                'damage':10,
+                'velocity':35.0,
+                'type':'single',
+                'zoom':35,
+                'recoil':0.1,
+                'auto':False,
+                },
             'SMPistol':{
                 'maxAmmo':30,
                 'ammo':30,
@@ -459,16 +474,16 @@ class Person(SphereObject):
                 'reloading':False,
                 'accuracy':0.85,
                 'timeBetweenShots':0.1,
-                'damage':0.0,
+                'damage':8.0,
                 'velocity':45.0,
                 'type':'burst',
                 'bulletsPerBurst':3,
-                'timeBetweenBurstShots':0.025,
-                'timeBetweenBursts':0.3,
+                'timeBetweenBurstShots':0.035,
+                'timeBetweenBursts':0.4,
                 'type2':'single',
                 'zoom':45,
                 'recoil':0.08,
-                'auto':True,
+                'auto':False,
                 },
             'Support':{
                 'maxAmmo':100,
@@ -476,9 +491,9 @@ class Person(SphereObject):
                 'reloadTime':5.0,
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
-                'accuracy':0.9,
+                'accuracy':0.8,
                 'timeBetweenShots':0.18,
-                'damage':15,
+                'damage':10,
                 'velocity':50.0,
                 'type':'single',
                 'bulletsPerShot':3,
@@ -504,6 +519,8 @@ class Person(SphereObject):
             }
 
         self.gunName = ""
+        self.primaryGunName = "SMG"
+        self.secondayGunName = "Assault"
         self.setGun("SMG")
         
     def doDamage(self, damage):
@@ -520,15 +537,23 @@ class Person(SphereObject):
             
             SphereObject.preStep(self)
             if '1' in self.presses:
-                self.setGun("SMPistol")
+                self.setGun("Pistol")
             if '2' in self.presses:
-                self.setGun("SMG")
+                self.setGun("SMPistol")
             if '3' in self.presses:
-                self.setGun("Shotgun")
+                self.setGun("SMG")
             if '4' in self.presses:
-                self.setGun("Assault")
+                self.setGun("Shotgun")
             if '5' in self.presses:
+                self.setGun("Assault")
+            if '6' in self.presses:
+                self.setGun("Support")
+            if '7' in self.presses:
                 self.setGun("Sniper")
+            if 'mu' in self.presses:
+                self.setGun(self.primaryGunName)
+            if 'md' in self.presses:
+                self.setGun(self.secondaryGunName)
         else:
             if self.timeUntilRespawn <= 0:
                 self.setDead(False)
@@ -546,8 +571,8 @@ class Person(SphereObject):
         #Load New Gun Stats
         if self.gunName != name:
             self.gunName = name
-            self.maxAmmo = self.guns[name]['maxAmmo']
-            self.ammo = self.guns[name]['ammo']
+            self.maxAmmo = self.guns[self.gunName]['maxAmmo']
+            self.ammo = self.guns[self.gunName]['ammo']
             self.reloading = self.guns[self.gunName]['reloading'] 
             self.reloadTime = self.guns[self.gunName]['reloadTime']
             self.timeLeftUntilNextShot = self.guns[self.gunName]['timeLeftUntilNextShot']

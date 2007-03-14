@@ -61,7 +61,13 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             'weapon3':OIS.KC_UNASSIGNED,
             'weapon4':OIS.KC_UNASSIGNED,
             'weapon5':OIS.KC_UNASSIGNED,
-            'shoot':None}
+            'weapon6':OIS.KC_UNASSIGNED,
+            'weapon7':OIS.KC_UNASSIGNED,
+            'weapon8':OIS.KC_UNASSIGNED,
+            'weapon9':OIS.KC_UNASSIGNED,
+            'shoot':None,
+            'previous':None,
+            'next':None}
 
     def frameEnded(self, frameTime):
         objects.DynamicObject.frameEnded(self, frameTime)
@@ -74,28 +80,20 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             return presses
 
         if keyboard.isKeyDown(self.keys['left']):
-            #self._moveLeft()
             presses.append("l")
         if keyboard.isKeyDown(self.keys['right']):
-            #self._moveRight()
             presses.append("r")
         if keyboard.isKeyDown(self.keys['rotate-left']):
-            #self._rotateLeft()
             presses.append("rl")
         if keyboard.isKeyDown(self.keys['rotate-right']):
-            #self._rotateRight()
             presses.append("rr")
         if keyboard.isKeyDown(self.keys['up']):
-            #self._jump()
             presses.append("u")
         if keyboard.isKeyDown(self.keys['down']):
-            #self._crouch()
             presses.append("d")
         if keyboard.isKeyDown(self.keys['reload']):
-            #self._reload()
             presses.append("a")
         if keyboard.isKeyDown(self.keys['downdown']):
-            #self._prone()
             presses.append("p")
         if keyboard.isKeyDown(self.keys['weapon1']):
             presses.append("1")
@@ -107,9 +105,16 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             presses.append("4")
         if keyboard.isKeyDown(self.keys['weapon5']):
             presses.append("5")
+        if keyboard.isKeyDown(self.keys['weapon6']):
+            presses.append("6")
+        if keyboard.isKeyDown(self.keys['weapon7']):
+            presses.append("7")
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
-            #self._shoot()
             presses.append("s")
+        if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['previous']):
+            presses.append("mu")
+        if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
+            presses.append("md")
 
         return presses
     
@@ -160,7 +165,9 @@ class BulletObject(objects.BulletObject, SphereObject):
             'weapon3':OIS.KC_UNASSIGNED,
             'weapon4':OIS.KC_UNASSIGNED,
             'weapon5':OIS.KC_UNASSIGNED,
-            'shoot':None}
+            'shoot':None,
+            'previous':None,
+            'next':None}
         
         self.name = name
         self._entity = gameworld.sceneManager.createBillboardSet("bb" + name)
@@ -228,17 +235,17 @@ class Person(objects.Person, SphereObject):
         self.soundManager = gameworld.soundManager
 
         self.sounds = {}
-        self.sounds['SMPistol'] = self.soundManager.createSound("SMPistol-" + name, "smg.wav", False)
-        self.sounds['SMG'] = self.soundManager.createSound("SMG-" + name, "bolter.wav", False)
-        self.sounds['Test'] = self.soundManager.createSound("Test-" + name, "pbeampistol.wav", False)
-        self.sounds['Assault'] = self.soundManager.createSound("Assault-" + name, "assault.wav", False)
-        self.sounds['Shotgun'] = self.soundManager.createSound("Shotgun-" + name, "shotgun.wav", False)
-        self.sounds['Sniper'] = self.soundManager.createSound("Sniper-" + name, "sniper.wav", False)
+        for gun in self.guns.keys():
+            self.sounds[gun] = self.soundManager.createSound(gun + "-" + name, gun + ".wav", False)
         
-        self.noAmmoSound = self.soundManager.createSound("empty-" + name, "verschluss.wav", False)
+        self.reloadSound = self.soundManager.createSound("reload-" + name, "reload.wav", False)
+        self.noAmmoSound = self.soundManager.createSound("noammo-" + name, "noammo.wav", False)
 
         for sound in [self.sounds[name] for name in self.sounds]:
             self._node.attachObject(sound)
+
+        self._node.attachObject(self.reloadSound)
+        self._node.attachObject(self.noAmmoSound)
 
         self.setDirection((1.0,0.0,0.0))
         self._camera = camera
@@ -257,7 +264,13 @@ class Person(objects.Person, SphereObject):
             'weapon3':OIS.KC_UNASSIGNED,
             'weapon4':OIS.KC_UNASSIGNED,
             'weapon5':OIS.KC_UNASSIGNED,
-            'shoot':None}
+            'weapon6':OIS.KC_UNASSIGNED,
+            'weapon7':OIS.KC_UNASSIGNED,
+            'weapon8':OIS.KC_UNASSIGNED,
+            'weapon9':OIS.KC_UNASSIGNED,
+            'shoot':None,
+            'previous':None,
+            'next':None}
         
         ogre.Animation.setDefaultInterpolationMode(ogre.Animation.IM_SPLINE)
         self.animations = {}
@@ -272,14 +285,20 @@ class Person(objects.Person, SphereObject):
         self.animations['jump'].setLoop(False)
 
 
-
     def __del__(self):
         SphereObject.__del__(self)
         objects.Person.__del__(self)
         for sound in [self.sounds[name] for name in self.sounds]:
             self.audioManager.destroySound(sound)
 
+    def _shoot(self):
+        #TODO: Make server side
+        if self.ammo == 0:
+            self.noAmmoSound.play()
+        objects.Person._shoot(self)
+
     def _shootSound(self):
+        self.noAmmoSound.stop()
         if self.sounds[self.gunName].isPlaying():
             self.sounds[self.gunName].stop()
 
@@ -378,12 +397,18 @@ class Player(Person):
         self.keys['rotate-left'] = OIS.KC_A
         self.keys['rotate-right'] = OIS.KC_D
         self.keys['shoot'] = OIS.MB_Left
+        self.keys['previous'] = OIS.MB_Button3
+        self.keys['next'] = OIS.MB_Button4
         self.keys['reload'] = OIS.KC_R
         self.keys['weapon1'] = OIS.KC_1
         self.keys['weapon2'] = OIS.KC_2
         self.keys['weapon3'] = OIS.KC_3
         self.keys['weapon4'] = OIS.KC_4
         self.keys['weapon5'] = OIS.KC_5
+        self.keys['weapon6'] = OIS.KC_6
+        self.keys['weapon7'] = OIS.KC_7
+        self.keys['weapon8'] = OIS.KC_8
+        self.keys['weapon9'] = OIS.KC_9
         
         self.cursorNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
         self.cursorLines = ogre.ManualObject( "__CURSOR__" + name)
