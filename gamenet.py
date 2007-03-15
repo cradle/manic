@@ -16,9 +16,10 @@ class XMPPClientConnector(SRVConnector):
         return host, port
 
 class NetCode:
-        def __init__(self, name, server, resource, password, updateInterval = 0.1):
+        def __init__(self, name, server, resource, password, chatroom, updateInterval = 0.1):
                 self.reactor = reactor
                 self.thexmlstream = None
+                self.server = server
                 self.tryandregister = 1
                 self.messageNum = 0
                 self.updateInterval = updateInterval
@@ -35,11 +36,13 @@ class NetCode:
                 self.factory.addBootstrap('//event/client/basicauth/registerfailed', self.registerfailedEvent)
         	#self.factory.addBootstrap(xmlstream.STREAM_CONNECTED_EVENT, self.connectedEvent)
         	self.factory.addBootstrap('//event/stream/connected', self.connectedEvent)
-		self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnectedEvent)
+		self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnectedEvent)             
 
-                # Go!
-                self.reactor.connectTCP(server, 5222, self.factory)
-                self.reactor.startRunning()
+		self.globalChat = "AV-" + chatroom + "-all"
+		self.teamChat = "AV-" + chatroom + "-team"
+		self.chatRoomServer = "conference.cradle.dyndns.org"
+
+                # Don't start until we get a nickname
 
         def gotMessage(self, el):
                 error = ''.join([''.join(x.attributes['code']) for x in el.elements() if x.name == 'error'])
@@ -50,33 +53,39 @@ class NetCode:
                 elif len(message) != 0:
 			sender = jid.JID(el.attributes['from'])
 			if el.attributes['type'] == 'groupchat':
-				self.statusListener(str(sender.resource + "@" + sender.user), str(message))
+				self.statusListener(str(sender.resource), str(message))
 			else:
 				self.statusListener(str(sender.userhost()), str(message))
 				
+        def sendTeamMessage(self, message):
+            self.sendGroupMessage(message, self.teamChat)
 
-	def sendGroupMessage(self, message, room = "assaultvector", nick = "test"):
-		self.sendMessage(room + "@conference.cradle.dyndns.org:" + message, type="groupchat")
+        def sendAllMessage(self, message):
+            self.sendGroupMessage(message, self.globalChat)
 
-        def sendMessage(self, text, type='chat'):
+	def sendGroupMessage(self, message, room):
+		self.sendMessage(room + "@" + self.chatRoomServer + ":" + message, type="groupchat")
+
+        def sendMessage(self, text, type='groupchat'):
                 split = text.split(":",1)
                 to = None
                 if len(split) == 2 and split[0].lower() == "team":
-                    self.sendGroupMessage(split[1])
-                    return
+                        self.sendTeamMessage("(team): " + split[1].strip())
+                        return
                 
                 if len(split) == 2 and len(split[0]) != 0:
                         try:
                                 to = jid.JID(split[0])
-                                theBody = split[1]
+                                theBody = split[1].strip()
                         except jid.InvalidFormat:
                                 pass
-
+                
                 if to and to.user and to.host:
                         to = to.full()
                 else:
-                        to = 'cradle@gmail.com'
-                        theBody = text
+                        to = self.globalChat + "@" + self.chatRoomServer
+                        type = "groupchat"
+                        theBody = text.strip()
 
                 if len(text) == 0:
                         return
@@ -123,14 +132,14 @@ class NetCode:
                 xmlstream.addObserver('/iq', self.gotIq)
                 xmlstream.addObserver('/*', self.debug)
 
-		self.joinChatroom("assaultvector", self.myJID.user)
-		self.joinChatroom("assaultvector-team1", self.myJID.user)
+		self.joinChatroom(self.teamChat)
+		self.joinChatroom(self.globalChat)
 		
 
-	def joinChatroom(self, roomName = 'assaultvector', nickName = 'test'):
+	def joinChatroom(self, roomName):
 		xmlstream = self.thexmlstream
 		message = domish.Element((None, 'presence'))
-		message['to'] = roomName + "@conference.cradle.dyndns.org/" + nickName
+		message['to'] = roomName + "@conference.cradle.dyndns.org/" + self.nickName
 		message.addElement("priority",content="5")
 		c = domish.Element(("http://jabber.org/protocol/caps","c"))
 		c['ext'] = 'cs ep-notify'
@@ -164,7 +173,7 @@ class NetCode:
                 if jid.JID(el.attributes['from']).userhost == self.myJID.userhost:
                         return
                 
-                self.statusListener(str(jid.JID(el.attributes['from']).userhost()), str('is %s' % status))
+                #self.statusListener(str(jid.JID(el.attributes['from']).userhost()), str('is %s' % status))
                         
                 try:
                         t = el.attributes['type']
@@ -214,6 +223,13 @@ class NetCode:
 	def stop(self):
 		self.reactor.stop()
                 self.statusListener("System", 'Shutting down')
+
+        def setNickName(self, nick):
+                self.nickName = nick
+                print "Nickname Set, Logging in"
+                # Go!
+                self.reactor.connectTCP(self.server, 5222, self.factory)
+                self.reactor.startRunning()
 
 def aMethod(a,b):
         print a,"=>",b

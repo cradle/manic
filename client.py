@@ -144,10 +144,12 @@ class GameKeyListener(OIS.KeyListener):
         self.keyToRepeat = {'mode':'waiting', 'time':0.0, 'text':arg.text, 'key':arg.key}
         CEGUI.System.getSingleton().injectKeyDown( arg.key )
         CEGUI.System.getSingleton().injectChar( arg.text )
+        print "DN",arg.key
     
     def keyReleased(self, arg):
         if len(self.keyToRepeat) != 0 and arg.key == self.keyToRepeat['key']:
             self.keyToRepeat = {}
+        print "UP",arg.key
             
         CEGUI.System.getSingleton().injectKeyUp( arg.key )
 
@@ -155,20 +157,34 @@ class GameKeyListener(OIS.KeyListener):
         chat = CEGUI.WindowManager.getSingleton().getWindow("TextWindow")
         editBox = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
 
-        # TODO: Put more thought into HCI
         if arg.key == OIS.KC_RETURN and editBox.hasInputFocus():
             self.game.sendText()
-            static.activate() # Remove focus from editbox
-            chat.setEnabled(False)
+            editBox.deactivate() # Remove focus from editbox
+            chat.disable()
+            chat.setAlpha(0.3)
             
         if arg.key == OIS.KC_T and \
            (chat.isDisabled() or (not chat.isDisabled() and not editBox.hasInputFocus())):
-            chat.setEnabled(True)
+            chat.enable()
+            chat.setAlpha(0.9)
+            if editBox.getText().c_str().startswith("team:"):
+                editBox.setText(editBox.getText().c_str()[5:])
+                editBox.setCaratIndex(editBox.getCaratIndex() - 5)
+            editBox.activate()
+            
+        if arg.key == OIS.KC_Y and \
+           (chat.isDisabled() or (not chat.isDisabled() and not editBox.hasInputFocus())):
+            chat.enable()
+            chat.setAlpha(0.9)
+            if not editBox.getText().c_str().startswith("team:"):
+                editBox.setText("team:" + editBox.getText().c_str())
+                editBox.setCaratIndex(editBox.getCaratIndex() + 5)
             editBox.activate()
                     
         if arg.key == OIS.KC_ESCAPE and editBox.hasInputFocus():
-            static.activate() # Remove focus from editbox
-            chat.setEnabled(False)
+            editBox.deactivate()
+            chat.disable()
+            chat.setAlpha(0.3)
                 
         if arg.key == OIS.KC_F12:
             chat.setVisible(not chat.isVisible())
@@ -314,7 +330,7 @@ class Client(Application, Engine):
     def __init__(self, autoConnect = False):
         Application.__init__(self)
         Engine.__init__(self)
-        ip, port = "cradle.dyndns.org", 10001
+        ip, port = "cradle.dyndns.org", "10001"
 
         if not autoConnect:
             address = raw_input("server ('cradle.dyndns.org:10001') :> ")
@@ -325,7 +341,7 @@ class Client(Application, Engine):
                 if len(split) == 2:
                     port = split[1]
 
-        self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AssaultVector", "enter")
+        self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AV", "enter", "-".join([ip, port]))
         self.chat.registerMessageListener(self.messageListener)
         self.timeBetweenChatUpdates = 0.5
         self.timeUntilNextChatUpdate = 0.0            
@@ -339,7 +355,7 @@ class Client(Application, Engine):
     
     def sendText(self):
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
-        self.messageListener("Me", e.getText().c_str())
+        #self.messageListener("Me", e.getText().c_str())
         self.chat.sendMessage(e.getText().c_str())
         e.setText("")
 
@@ -426,7 +442,7 @@ class Client(Application, Engine):
         CEGUI.SchemeManager.getSingleton().loadScheme("TaharezLook.scheme") 
         self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow")
         CEGUI.MouseCursor.getSingleton().setVisible(False)
-        CEGUI.FontManager.getSingleton().createFont("Commonwealth-10.font")
+        font = CEGUI.FontManager.getSingleton().createFont("tuffy.font")
         background = winMgr.createWindow("TaharezLook/StaticImage", "background_wnd")
         background.setProperty("FrameEnabled", "false")
         background.setProperty("BackgroundEnabled", "false")
@@ -449,8 +465,9 @@ class Client(Application, Engine):
         #textwnd.setMinSize(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.1)))
         textwnd.setSize(CEGUI.UVector2(cegui_reldim(0.55), cegui_reldim( 0.2)))
         textwnd.setCloseButtonEnabled(False)
-        textwnd.setText("Chat (press 't' to activate, 'Enter' to send, 'ESC' to cancel)")
+        textwnd.setText("Chat:'t', Team chat:'y', Send:'Enter', Cancel:'ESC', Remove:'F12')")
         textwnd.setEnabled(False)
+        textwnd.setAlpha(0.3)
         
         st = winMgr.createWindow("TaharezLook/StaticText", "TextWindow/Static")
         st.setProperty("HorzFormatting","WordWrapLeftAligned")
@@ -507,16 +524,19 @@ class Client(Application, Engine):
         self.frameListener = FrameListener(self, self.renderWindow, self.camera)
         self.keylistener = GameKeyListener(self)
         self.root.addFrameListener(self.frameListener)
-        
-    def frameEnded(self, frameTime, keyboard,  mouse):
-            
-        Engine.frameEnded(self, frameTime)
 
+    def updateChat(self, frameTime):
         self.timeUntilNextChatUpdate -= frameTime
         if self.timeUntilNextChatUpdate <= 0.0:
             self.chat.update()
             while self.timeUntilNextChatUpdate <= 0.0:
                 self.timeUntilNextChatUpdate += self.timeBetweenChatUpdates
+        
+    def frameEnded(self, frameTime, keyboard,  mouse):
+            
+        Engine.frameEnded(self, frameTime)
+
+        self.updateChat()
         
         self.keyboard = keyboard
         self.mouse = mouse
@@ -550,6 +570,7 @@ class Client(Application, Engine):
                             newObject = None
                             if serverObject[2] == True:
                                 newObject = Player(self, serverObject[0], self.camera)
+                                self.chat.setNickName(serverObject[0])
                                 newObject.enable()
                                 self.player = newObject
                             else:

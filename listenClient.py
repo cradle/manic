@@ -11,6 +11,7 @@ class ListenClient(Client, Server):
         Client._createScene(self)
         self.clientNumber += 1
         self.player = guiobjects.Player(self, "p%i" % self.clientNumber, self.camera)
+        self.chat.setNickName(self.player._name)
         self.player.setPosition(self.spawnLocation())
         self.objects += [self.player]
         self._stats[self.player._name] = {}
@@ -20,6 +21,7 @@ class ListenClient(Client, Server):
         
     def frameEnded(self, frameTime, keyboard, mouse):            
         Server.frameEnded(self, frameTime)
+        self.updateChat(frameTime)
         self.displayScores()
         self.displayVitals()
         self.player.inputPresses(self.player.input(keyboard, mouse))
