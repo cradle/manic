@@ -44,7 +44,6 @@ class NetworkClient(DatagramProtocol):
         self.transport.connect(self.serverIP, self.port)
         
     def datagramReceived(self, data, (host, port)):
-        print "RCVD:", len(data)
         message = jelly.unjelly(banana.decode(zlib.decompress(data)))
         if type(message[0]) == str and message[0] == "pong":
             for ping in self.pings:
@@ -55,7 +54,6 @@ class NetworkClient(DatagramProtocol):
         elif type(message[0]) == str and message[0] == "stats":
             self._stats = message[1]
         else:
-            #self._messages.insert(0,message)
             self._messages += [message]
         
     # Possibly invoked if there is no server listening on the
@@ -64,7 +62,7 @@ class NetworkClient(DatagramProtocol):
         print "No Server"
 
     def send(self, obj):
-        self.transport.write(zlib.compress(banana.encode(jelly.jelly(obj)),1))
+        self.transport.write(banana.encode(jelly.jelly(obj)))
 
     def update(self, elapsedTime):
         if self.serverIP != None:

@@ -124,8 +124,15 @@ class GameKeyListener(OIS.KeyListener):
         self.keyToRepeat = {}
         self.timeUntilRepeat = 0.4
         self.timeBetweenRepeats = 0.03
+        self.chatAlpha = 0.3
+        self.chatPosition = CEGUI.UDim(0.8, 0)
 
     def frameEnded(self, time, keyboard):
+        chat = CEGUI.WindowManager.getSingleton().getWindow("TextWindow")
+        # TODO: Moderate speed of effects with time
+        chat.setAlpha((chat.getAlpha()*3 + self.chatAlpha)/4)
+        chat.setYPosition((chat.getYPosition()*CEGUI.UDim(3, 0) + self.chatPosition)*CEGUI.UDim(0.25, 0))
+        
         if len(self.keyToRepeat) != 0:
             key = self.keyToRepeat['key']
             self.keyToRepeat['time'] += time
@@ -159,12 +166,13 @@ class GameKeyListener(OIS.KeyListener):
             self.game.sendText()
             editBox.deactivate() # Remove focus from editbox
             chat.disable()
-            chat.setAlpha(0.3)
+            self.chatAlpha = 0.3
             
         if arg.key == OIS.KC_T and \
            (chat.isDisabled() or (not chat.isDisabled() and not editBox.hasInputFocus())):
             chat.enable()
-            chat.setAlpha(0.9)
+            self.chatAlpha = 0.9
+            self.chatPosition = CEGUI.UDim(0.8, 0)
             if editBox.getText().c_str().startswith("team:"):
                 editBox.setText(editBox.getText().c_str()[5:])
                 editBox.setCaratIndex(editBox.getCaratIndex() - 5)
@@ -173,7 +181,8 @@ class GameKeyListener(OIS.KeyListener):
         if arg.key == OIS.KC_Y and \
            (chat.isDisabled() or (not chat.isDisabled() and not editBox.hasInputFocus())):
             chat.enable()
-            chat.setAlpha(0.9)
+            self.chatAlpha = 0.9
+            self.chatPosition = CEGUI.UDim(0.8, 0)
             if not editBox.getText().c_str().startswith("team:"):
                 editBox.setText("team:" + editBox.getText().c_str())
                 editBox.setCaratIndex(editBox.getCaratIndex() + 5)
@@ -182,11 +191,20 @@ class GameKeyListener(OIS.KeyListener):
         if arg.key == OIS.KC_ESCAPE and editBox.hasInputFocus():
             editBox.deactivate()
             chat.disable()
-            chat.setAlpha(0.3)
+            self.chatAlpha = 0.3
                 
         if arg.key == OIS.KC_F12:
-            chat.setVisible(not chat.isVisible())
-            chat.setEnabled(chat.isVisible())
+            if self.chatPosition == CEGUI.UDim(0.8, 0):
+                self.chatPosition = CEGUI.UDim(1.0, 0)
+                editBox.deactivate()
+            else:
+                self.chatPosition = CEGUI.UDim(0.8, 0)
+                
+            chat.disable()
+            self.chatAlpha = 0.3
+            
+            #chat.setVisible(not chat.isVisible())
+            #chat.setEnabled(chat.isVisible())
 
 class GameMouseListener(OIS.MouseListener):
     def __init__(self, game):
@@ -462,12 +480,10 @@ class Client(Application, Engine):
         ##
         textwnd = winMgr.createWindow("TaharezLook/FrameWindow", "TextWindow")
         sheet.addChildWindow(textwnd)
-        textwnd.setPosition(CEGUI.UVector2(cegui_reldim(0.2), cegui_reldim( 0.8)))
-        #textwnd.setMaxSize(CEGUI.UVector2(cegui_reldim(0.4), cegui_reldim( 0.2)))
-        #textwnd.setMinSize(CEGUI.UVector2(cegui_reldim(0.1), cegui_reldim( 0.1)))
+        textwnd.setPosition(CEGUI.UVector2(CEGUI.UDim(0.2, 0), CEGUI.UDim(0.8, 0)))
         textwnd.setSize(CEGUI.UVector2(cegui_reldim(0.55), cegui_reldim( 0.2)))
         textwnd.setCloseButtonEnabled(False)
-        textwnd.setText("Chat:'t', Team chat:'y', Send:'Enter', Cancel:'ESC', Remove:'F12')")
+        textwnd.setText("Chat:'t', Team chat:'y', Send:'Enter', Cancel:'ESC', Hide:'F12')")
         textwnd.setEnabled(False)
         textwnd.setAlpha(0.3)
         
@@ -533,7 +549,7 @@ class Client(Application, Engine):
             self.chat.update()
             while self.timeUntilNextChatUpdate <= 0.0:
                 self.timeUntilNextChatUpdate += self.timeBetweenChatUpdates
-        
+    
     def frameEnded(self, frameTime, keyboard,  mouse):
             
         Engine.frameEnded(self, frameTime)

@@ -111,7 +111,7 @@ class Engine:
         o2 = geom2.object
 
         if o1 == None or o2 == None:
-            print type(geom1), type(geom2)
+            print "BUG! Probably not deleting some object properly"
             return
 
         if (o1.type == "Bullet" and o2.type == "Bullet") or (o1 == o2):

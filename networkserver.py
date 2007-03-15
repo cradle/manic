@@ -48,7 +48,6 @@ class NetworkServer(DatagramProtocol):
         self.connectedCallback = connectedCallback
         
     def datagramReceived(self, data, address):
-        print "RCVD:", len(data)
         # Allocate the received datagram to the correct client
         client = Client(address, self.transport)
         if client not in self.clients:
@@ -57,7 +56,7 @@ class NetworkServer(DatagramProtocol):
         else:
             client = self.clients[self.clients.index(client)]
 
-        client.push(jelly.unjelly(banana.decode(zlib.decompress(data))))
+        client.push(jelly.unjelly(banana.decode(data)))
 
     def update(self, time = 0):
         self.reactor.runUntilCurrent()
