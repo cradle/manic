@@ -1,6 +1,5 @@
 import ode
 from objects import *
-import gamenet
 import time, random
 
 class Engine:    

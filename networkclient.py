@@ -16,6 +16,7 @@ class NetworkClient(DatagramProtocol):
         self.reactor = reactor
         self.serverIP = None
         self.port = port
+        self.reactor.startRunning()
         self.reactor.resolve(host).addCallback(self.gotIP)
         self._pingSendTime = time.time()
         self.roundTripTime = 0.0
@@ -28,6 +29,7 @@ class NetworkClient(DatagramProtocol):
         self._stats = {}
 
     def gotIP(self, ip):
+        print "Got IP", ip
         self.serverIP = ip
         self.reactor.listenUDP(0, self)
 
@@ -41,19 +43,18 @@ class NetworkClient(DatagramProtocol):
         self.transport.connect(self.serverIP, self.port)
         
     def datagramReceived(self, data, (host, port)):
-        if self.serverIP != None:
-            message = jelly.unjelly(banana.decode(data))
-            if type(message[0]) == str and message[0] == "pong":
-                for ping in self.pings:
-                    if ping.number == message[1]:
-                        self.roundTripTime = time.time() - ping.time;
-                        self.serverOffset = time.time() - (message[2] + self.roundTripTime/2)
-                        self.pings = [p for p in self.pings if p.number <= ping.number]
-            elif type(message[0]) == str and message[0] == "stats":
-                self._stats = message[1]
-            else:
-                #self._messages.insert(0,message)
-                self._messages += [message]
+        message = jelly.unjelly(banana.decode(data))
+        if type(message[0]) == str and message[0] == "pong":
+            for ping in self.pings:
+                if ping.number == message[1]:
+                    self.roundTripTime = time.time() - ping.time;
+                    self.serverOffset = time.time() - (message[2] + self.roundTripTime/2)
+                    self.pings = [p for p in self.pings if p.number <= ping.number]
+        elif type(message[0]) == str and message[0] == "stats":
+            self._stats = message[1]
+        else:
+            #self._messages.insert(0,message)
+            self._messages += [message]
         
     # Possibly invoked if there is no server listening on the
     # address to which we are sending.
@@ -71,16 +72,12 @@ class NetworkClient(DatagramProtocol):
                 while self.timeUntilNextPing <= 0.0:
                     self.timeUntilNextPing += self.timeBetweenPings
                 
+        self.reactor.runUntilCurrent()
         self.reactor.doIteration(0)
 
 if __name__ == "__main__":
     # 0 means any port, we don’t care in this case
-    client = NetworkClient()
-    reactor.listenUDP(0, client)
-    t = ""
-    while t != "exit":
-        reactor.doIteration(0)
-        t = raw_input(":")
-        if t != "":
-            client.send(eval(t))
+    client = NetworkClient("cradle.dyndns.org")
+    while(True):
+        client.update(0.1)
     

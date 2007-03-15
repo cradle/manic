@@ -38,9 +38,11 @@ class NetCode:
         	self.factory.addBootstrap('//event/stream/connected', self.connectedEvent)
 		self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnectedEvent)             
 
-		self.globalChat = "AV-" + chatroom + "-all"
-		self.teamChat = "AV-" + chatroom + "-team"
+                # Must be lower case
+		self.globalChat = "av-" + chatroom + "-all"
+		self.teamChat = "av-" + chatroom + "-team"
 		self.chatRoomServer = "conference.cradle.dyndns.org"
+		self.nickName = None
 
                 # Don't start until we get a nickname
 
@@ -53,7 +55,10 @@ class NetCode:
                 elif len(message) != 0:
 			sender = jid.JID(el.attributes['from'])
 			if el.attributes['type'] == 'groupchat':
-				self.statusListener(str(sender.resource), str(message))
+                            if str(sender.user) == self.teamChat:
+                                    self.statusListener(str(sender.resource), "(team) " + str(message))
+                            else:
+                                    self.statusListener(str(sender.resource), str(message))
 			else:
 				self.statusListener(str(sender.userhost()), str(message))
 				
@@ -70,7 +75,7 @@ class NetCode:
                 split = text.split(":",1)
                 to = None
                 if len(split) == 2 and split[0].lower() == "team":
-                        self.sendTeamMessage("(team): " + split[1].strip())
+                        self.sendTeamMessage(split[1].strip())
                         return
                 
                 if len(split) == 2 and len(split[0]) != 0:

@@ -144,12 +144,10 @@ class GameKeyListener(OIS.KeyListener):
         self.keyToRepeat = {'mode':'waiting', 'time':0.0, 'text':arg.text, 'key':arg.key}
         CEGUI.System.getSingleton().injectKeyDown( arg.key )
         CEGUI.System.getSingleton().injectChar( arg.text )
-        print "DN",arg.key
     
     def keyReleased(self, arg):
         if len(self.keyToRepeat) != 0 and arg.key == self.keyToRepeat['key']:
             self.keyToRepeat = {}
-        print "UP",arg.key
             
         CEGUI.System.getSingleton().injectKeyUp( arg.key )
 
@@ -360,7 +358,11 @@ class Client(Application, Engine):
         e.setText("")
 
     def messageListener(self, name, message):
-        self.appendText(name + ": " + message)
+        if message.startswith("/me") and len(message[3:].strip()) > 0 :
+            self.appendText("*" + name + " " + message[3:].strip())
+        else:
+            self.appendText(name + ": " + message)
+            
 
     def appendText(self, text):
         st = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
@@ -536,7 +538,7 @@ class Client(Application, Engine):
             
         Engine.frameEnded(self, frameTime)
 
-        self.updateChat()
+        self.updateChat(frameTime)
         
         self.keyboard = keyboard
         self.mouse = mouse

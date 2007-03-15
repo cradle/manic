@@ -21,7 +21,6 @@ class StaticObject(object):
         self._geometry.object = None
 
     def __del__(self):
-        print "Deleting", type(self)
         self._geometry.disable()
         self._world = None
         self._space = None
@@ -359,9 +358,9 @@ class Person(SphereObject):
         self.ownerName = name
         self._bulletNum = 0
         self.timeNeededToPrepareJump = 0.0
-        self.maxStopForce = 35000/self.feetSize
-        self.maxSpinForce = 35000/self.feetSize
-        self.maxSpinVelocity = 10/self.feetSize
+        self.maxStopForce = 40000/self.feetSize
+        self.maxSpinForce = 40000/self.feetSize
+        self.maxSpinVelocity = 15/self.feetSize
         self.maxMoveForce = 400
         self.maxMoveVelocity = 2
         self.maxJumpForce = ode.Infinity
