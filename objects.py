@@ -306,8 +306,8 @@ class Person(SphereObject):
 
         # The size of the movement ball
         self.feetSize = 0.5 # Sphere
-        torsoSize = (0.6, 0.6, 0.6) # Box
-        headSize = (0.3 ,0.4 ,0.3 )# Box
+        torsoSize = (1.0, 0.5, 1.0) # Box
+        headSize = (1.0 ,0.4 ,1.0 )# Box
         weight = 70
         self._name = name        
         self._size = self.feetSize
@@ -315,7 +315,7 @@ class Person(SphereObject):
         self._geometry = ode.GeomSphere(gameworld.space, self.feetSize)
         self._body = ode.Body(gameworld.world)
         mass = ode.Mass()
-        mass.setSphereTotal(weight,self.feetSize)
+        mass.setSphereTotal(weight/2,self.feetSize)
         self._body.setMass(mass)
         self._geometry.setBody(self._body)
         self._geometry.objectName = name
@@ -331,7 +331,6 @@ class Person(SphereObject):
         self._torsoGeometry.objectName = self._name
         ## Moving up only feetSize (not *2) so that it overlaps the feet
         self._torsoGeometry.setPosition((0,0.8,0))
-        self._torsoGeometry.setQuaternion((0.707,0,0,0.707))
 
         self._torsoTransform = ode.GeomTransform(gameworld.space)
         self._torsoTransform.setGeom(self._torsoGeometry)
@@ -342,17 +341,25 @@ class Person(SphereObject):
         # Head
         self._headGeometry = ode.GeomBox(lengths=headSize)
         self._headGeometry.objectName = self._name
-        self._headGeometry.setPosition((0,1.3,0))
-        self._headGeometry.setQuaternion((0.707,0,0,0.707))
+        self._headGeometry.setPosition((0,1.0,0))
 
         self._headTransform = ode.GeomTransform(gameworld.space)
         self._headTransform.setGeom(self._headGeometry)
         self._headTransform.location = "Head"
         self._headTransform.objectName = self._name
         self._headTransform.object = self
+
+        self.torsoBody = ode.Body(gameworld.world)
+        mass = ode.Mass()
+        mass.setSphereTotal(weight/2,self.feetSize)
+        self.torsoBody.setMass(mass)
+
+        self.hinge = ode.HingeJoint(gameworld.world)
+        self.hinge.attach(self._body, self.torsoBody)
+        self.hinge.setAxis((0,0,1))
         
-        self._headTransform.setBody(self._body)
-        self._torsoTransform.setBody(self._body)
+        self._headTransform.setBody(self.torsoBody)
+        self._torsoTransform.setBody(self.torsoBody)
         
         self.type = "Person"
         self.ownerName = name
@@ -427,7 +434,7 @@ class Person(SphereObject):
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
                 'accuracy':0.95,
-                'timeBetweenShots':0.05,
+                'timeBetweenShots':0.0,
                 'damage':10,
                 'velocity':35.0,
                 'type':'single',
