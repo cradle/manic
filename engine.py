@@ -119,8 +119,7 @@ class Engine:
         else:
             contacts = ode.collide(geom1, geom2)
 
-        # Only do one contact
-        for contact in contacts[0:1]:
+        for contact in contacts:
             contact.setMode(ode.ContactBounce + ode.ContactApprox1_1)
             contact.setBounce(0.01)
             contact.setBounceVel(0.0)
