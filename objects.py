@@ -309,13 +309,14 @@ class Person(SphereObject):
         torsoSize = (1.0, 0.5, 1.0) # Box
         headSize = (1.0 ,0.4 ,1.0 )# Box
         weight = 70
+        self.weight = weight
         self._name = name        
         self._size = self.feetSize
         
         self._geometry = ode.GeomSphere(gameworld.space, self.feetSize)
         self._body = ode.Body(gameworld.world)
         mass = ode.Mass()
-        mass.setSphereTotal(weight/2,self.feetSize)
+        mass.setSphereTotal(weight,self.feetSize)
         self._body.setMass(mass)
         self._geometry.setBody(self._body)
         self._geometry.objectName = name
@@ -350,16 +351,20 @@ class Person(SphereObject):
         self._headTransform.object = self
 
         self.torsoBody = ode.Body(gameworld.world)
+        self.torsoBody.setGravityMode(False)
         mass = ode.Mass()
-        mass.setSphereTotal(weight/2,self.feetSize)
-        self.torsoBody.setMass(mass)
+        mass.setSphereTotal(weight,self.feetSize)
+        #self.torsoBody.setMass(mass)
 
         self.hinge = ode.HingeJoint(gameworld.world)
         self.hinge.attach(self._body, self.torsoBody)
         self.hinge.setAxis((0,0,1))
         
-        self._headTransform.setBody(self.torsoBody)
         self._torsoTransform.setBody(self.torsoBody)
+        self._headTransform.setBody(self.torsoBody)
+            
+        self.torsoBody.setQuaternion((1,0,0,0))
+        self.torsoBody.setAngularVel((0,0,0))
         
         self.type = "Person"
         self.ownerName = name
@@ -454,7 +459,7 @@ class Person(SphereObject):
                 'velocity':25.0,
                 'type':'single',
                 'zoom':30,
-                'recoil':0.1,
+                'recoil':0.06,
                 'auto':True,
                 },
             'SMG':{
@@ -520,7 +525,7 @@ class Person(SphereObject):
                 'type':'single',
                 'bulletsPerShot':3,
                 'zoom':60,
-                'recoil':0.05,
+                'recoil':0.075,
                 'auto':True,
                 },
             'Sniper':{
@@ -640,7 +645,7 @@ class Person(SphereObject):
     def _calculateAccuracy(self):
             
         self._accuracy -= self._instability
-        self._instability /= 1.75
+        self._instability /= 1.1
 
         recoveryWeight = 2.5
 
@@ -791,8 +796,11 @@ class Person(SphereObject):
             self._motor.setAngleParam(ode.ParamFMax, self.maxStopForce)
             self._motor.setAngleParam(ode.ParamVel, 0)
         self._calculateAccuracy()
-        self._torsoTransform.setQuaternion((1,0,0,0))
-        self._headTransform.setQuaternion((1,0,0,0))
+        v = self.torsoBody.getAngularVel()[2]
+        self._body.addForce((-self.weight*v*math.fabs(v)*0.25,0,0))
+            
+        self.torsoBody.setQuaternion((1,0,0,0))
+        self.torsoBody.setAngularVel((0,0,0))
         
     def isEnabled(self):
         return self.enabled

@@ -351,7 +351,7 @@ class Person(objects.Person, SphereObject):
             self.animations['crouch'].addTime(time)
             self.animations['jump'].Enabled = False
             self.animations['dead'].Enabled = False
-            self.animations['run'].Enabled = False
+            #self.animations['run'].Enabled = False
             self.animations['idle'].Enabled = False
             self.animations['crouch'].Enabled = True
             self.animations['jump'].setTimePosition(0)
@@ -360,7 +360,7 @@ class Person(objects.Person, SphereObject):
             self.animations['jump'].addTime(time)
             self.animations['jump'].Enabled = True
             self.animations['dead'].Enabled = False
-            self.animations['run'].Enabled = False
+            #self.animations['run'].Enabled = False
             self.animations['idle'].Enabled = False
             self.animations['crouch'].Enabled = True
             self.animations['crouch'].setTimePosition(0)
@@ -369,7 +369,7 @@ class Person(objects.Person, SphereObject):
             self.animations['idle'].addTime(time)
             self.animations['jump'].Enabled = False
             self.animations['dead'].Enabled = False
-            self.animations['run'].Enabled = False
+            #self.animations['run'].Enabled = False
             self.animations['idle'].Enabled = True
             self.animations['crouch'].Enabled = False
             self.animations['crouch'].setTimePosition(0)
@@ -420,7 +420,7 @@ class Player(Person):
         
     def setPosition(self, position):
         if position:
-            position = [(x+y)/2 for x,y in zip(position, self._body.getPosition())]
+            position = [(x+y*2)/3 for x,y in zip(position, self._body.getPosition())]
         Person.setPosition(self, position)
 
     def setAttributes(self, attributes):
