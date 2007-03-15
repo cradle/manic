@@ -286,13 +286,13 @@ class BulletObject(SphereObject):
 
     def getAttributes(self):
         if self.hasSentToClients:
-            return []
+            return 0
         else:
             return [self.to2d(self._body.getPosition()),
                     self.to2d(self._body.getLinearVel())]
 
     def setAttributes(self, attributes):
-        if len(attributes) != 0:
+        if type(attributes) != int:
             self._body.setPosition(self.to3d(attributes[0]))
             self._body.setLinearVel(self.to3d(attributes[1]))
 
@@ -358,11 +358,11 @@ class Person(SphereObject):
         self.ownerName = name
         self._bulletNum = 0
         self.timeNeededToPrepareJump = 0.0
-        self.maxStopForce = 40000/self.feetSize
-        self.maxSpinForce = 40000/self.feetSize
-        self.maxSpinVelocity = 15/self.feetSize
-        self.maxMoveForce = 400
-        self.maxMoveVelocity = 2
+        self.maxStopForce = 70000/self.feetSize
+        self.maxSpinForce = 70000/self.feetSize
+        self.maxSpinVelocity = 10/self.feetSize
+        self.maxMoveForce = 800
+        self.maxMoveVelocity = 3.5
         self.maxJumpForce = ode.Infinity
         self.maxJumpVelocity = 11
         self._world = gameworld
@@ -372,6 +372,21 @@ class Person(SphereObject):
         self.setDead(False)
         self.timeUntilRespawn = 0.0
         self.events = []
+
+        self.gunIDs = {
+             "Pistol":  1,
+             "SMPistol":2,
+             "SMG":     3,
+             "Shotgun": 4,
+             "Assault": 5,
+             "Support": 6,
+             "Sniper":  7,
+            }
+
+        self.gunNames = {}
+        for name, id in self.gunIDs.items():
+            self.gunNames[id] = name
+
         self.reset()
         self._instability = 0.0
 
@@ -587,12 +602,13 @@ class Person(SphereObject):
                 self.shotsLeftInBurst = self.guns[self.gunName]['bulletsPerBurst']
 
     def getAttributes(self):
+        # Massive corners cut here for the sake of network traffic
         return SphereObject.getAttributes(self) + \
-               [self.health,
-                self.gunName,
-                self.ammo,
-                self.timeLeftUntilNextShot,
-                self.timeUntilRespawn,
+               [int(self.health),
+                int(self.gunIDs[self.gunName]),
+                int(self.ammo),
+                self.timeLeftUntilNextShot if self.timeLeftUntilNextShot > 0 else 0,
+                self.timeUntilRespawn if self.timeUntilRespawn > 0 else 0,
                 (1 if self.reloading else 0 |
                 2 if self.isCrouching else 0 |
                 4 if self.isJumping else 0 |
@@ -603,7 +619,7 @@ class Person(SphereObject):
     def setAttributes(self, attributes):
         SphereObject.setAttributes(self,attributes)
         self.health = attributes[5]
-        self.setGun(attributes[6])
+        self.setGun(self.gunNames[attributes[6]])
         self.ammo = attributes[7]
         self.timeLeftUntilNextShot = attributes[8]
         self.timeUntilRespawn = attributes[9]

@@ -3,6 +3,7 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 from twisted.spread import jelly
 from twisted.spread import banana
+import zlib
 import time
 
 class ping(object):
@@ -43,7 +44,8 @@ class NetworkClient(DatagramProtocol):
         self.transport.connect(self.serverIP, self.port)
         
     def datagramReceived(self, data, (host, port)):
-        message = jelly.unjelly(banana.decode(data))
+        print "RCVD:", len(data)
+        message = jelly.unjelly(banana.decode(zlib.decompress(data)))
         if type(message[0]) == str and message[0] == "pong":
             for ping in self.pings:
                 if ping.number == message[1]:
@@ -62,7 +64,7 @@ class NetworkClient(DatagramProtocol):
         print "No Server"
 
     def send(self, obj):
-        self.transport.write(banana.encode(jelly.jelly(obj)))
+        self.transport.write(zlib.compress(banana.encode(jelly.jelly(obj)),1))
 
     def update(self, elapsedTime):
         if self.serverIP != None:

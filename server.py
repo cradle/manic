@@ -11,6 +11,7 @@ class Server(Engine):
         self.timeBetweenNetworkUpdates = 1.0/15.0
         self.timeUntilNextNetworkUpdate = 0.0
         self.clientNumber = 0
+        print "Server started"
 
     def clientConnected(self, client):
         self.clientNumber += 1

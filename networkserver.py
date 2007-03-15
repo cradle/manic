@@ -3,6 +3,7 @@ from twisted.internet import reactor
 from twisted.spread import jelly
 from twisted.spread import banana
 import time
+import zlib
 
 class Client():
     def __init__(self, address, transport):
@@ -36,16 +37,18 @@ class Client():
         return self.messages.pop()
 
     def send(self, data):
-        self.transport.write(banana.encode(jelly.jelly(data)), self.address)
+        self.transport.write(zlib.compress(banana.encode(jelly.jelly(data)),9), self.address)
     
 class NetworkServer(DatagramProtocol):
     def __init__(self, connectedCallback):
         self.clients = []
         self.reactor = reactor
+        self.reactor.startRunning()
         self.reactor.listenUDP(10001, self)
         self.connectedCallback = connectedCallback
         
     def datagramReceived(self, data, address):
+        print "RCVD:", len(data)
         # Allocate the received datagram to the correct client
         client = Client(address, self.transport)
         if client not in self.clients:
@@ -54,7 +57,7 @@ class NetworkServer(DatagramProtocol):
         else:
             client = self.clients[self.clients.index(client)]
 
-        client.push(jelly.unjelly(banana.decode(data)))
+        client.push(jelly.unjelly(banana.decode(zlib.decompress(data))))
 
     def update(self, time = 0):
         self.reactor.runUntilCurrent()
