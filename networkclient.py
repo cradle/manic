@@ -62,7 +62,7 @@ class NetworkClient(DatagramProtocol):
         print "No Server"
 
     def send(self, obj):
-        self.transport.write(banana.encode(jelly.jelly(obj)))
+        self.transport.write(banana.encode(obj))
 
     def update(self, elapsedTime):
         if self.serverIP != None:
