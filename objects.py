@@ -330,7 +330,7 @@ class Person(SphereObject):
         self._torsoGeometry = ode.GeomBox(lengths=torsoSize)
         self._torsoGeometry.objectName = self._name
         ## Moving up only feetSize (not *2) so that it overlaps the feet
-        self._torsoGeometry.setPosition((0,0.9,0))
+        self._torsoGeometry.setPosition((0,0.8,0))
         self._torsoGeometry.setQuaternion((0.707,0,0,0.707))
 
         self._torsoTransform = ode.GeomTransform(gameworld.space)
@@ -342,7 +342,7 @@ class Person(SphereObject):
         # Head
         self._headGeometry = ode.GeomBox(lengths=headSize)
         self._headGeometry.objectName = self._name
-        self._headGeometry.setPosition((0,1.6,0))
+        self._headGeometry.setPosition((0,1.5,0))
         self._headGeometry.setQuaternion((0.707,0,0,0.707))
 
         self._headTransform = ode.GeomTransform(gameworld.space)
