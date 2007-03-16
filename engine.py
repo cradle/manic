@@ -53,7 +53,7 @@ class Engine:
     def addBullet(self, name, position, direction, velocity, damage, owner):
         if len([True for object in self.objects if object._name == name]) == 0:
             b = self.createBulletObject(name, direction, velocity, damage)
-            b.setPosition([p + x for p, x in zip(position, direction)])
+            b.initialisePosition([p + x for p, x in zip(position, direction)])
             b.setOwnerName(owner._name)
             self.objects.append(b)
         

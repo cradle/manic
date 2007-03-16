@@ -613,6 +613,9 @@ class Client(Application, Engine):
                                 newObject.existsOnServer = True        
                                 newObject.setAttributes(serverObject[1])
                                 newObject.setEvents(serverObject[4])
+                                # HACK
+                                #if type(serverObject[1]) != int:
+                                #    newObject.initialisePosition(serverObject[1][0] + [0])
                                 self.objects += [newObject]
 
                     for object in self.objects:

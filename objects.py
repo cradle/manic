@@ -118,6 +118,9 @@ class DynamicObject(StaticObject):
     def to3d(self, vector):
         return vector + [0]
 
+    def initialisePosition(self, position):
+        StaticObject.setPosition(self, position)
+
     def getAttributes(self):
         return [self.to2d(self._body.getPosition()),
          self.to2d(self._body.getQuaternion()),
@@ -228,7 +231,7 @@ class DynamicObject(StaticObject):
             self._motor.setYParam(ode.ParamFMax, self.maxMoveForce)
             
     def _unJump(self):
-        self.isJumping = False
+        pass
 
     def _crouch(self):
         pass
@@ -377,7 +380,7 @@ class Person(SphereObject):
         self.type = "Person"
         self.ownerName = name
         self._bulletNum = 0
-        self.timeNeededToPrepareJump = 0.0
+        self.timeNeededToPrepareJump = 0.25
         self.maxStopForce = 70000/self.feetSize
         self.maxSpinForce = 70000/self.feetSize
         self.maxSpinVelocity = 10/self.feetSize
@@ -784,11 +787,16 @@ class Person(SphereObject):
             self._motor.setYParam(ode.ParamVel,  self.maxJumpVelocity)
             self._motor.setYParam(ode.ParamFMax, self.maxJumpForce)
             self.wantsToJump = False
+            self.isJumping = False
         elif self.isOnGround:
             self.wantsToJump = True
             self.isJumping = True
         else:
             self.wantsToJump = False
+            
+    def _unJump(self):
+        self.isJumping = False
+        self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
 
     def _rotateLeft(self):
         if self.isOnGround:

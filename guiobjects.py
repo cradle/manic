@@ -130,6 +130,15 @@ class DynamicObject(objects.DynamicObject, StaticObject):
     def enable(self):
         objects.DynamicObject.enable(self)
         self._entity.setVisible(True)
+        
+    def setPosition(self, position):
+        #curPos = self._body.getPosition()
+        #curVel = self._body.getLinearVel()
+        #if position and \
+        #   (math.fabs(position[0] - curPos[0]) > math.fabs(curVel[0]) or \
+        #    math.fabs(position[1] - curPos[1]) > math.fabs(curVel[1])):
+            #position = [(x+y)/2 for x,y in zip(position, curPos)]
+        objects.DynamicObject.setPosition(self, position)
 
     def __del__(self):
         StaticObject.__del__(self)
@@ -283,12 +292,17 @@ class Person(objects.Person, SphereObject):
         self.animations['dead'] = self._entity.getAnimationState('Death1')
         self.animations['dead'].setLoop(False)
         self.animations['run'] = self._entity.getAnimationState('Stealth')
+        self.animations['run'].setWeight(2)
         self.animations['idle'] = self._entity.getAnimationState('Idle1')
+        self.animations['idle'].setWeight(0.25)
         self.animations['crouch'] = self._entity.getAnimationState('Crouch')
         self.animations['crouch'].setLoop(False)
+        self.animations['crouch'].setWeight(2)
         self.animations['crouch'].setLength(self.animations['crouch'].getLength()/2.0)
         self.animations['jump'] = self._entity.getAnimationState('JumpNoHeight')
         self.animations['jump'].setLoop(False)
+        self.animations['jump'].setWeight(4)
+
 
 
     def __del__(self):
@@ -327,20 +341,7 @@ class Person(objects.Person, SphereObject):
 
     def frameEnded(self, time):
 
-        if not self.isDead() and math.fabs(self._body.getLinearVel()[0]) > 0.1:
-            if self.getDirection()[0] <= 0.0: # facing left
-                self.animations['run'].addTime(time * self._body.getLinearVel()[0] * -0.3)
-            else: # "right"
-                self.animations['run'].addTime(time * self._body.getLinearVel()[0] * 0.3)
-            self.animations['dead'].Enabled = False
-            self.animations['jump'].Enabled = False
-            self.animations['run'].Enabled = True
-            self.animations['idle'].Enabled = False
-            self.animations['crouch'].Enabled = False
-            self.animations['crouch'].setTimePosition(0)
-            self.animations['jump'].setTimePosition(0)
-            self.animations['dead'].setTimePosition(0)
-        elif self.isDead():
+        if self.isDead():
             self.animations['dead'].addTime(time)
             self.animations['jump'].Enabled = False
             self.animations['dead'].Enabled = True
@@ -349,34 +350,41 @@ class Person(objects.Person, SphereObject):
             self.animations['crouch'].Enabled = False
             self.animations['crouch'].setTimePosition(0)
             self.animations['jump'].setTimePosition(0)
-        elif self.isCrouching:
-            self.animations['crouch'].addTime(time)
-            self.animations['jump'].Enabled = False
-            self.animations['dead'].Enabled = False
-            #self.animations['run'].Enabled = False
-            self.animations['idle'].Enabled = False
-            self.animations['crouch'].Enabled = True
-            self.animations['jump'].setTimePosition(0)
-            self.animations['dead'].setTimePosition(0)
-        elif self.isJumping:
-            self.animations['jump'].addTime(time)
-            self.animations['jump'].Enabled = True
-            self.animations['dead'].Enabled = False
-            #self.animations['run'].Enabled = False
-            self.animations['idle'].Enabled = False
-            self.animations['crouch'].Enabled = True
-            self.animations['crouch'].setTimePosition(0)
-            self.animations['dead'].setTimePosition(0)
         else:
-            self.animations['idle'].addTime(time)
-            self.animations['jump'].Enabled = False
             self.animations['dead'].Enabled = False
-            #self.animations['run'].Enabled = False
-            self.animations['idle'].Enabled = True
-            self.animations['crouch'].Enabled = False
-            self.animations['crouch'].setTimePosition(0)
-            self.animations['jump'].setTimePosition(0)
             self.animations['dead'].setTimePosition(0)
+            
+            if math.fabs(self._body.getLinearVel()[0]) > 0.1:
+                modifier = 0.3
+                if not self.isOnGround:
+                    modifier = 0.15
+                
+                if self.getDirection()[0] <= 0.0: # facing left
+                    self.animations['run'].addTime(time * self._body.getLinearVel()[0] * -modifier)
+                else: # "right"
+                    self.animations['run'].addTime(time * self._body.getLinearVel()[0] * modifier)
+                self.animations['run'].Enabled = True
+                self.animations['idle'].setWeight(0.5)
+            else:
+                self.animations['idle'].addTime(time)
+                #self.animations['run'].Enabled = False
+                self.animations['idle'].Enabled = True
+                self.animations['idle'].setWeight(2)
+                
+            if self.isCrouching and self.isOnGround:
+                self.animations['crouch'].addTime(time)
+                self.animations['crouch'].Enabled = True
+                self.animations['jump'].setTimePosition(0)
+            else:
+                self.animations['crouch'].setTimePosition(0)
+                self.animations['crouch'].Enabled = False
+
+            if self.isJumping:
+                self.animations['jump'].addTime(time)
+                self.animations['jump'].Enabled = True
+            else:
+                self.animations['jump'].setTimePosition(0)
+                self.animations['jump'].Enabled = False
             
 
         super(Person, self).frameEnded(time)
@@ -429,17 +437,11 @@ class Player(Person):
         self._shawdowNode.setScale(self.scale,self.scale,self.scale)
         # Node -> Entity
         self._shawdowNode.attachObject(self._shawdowEntity)
+        self._shawdowNode.setVisible(False)
         
     def setPosition(self, position):
-        curPos = self._body.getPosition()
-        curVel = self._body.getLinearVel()
-        #print math.fabs(position[0] - curPos[0]), math.fabs(curVel[0]), math.fabs(position[1] - curPos[1]), math.fabs(curVel[1])
-        if position and \
-           (math.fabs(position[0] - curPos[0]) >= math.fabs(curVel[0]) or \
-            math.fabs(position[1] - curPos[1]) >= math.fabs(curVel[1])) :
-        #    #position = [(x+y)/2 for x,y in zip(position, curPos)]
-            Person.setPosition(self, position)
         self._shawdowNode.setPosition(position)
+        Person.setPosition(self, position)
 
     #def setAngularVel(self, vel):
     #    pass
