@@ -526,14 +526,16 @@ class Client(Application, Engine):
             self._vitalsWindow.setText(self.player.vitals())
 
     def displayScores(self):
-        text = ""
+        text = "Temorarily Disabled"
+        
         scores = [[self._stats[name]["score"],name] for name in self._stats.keys()]
         scores.sort(reverse=True)
-        for player in [name for score, name in scores]:
-            text += " %s, %i, %.2f\n" % \
-                    (player, self._stats[player]["score"], self._stats[player]["ping"])
+        #for player in [name for score, name in scores]:
+        #    text += " %s, %i, %.2f\n" % \
+        #            (player, self._stats[player]["score"], self._stats[player]["ping"])
 
-        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05*len(self._stats),0)))
+        #self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05*len(self._stats),0)))
+        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05,0)))
         self._scoreWindow.setText(text)
 
 

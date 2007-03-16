@@ -624,8 +624,7 @@ class Person(SphereObject):
                 2 if self.isCrouching else 0 |
                 4 if self.isJumping else 0 |
                 8 if self.isDead() else 0 |
-                16 if self.canShoot else 0),
-                self.getAccuracy()
+                16 if self.canShoot else 0)
                 ]
 
     def setAttributes(self, attributes):
@@ -641,7 +640,6 @@ class Person(SphereObject):
         self.isJumping = (state & 4 == 4)
         self.setDead((state & 8 == 8))
         self.canShoot = (state & 16 == 16)
-        self.setAccuracy(attributes[11])
 
     def _calculateAccuracy(self):
             

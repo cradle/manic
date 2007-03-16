@@ -421,7 +421,10 @@ class Player(Person):
         
     def setPosition(self, position):
         curPos = self._body.getPosition()
-        if position and math.fabs(position[0] - curPos[0]) >= 0.5 and math.fabs(position[1] - curPos[1]) >= 0.5 :
+        curVel = self._body.getLinearVel()
+        if position and \
+           math.fabs(position[0] - curPos[0]) >= math.fabs(curVel[0]) and \
+           math.fabs(position[1] - curPos[1]) >= math.fabs(curVel[1]) :
             position = [(x+y*3)/4 for x,y in zip(position, curPos)]
         Person.setPosition(self, position)
 
