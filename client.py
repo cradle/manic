@@ -522,6 +522,15 @@ class Client(Application, Engine):
         self._vitalsWindow = vitals
         sheet.addChildWindow(vitals)
 
+        myMaterial = ogre.MaterialManager.getSingleton().create("bullets","debugger"); 
+        myMaterial.setReceiveShadows(False); 
+        myMaterial.getTechnique(0).setLightingEnabled(True);
+        #myMaterial.getTechnique(0).getPass(0).setDiffuse(1,1,1,1);
+        #myMaterial.getTechnique(0).getPass(0).setAmbient(0,0,0)
+        myMaterial.setSceneBlending(ogre.SBT_TRANSPARENT_ALPHA)
+        myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_AMBIENT | ogre.TVC_DIFFUSE)
+        
+
     def displayVitals(self):
         if self.player:
             self._vitalsWindow.setText(self.player.vitals())

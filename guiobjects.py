@@ -206,10 +206,14 @@ class BulletObject(objects.BulletObject, SphereObject):
         
         self.trail.clear()
         self.trailNode.detachAllObjects()
-        self.trail.begin("Red", ogre.RenderOperation.OT_LINE_LIST)
+        self.trail.begin("bullets", ogre.RenderOperation.OT_LINE_LIST)
         self.trail.position( self._body.getPosition() )
-        self.trail.position(
-            [a-(b*time) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
+        self.trail.colour(1.0,1.0,1.0,1.0)
+        self.trail.normal(0.0,0.0,1)
+        self.trail.position(\
+            [a-(b*4*time) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
+        self.trail.colour(1.0,1.0,1.0,0.0)
+        self.trail.normal(0.0,0.0,-1)
         self.trail.end()
         self.trailNode.attachObject(self.trail)
         
@@ -336,6 +340,8 @@ class Person(objects.Person, SphereObject):
                 self._node.setOrientation(right)
 
     def setEvents(self, events):
+        if len(events) != 0:
+            print events
         if 'shoot' in events:
             self._shootSound()
 
@@ -514,3 +520,19 @@ class Player(Person):
             direction = (1.0,0.0,0)
             
         return direction
+
+    # Don't respond to these for now, no client side prediction
+##    def _moveLeft(self):
+##        pass
+##        
+##    def _moveRight(self):
+##        pass
+##
+##    def _rotateLeft(self):
+##        pass
+##
+##    def _rotateRight(self):
+##        pass
+##        
+##    def _jump(self):
+##        pass

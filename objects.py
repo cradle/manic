@@ -217,12 +217,20 @@ class DynamicObject(StaticObject):
             self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
 
     def _rotateLeft(self):
-        self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity)
-        self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
+        if self.isCrouching:
+            self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity/2)
+            self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
+        else:
+            self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity)
+            self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
 
     def _rotateRight(self):
-        self._motor.setAngleParam(ode.ParamVel,  -self.maxSpinVelocity)
-        self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
+        if self.isCrouching:
+            self._motor.setAngleParam(ode.ParamVel,  -self.maxSpinVelocity/2)
+            self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
+        else:
+            self._motor.setAngleParam(ode.ParamVel,  -self.maxSpinVelocity)
+            self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
         
     def _jump(self):
         if self.isOnGround:
@@ -271,10 +279,12 @@ class BulletObject(SphereObject):
         if type(self.size) == float or type(self.size) == int:
             self._body.getMass().setSphereTotal(self.weight, self.size)
 
+        speedVariation = (1-(random.random()-0.5)/5)
+
         if direction:
-            self._motor.setXParam(ode.ParamVel,  self.maxSpeed * direction[0])
+            self._motor.setXParam(ode.ParamVel,  self.maxSpeed * direction[0] * speedVariation)
             self._motor.setXParam(ode.ParamFMax, ode.Infinity)
-            self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1])
+            self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1] * speedVariation)
             self._motor.setYParam(ode.ParamFMax, ode.Infinity)
             
         self.setDead(False)
@@ -470,7 +480,7 @@ class Person(SphereObject):
                 'velocity':25.0,
                 'type':'single',
                 'zoom':30,
-                'recoil':0.06,
+                'recoil':0.03,
                 'auto':True,
                 },
             'SMG':{
@@ -480,12 +490,12 @@ class Person(SphereObject):
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
                 'accuracy':0.8,
-                'timeBetweenShots':0.1,
+                'timeBetweenShots':0.07,
                 'damage':5,
                 'velocity':40.0,
                 'type':'single',
                 'zoom':40,
-                'recoil':0.15,
+                'recoil':0.03,
                 'auto':True,
                 },
             'Shotgun':{
@@ -570,9 +580,7 @@ class Person(SphereObject):
                 self.timeUntilRespawn = self.respawnTime
             
     def preStep(self):
-        if not self.isDead():
-            #self._body.addForce(self._torsoBody.getForce())
-            
+        if not self.isDead():            
             SphereObject.preStep(self)
             if '1' in self.presses:
                 self.setGun("Pistol")
@@ -756,13 +764,17 @@ class Person(SphereObject):
                 numShots = self.guns[self.gunName]['bulletsPerShot']
 
             for i in range(numShots):
-                scatter = self._calculateScatter()
+                direction = [self.getDirection()[0]+self._calculateScatter(),
+                             self.getDirection()[1]+self._calculateScatter(),
+                             0]
+                length = math.sqrt(direction[0]*direction[0] + direction[1]*direction[1])
+                direction[0] /= length
+                direction[1] /= length
+                
                 self._bulletNum += 1
                 self._world.addBullet(self._name + "b" + str(self._bulletNum), \
                                       [a+b for a,b in zip(self._body.getPosition(), self.getShootOffset())],
-                                      [self.getDirection()[0] + self._calculateScatter(),
-                                       self.getDirection()[1] + self._calculateScatter(),
-                                       0],
+                                      direction,
                                       self.velocity,
                                       self.damage,
                                       self)

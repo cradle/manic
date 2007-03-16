@@ -1,1 +1,1 @@
-"c:\Program Files\7-Zip\7z.exe" a assaultvector.exe assaultvector/
+"c:\Program Files\7-Zip\7z.exe" a assaultvector.exe dist/
