@@ -34,9 +34,10 @@ class Server(Engine):
 
         for client in self.network.clients:
             self._stats[client.player._name]["ping"] = client.ping
-        
-        for client in self.network.clients:                
-            client.send(["stats", self._stats])
+
+        ## Removed to remove need for jelly
+        #for client in self.network.clients:                
+        #    client.send(["stats", self._stats])
 
         while self.timeUntilNextNetworkUpdate <= 0.0:
             self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
@@ -74,7 +75,7 @@ class Server(Engine):
         Engine.frameEnded(self, frameTime)
 
         self.sleep()
-        return True
+        return self.network.reactor.running
 
     def sleep(self):
         time.sleep(min(self.timeUntilNextNetworkUpdate,

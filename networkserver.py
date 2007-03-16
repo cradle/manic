@@ -37,7 +37,7 @@ class Client():
         return self.messages.pop()
 
     def send(self, data):
-        self.transport.write(zlib.compress(banana.encode(jelly.jelly(data)),3), self.address)
+        self.transport.write(zlib.compress(banana.encode(data),4), self.address)
     
 class NetworkServer(DatagramProtocol):
     def __init__(self, connectedCallback):
@@ -56,7 +56,7 @@ class NetworkServer(DatagramProtocol):
         else:
             client = self.clients[self.clients.index(client)]
 
-        client.push(banana.decode(data))
+        client.push(banana.decode(zlib.decompress(data)))
 
     def update(self, time = 0):
         self.reactor.runUntilCurrent()

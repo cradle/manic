@@ -562,7 +562,8 @@ class Client(Application, Engine):
         if self.timeUntilNextNetworkUpdate <= 0.0:
             self.network.update(frameTime)
 
-            self._stats = self.network._stats
+            ## Removed to remove need for jelly
+            #self._stats = self.network._stats
             self.displayScores()
             self.displayVitals()
             
@@ -581,9 +582,9 @@ class Client(Application, Engine):
                         for object in self.objects:
                             if serverObject[0] == object._name:
                                 hasObject = True
+                                object.existsOnServer = True
                                 object.setAttributes(serverObject[1])
                                 object.setEvents(serverObject[4])
-                                object.existsOnServer = True
                         if not hasObject:
                             newObject = None
                             if serverObject[2] == True:
@@ -601,10 +602,11 @@ class Client(Application, Engine):
                                 elif serverObject[3] == "Sphere":
                                     newObject = SphereObject(self, serverObject[0])
 
-                            newObject.existsOnServer = True        
-                            newObject.setAttributes(serverObject[1])
-                            newObject.setEvents(serverObject[4])
-                            self.objects += [newObject]
+                            if newObject:
+                                newObject.existsOnServer = True        
+                                newObject.setAttributes(serverObject[1])
+                                newObject.setEvents(serverObject[4])
+                                self.objects += [newObject]
 
                     for object in self.objects:
                         if not object.existsOnServer:

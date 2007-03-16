@@ -120,6 +120,7 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
             presses.append("md")
 
+        self.inputPresses(presses)
         return presses
     
     def disable(self):
@@ -293,7 +294,7 @@ class Person(objects.Person, SphereObject):
         SphereObject.__del__(self)
         objects.Person.__del__(self)
         for sound in [self.sounds[name] for name in self.sounds]:
-            self.audioManager.destroySound(sound)
+            self.soundManager.destroySound(sound)
 
     def _shoot(self):
         #TODO: Make server side
@@ -419,8 +420,9 @@ class Player(Person):
         self.cursorNode.attachObject(self.cursorLines)
         
     def setPosition(self, position):
-        if position:
-            position = [(x+y*2)/3 for x,y in zip(position, self._body.getPosition())]
+        curPos = self._body.getPosition()
+        if position and math.fabs(position[0] - curPos[0]) >= 0.5 and math.fabs(position[1] - curPos[1]) >= 0.5 :
+            position = [(x+y*3)/4 for x,y in zip(position, curPos)]
         Person.setPosition(self, position)
 
     def setAttributes(self, attributes):

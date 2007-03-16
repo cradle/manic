@@ -235,7 +235,7 @@ class DynamicObject(StaticObject):
                (self._body.getLinearVel() + self._body.getAngularVel())
 
     def inputPresses(self, presses):
-        self.setDirection(presses.pop(0))
+        self.setDirection(presses[0])
         self.presses = presses
 
 class SphereObject(DynamicObject):
@@ -352,6 +352,8 @@ class Person(SphereObject):
 
         self.torsoBody = ode.Body(gameworld.world)
         self.torsoBody.setGravityMode(False)
+        self.torsoBody.setAngularVel((0,0,0))
+        self.torsoBody.setLinearVel((0,0,0))
         mass = ode.Mass()
         mass.setSphereTotal(weight,self.feetSize)
         #self.torsoBody.setMass(mass)
@@ -362,9 +364,6 @@ class Person(SphereObject):
         
         self._torsoTransform.setBody(self.torsoBody)
         self._headTransform.setBody(self.torsoBody)
-            
-        self.torsoBody.setQuaternion((1,0,0,0))
-        self.torsoBody.setAngularVel((0,0,0))
         
         self.type = "Person"
         self.ownerName = name
@@ -625,7 +624,8 @@ class Person(SphereObject):
                 2 if self.isCrouching else 0 |
                 4 if self.isJumping else 0 |
                 8 if self.isDead() else 0 |
-                16 if self.canShoot else 0)
+                16 if self.canShoot else 0),
+                self.getAccuracy()
                 ]
 
     def setAttributes(self, attributes):
@@ -641,6 +641,7 @@ class Person(SphereObject):
         self.isJumping = (state & 4 == 4)
         self.setDead((state & 8 == 8))
         self.canShoot = (state & 16 == 16)
+        self.setAccuracy(attributes[11])
 
     def _calculateAccuracy(self):
             
@@ -662,6 +663,9 @@ class Person(SphereObject):
             return self._maxAccuracy
         else:
             return self._accuracy
+
+    def setAccuracy(self, accuracy):
+        self._accuracy = accuracy
 
     def getEvents(self):
         return self.events

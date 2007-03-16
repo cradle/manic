@@ -44,7 +44,7 @@ class NetworkClient(DatagramProtocol):
         self.transport.connect(self.serverIP, self.port)
         
     def datagramReceived(self, data, (host, port)):
-        message = jelly.unjelly(banana.decode(zlib.decompress(data)))
+        message = banana.decode(zlib.decompress(data))
         if type(message[0]) == str and message[0] == "pong":
             for ping in self.pings:
                 if ping.number == message[1]:
@@ -62,7 +62,7 @@ class NetworkClient(DatagramProtocol):
         print "No Server"
 
     def send(self, obj):
-        self.transport.write(banana.encode(obj))
+        self.transport.write(zlib.compress(banana.encode(obj),4))
 
     def update(self, elapsedTime):
         if self.serverIP != None:

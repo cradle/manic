@@ -24,7 +24,6 @@ class ListenClient(Client, Server):
         self.updateChat(frameTime)
         self.displayScores()
         self.displayVitals()
-        self.player.inputPresses(self.player.input(keyboard, mouse))
         return True # Keep going
         
     def networkUpdate(self):

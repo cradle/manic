@@ -49,10 +49,11 @@ class Engine:
         print "%s: %s" % (source, message)
 
     def addBullet(self, name, position, direction, velocity, damage, owner):
-        b = self.createBulletObject(name, direction, velocity, damage)
-        b.setPosition([p + x for p, x in zip(position, direction)])
-        b.setOwnerName(owner._name)
-        self.objects.append(b)
+        if len([True for object in self.objects if object._name == name]) == 0:
+            b = self.createBulletObject(name, direction, velocity, damage)
+            b.setPosition([p + x for p, x in zip(position, direction)])
+            b.setOwnerName(owner._name)
+            self.objects.append(b)
         
     def frameEnded(self, frameTime):
         self.timeUntilNextEngineUpdate -= frameTime  
