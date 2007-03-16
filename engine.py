@@ -11,6 +11,8 @@ class Engine:
 
     def go(self):
         self._createWorld()
+        self._startTime = time.time()
+        self._stepNumber = 0
         lastFrame = time.time()
         timeSinceLastFrame = 0.0
         while self.frameEnded(timeSinceLastFrame):
@@ -86,6 +88,9 @@ class Engine:
                 object.preStep()
                 
             self.world.quickStep(self.stepSize)
+            if self._stepNumber != None:
+                self._stepNumber += 1
+                #print "Steps per second =", self._stepNumber / (time.time() - self._startTime), 1.0/self.stepSize
             
             for object in self.objects:
                 object.postStep()

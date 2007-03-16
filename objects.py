@@ -127,10 +127,19 @@ class DynamicObject(StaticObject):
 
     def setAttributes(self, attributes):
         self.setPosition(self.to3d(attributes[0]))
-        self._body.setQuaternion(self.to3d(attributes[1]))
-        self._body.setAngularVel(self.to3d(attributes[2]))
-        self._body.setLinearVel(self.to3d(attributes[3]))
+        self.setQuaternion(self.to3d(attributes[1]))
+        self.setAngularVel(self.to3d(attributes[2]))
+        self.setLinearVel(self.to3d(attributes[3]))
         self.setDirection(self.to3d(attributes[4]))
+
+    def setQuaternion(self, quaternion):
+        self._body.setQuaternion(quaternion)
+
+    def setAngularVel(self, vel):
+        self._body.setAngularVel(vel)
+
+    def setLinearVel(self, vel):
+        self._body.setLinearVel(vel)
 
     def preCollide(self):
         self.isOnGround = False

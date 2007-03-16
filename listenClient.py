@@ -1,6 +1,6 @@
 from client import Client
 from server import Server
-import guiobjects
+import guiobjects, time
 
 class ListenClient(Client, Server):
     def __init__(self):
@@ -18,6 +18,8 @@ class ListenClient(Client, Server):
         self._stats[self.player._name]["ping"] = 0
         self._stats[self.player._name]["score"] = 0
         print "Self", self.player._name, "connected"
+        self._stepNumber = 0
+        self._startTime = time.time()
         
     def frameEnded(self, frameTime, keyboard, mouse):            
         Server.frameEnded(self, frameTime)

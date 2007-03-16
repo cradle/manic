@@ -368,6 +368,7 @@ class Client(Application, Engine):
         self.serverRoundTripTime = 0.0
         self.lastServerUpdate = time.time()
         self.player = None
+        self._stepNumber = None
     
     def sendText(self):
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
@@ -572,8 +573,12 @@ class Client(Application, Engine):
             self.timeUntilNextNetworkUpdate = self.timeBetweenNetworkUpdates
 
             for message in self.network._messages:
+                if not self._stepNumber:
+                    self._stepNumber = message[2]
+                    self._startTime = message[3]
+                    
                 if message[1] > self.lastServerUpdate:
-                    self.timeUntilNextEngineUpdate = 0
+                    #self.timeUntilNextEngineUpdate = self.stepSize * (self._stepNumber - message[2])
                     self.lastServerUpdate = message[1]
 
                     for object in self.objects:

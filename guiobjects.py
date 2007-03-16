@@ -218,6 +218,7 @@ class Person(objects.Person, SphereObject):
 
         # The scale to scale the model by
         scale = 0.01
+        self.scale = scale
         offset = (0.0, -self.feetSize, 0.0)
         self._nodeOffset = offset
         
@@ -419,14 +420,32 @@ class Player(Person):
         self.cursorLines = ogre.ManualObject( "__CURSOR__" + name)
         self.cursorNode.attachObject(self.cursorLines)
         
+        # Entity
+        self._shawdowEntity = gameworld.sceneManager.createEntity('es' + name, 'ninja.mesh')
+        self._shawdowEntity.setMaterialName("white-ninja")
+
+        # Scene -> Node
+        self._shawdowNode = gameworld.sceneManager.rootSceneNode.createChildSceneNode('ns' + name)
+        self._shawdowNode.setScale(self.scale,self.scale,self.scale)
+        # Node -> Entity
+        self._shawdowNode.attachObject(self._shawdowEntity)
+        
     def setPosition(self, position):
         curPos = self._body.getPosition()
         curVel = self._body.getLinearVel()
+        #print math.fabs(position[0] - curPos[0]), math.fabs(curVel[0]), math.fabs(position[1] - curPos[1]), math.fabs(curVel[1])
         if position and \
-           math.fabs(position[0] - curPos[0]) >= math.fabs(curVel[0]) and \
-           math.fabs(position[1] - curPos[1]) >= math.fabs(curVel[1]) :
-            position = [(x+y*3)/4 for x,y in zip(position, curPos)]
-        Person.setPosition(self, position)
+           (math.fabs(position[0] - curPos[0]) >= math.fabs(curVel[0]) or \
+            math.fabs(position[1] - curPos[1]) >= math.fabs(curVel[1])) :
+        #    #position = [(x+y)/2 for x,y in zip(position, curPos)]
+            Person.setPosition(self, position)
+        self._shawdowNode.setPosition(position)
+
+    #def setAngularVel(self, vel):
+    #    pass
+
+    #def setLinearVel(self, vel):
+    #    pass
 
     def setAttributes(self, attributes):
         Person.setAttributes(self, attributes)
