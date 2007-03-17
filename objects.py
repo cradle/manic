@@ -783,8 +783,9 @@ class Person(SphereObject):
                 self._world.addBullet(self._name + "b" + str(self._bulletNum), \
                                       [a+b for a,b in zip(self._body.getPosition(), self.getShootOffset())],
                                       direction,
-                                      [-self._body.getLinearVel()[0] + self.velocity, \
-                                       -self._body.getLinearVel()[1] + self.velocity],
+                                      #[self._body.getLinearVel()[0] + (self._body.getLinearVel()[0]/(math.fabs(self._body.getLinearVel()[0]))*self.velocity), \
+                                      # self._body.getLinearVel()[1] + (self._body.getLinearVel()[1]/(math.fabs(self._body.getLinearVel()[1]))*self.velocity)],
+                                      [self.velocity, self.velocity],
                                       self.damage,
                                       self)
                 

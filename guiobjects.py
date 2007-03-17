@@ -216,7 +216,7 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.trail.position( self._body.getPosition() )
         self.trail.colour(1.0,1.0,1.0,0.5)
         self.trail.position(\
-            [a-(b*4*time) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
+            [a-(b*2*time) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
         self.trail.colour(1.0,1.0,1.0,0.0)
         self.trail.end()
         self.trailNode.attachObject(self.trail)

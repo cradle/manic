@@ -11,7 +11,6 @@ class Engine:
         self.debugStepTime = 1.0
         self.debugFrameTime = 1.0
         self.debugNumSteps = 0
-        self.lastUpdate = time.time()
 
     def go(self):
         self._createWorld()
@@ -65,9 +64,7 @@ class Engine:
     def frameEnded(self, frameTime):
         timer = encode.timer()
         timer.start()
-        curTime = time.time()
-        self.timeUntilNextEngineUpdate -= (curTime - self.lastUpdate)
-        self.lastUpdate = curTime
+        self.timeUntilNextEngineUpdate -= frameTime
         self.step()     
         self.debugFrameTime = self.timeUntilNextEngineUpdate
 

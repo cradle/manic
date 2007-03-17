@@ -24,6 +24,7 @@ class Application(object):
         self.sceneManager = None
         self.world = None
         self.debug = True
+        self.debugNetworkTime = 666
 
     def go(self):
         "Starts the rendering loop."
@@ -273,6 +274,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
 
         self.mouselistener = GameMouseListener(self.game)
         self.Mouse.setEventCallback(self.mouselistener)
+        self.lastUpdate = time.time()
         
     def __del__ (self ):
       ogre.WindowEventUtilities.removeWindowEventListener(self.renderWindow, self)
@@ -337,8 +339,11 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
 
     def frameEnded(self, frameEvent):
         keepGoing = True
-        keepGoing = keepGoing and self.keylistener.frameEnded(frameEvent.timeSinceLastFrame, self.BufferedKeyboard)
-        keepGoing = keepGoing and self.game.frameEnded(frameEvent.timeSinceLastFrame, self.Keyboard, self.Mouse)
+        curTime = time.time()
+        frameTime = (curTime - self.lastUpdate)
+        keepGoing = keepGoing and self.keylistener.frameEnded(frameTime, self.BufferedKeyboard)
+        keepGoing = keepGoing and self.game.frameEnded(frameTime, self.Keyboard, self.Mouse)
+        self.lastUpdate = curTime
         return keepGoing
             
 
