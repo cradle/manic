@@ -1,7 +1,7 @@
 from engine import Engine
 import networkserver
 import os
-import time
+import time, encode
 from objects import Person, StaticObject, DynamicObject, SphereObject
 
 class Server(Engine):
@@ -11,6 +11,7 @@ class Server(Engine):
         self.timeBetweenNetworkUpdates = 1.0/15.0
         self.timeUntilNextNetworkUpdate = 0.0
         self.clientNumber = 0
+        self.debugNetworkTime = 0.0
         print "Server started"
 
     def clientConnected(self, client):
@@ -18,9 +19,6 @@ class Server(Engine):
         client.player = self.createPerson("p%i" % self.clientNumber)
         client.player.setPosition(self.spawnLocation())
         self.objects += [client.player]
-        self._stats[client.player._name] = {}
-        self._stats[client.player._name]["ping"] = 0
-        self._stats[client.player._name]["score"] = 0
         print "Client", client.player._name, " connected"
 
     def _createWorld(self):
@@ -31,24 +29,18 @@ class Server(Engine):
 
     def networkUpdate(self):
         self.network.update()
-
-        for client in self.network.clients:
-            self._stats[client.player._name]["ping"] = client.ping
-
-        ## Removed to remove need for jelly
-        #for client in self.network.clients:                
-        #    client.send(["stats", self._stats])
-
         while self.timeUntilNextNetworkUpdate <= 0.0:
             self.timeUntilNextNetworkUpdate += self.timeBetweenNetworkUpdates
 
         for client in self.network.clients:
             if client.timedOut():
                 print "Client", client.player._name, "timed out, disconnecting"
-                del self._stats[client.player._name]
                 client.player.close()
                 self.objects.remove(client.player)
                 self.network.clients.remove(client)
+
+        timer = encode.timer()
+        timer.start()
 
         for client in self.network.clients:                
             client.send([[[o._name,
@@ -63,6 +55,9 @@ class Server(Engine):
                 
             while client.hasMoreMessages():
                 client.player.inputPresses(client.pop())
+
+        timer.stop()
+        self.debugNetworkTime = timer.time()
 
         for o in self.objects:
             o.clearEvents()

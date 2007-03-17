@@ -431,7 +431,7 @@ class Client(Application, Engine):
     
     def _createScene(self):
         Engine._createWorld(self)
-        self.sceneManager.setAmbientLight((0.75, 0.75, 0.75))
+        self.sceneManager.setAmbientLight((0.75, 0.75, 0.75, 0.0))
 
 ##        entity = self.sceneManager.createEntity('bgE', 'game.mesh')
 ##        entity.setNormaliseNormals(True)
@@ -514,6 +514,14 @@ class Client(Application, Engine):
         self._scoreWindow = scores
         sheet.addChildWindow(scores)
 
+        debug = winMgr.createWindow("TaharezLook/StaticText", "DebugWindow")
+        debug.setPosition(CEGUI.UVector2(CEGUI.UDim(0.8,0), CEGUI.UDim(0.01,0)))
+        debug.setSize(CEGUI.UVector2(CEGUI.UDim(0.18,0), CEGUI.UDim(0.2,0)))
+        debug.setProperty("HorzFormatting","WordWrapLefteAligned")
+        debug.setProperty("VertFormatting", "TopAligned")
+        self._debugWindow = debug
+        sheet.addChildWindow(debug)
+
         vitals = winMgr.createWindow("TaharezLook/StaticText", "VitalsWindow")
         vitals.setPosition(CEGUI.UVector2(CEGUI.UDim(0.8,0), CEGUI.UDim(0.8,0)))
         vitals.setSize(CEGUI.UVector2(CEGUI.UDim(0.2,0), CEGUI.UDim(0.2,0)))
@@ -522,30 +530,36 @@ class Client(Application, Engine):
         self._vitalsWindow = vitals
         sheet.addChildWindow(vitals)
 
-        myMaterial = ogre.MaterialManager.getSingleton().create("bullets","debugger"); 
-        myMaterial.setReceiveShadows(False); 
-        myMaterial.getTechnique(0).setLightingEnabled(True);
-        #myMaterial.getTechnique(0).getPass(0).setDiffuse(1,1,1,1);
-        #myMaterial.getTechnique(0).getPass(0).setAmbient(0,0,0)
+        myMaterial = ogre.MaterialManager.getSingleton().create("bullets","debugger");
+        myMaterial.setLightingEnabled(False)
+        myMaterial.setDepthWriteEnabled(False)
         myMaterial.setSceneBlending(ogre.SBT_TRANSPARENT_ALPHA)
-        myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_AMBIENT | ogre.TVC_DIFFUSE)
+        myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_DIFFUSE)
+        print myMaterial.getTechnique(0).getPass(0).isTransparent()
         
+
+    def displayDebug(self):
+        self._debugWindow.setText("FrameTime:%0.4f\n1StepTime:%0.4f\nNumSteps:%i\nStepTime:%0.4f\nNetworkTime:%0.4f" % \
+                                  (self.debugFrameTime,
+                                   (self.debugStepTime / self.debugNumSteps) if self.debugNumSteps else 0,
+                                   self.debugNumSteps,
+                                   self.debugStepTime,
+                                   self.debugNetworkTime
+                                   )
+                                  )
 
     def displayVitals(self):
         if self.player:
             self._vitalsWindow.setText(self.player.vitals())
 
     def displayScores(self):
-        text = "Temorarily Disabled"
-        
-        scores = [[self._stats[name]["score"],name] for name in self._stats.keys()]
-        scores.sort(reverse=True)
-        #for player in [name for score, name in scores]:
-        #    text += " %s, %i, %.2f\n" % \
-        #            (player, self._stats[player]["score"], self._stats[player]["ping"])
+        text = ""
+        players = [object for object in self.objects if object.type == "Person"]
+        for player in players:
+            text += " %s, %i, %.2f\n" % \
+                    (player._name, player.score, player.ping)
 
-        #self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05*len(self._stats),0)))
-        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05,0)))
+        self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05*len(players),0)))
         self._scoreWindow.setText(text)
 
 
@@ -559,12 +573,12 @@ class Client(Application, Engine):
         self.timeUntilNextChatUpdate -= frameTime
         if self.timeUntilNextChatUpdate <= 0.0:
             self.chat.update()
-            while self.timeUntilNextChatUpdate <= 0.0:
-                self.timeUntilNextChatUpdate += self.timeBetweenChatUpdates
+            self.timeUntilNextChatUpdate = self.timeBetweenChatUpdates
     
     def frameEnded(self, frameTime, keyboard,  mouse):
             
         Engine.frameEnded(self, frameTime)
+        self.displayDebug()
 
         self.updateChat(frameTime)
         
@@ -575,7 +589,6 @@ class Client(Application, Engine):
             self.network.update(frameTime)
 
             ## Removed to remove need for jelly
-            #self._stats = self.network._stats
             self.displayScores()
             self.displayVitals()
             

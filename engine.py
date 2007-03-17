@@ -1,13 +1,17 @@
 import ode
 from objects import *
-import time, random
+import time
+import encode
 
 class Engine:    
     def __init__(self):
         self.stepSize = 1.0/85.0
         self.timeUntilNextEngineUpdate = 0.0
-        self._stats = {}
         random.seed(time.time())
+        self.debugStepTime = 1.0
+        self.debugFrameTime = 1.0
+        self.debugNumSteps = 0
+        self.lastUpdate = time.time()
 
     def go(self):
         self._createWorld()
@@ -21,6 +25,7 @@ class Engine:
     
     def _createWorld(self):
         self.world = ode.World()
+        #self.world.setQuickStepNumIterations(10)
         self.world.setGravity((0,-9.81,0))
         self.space = ode.Space(type=1)
         self.contactgroup = ode.JointGroup()
@@ -58,11 +63,18 @@ class Engine:
             self.objects.append(b)
         
     def frameEnded(self, frameTime):
-        self.timeUntilNextEngineUpdate -= frameTime  
-        self.step(frameTime)        
+        timer = encode.timer()
+        timer.start()
+        curTime = time.time()
+        self.timeUntilNextEngineUpdate -= (curTime - self.lastUpdate)
+        self.lastUpdate = curTime
+        self.step()     
+        self.debugFrameTime = self.timeUntilNextEngineUpdate
 
         for object in self.objects:
             object.frameEnded(frameTime)
+        timer.stop()
+        self.debugStepTime = timer.time()
 
         return True # Keep going
 
@@ -76,21 +88,19 @@ class Engine:
             (0.0,20.0,0.0)
             ])
 
-    def step(self, frameTime):
-        while self.timeUntilNextEngineUpdate <= 0.0: 
-            
+    def step(self):
+        self.debugNumSteps = 0
+        while self.timeUntilNextEngineUpdate <= 0.0:
+            self.debugNumSteps += 1
             for object in self.objects:
-                object.preCollide() 
-                
-            self.space.collide(0, self.collision_callback)
-            
+                object.preCollide()
+            self.space.collide(0, self.collision_callback)            
             for object in self.objects:
                 object.preStep()
-                
             self.world.quickStep(self.stepSize)
+            
             if self._stepNumber != None:
                 self._stepNumber += 1
-                #print "Steps per second =", self._stepNumber / (time.time() - self._startTime), 1.0/self.stepSize
             
             for object in self.objects:
                 object.postStep()
@@ -105,12 +115,9 @@ class Engine:
 
     def addScore(self, name, amount):
         # TODO: Add to Player object
-        if not self._stats.has_key(name):
-            self._stats[name] = {}
-        if not self._stats[name].has_key("score"):
-            self._stats[name]["score"] = 0
-
-        self._stats[name]["score"] += amount
+        for object in self.objects:
+            if object._name == name:
+                object.score += amount
 
     def collision_callback(self, args, geom1, geom2):
         o1 = geom1.object

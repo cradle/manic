@@ -147,6 +147,9 @@ class DynamicObject(StaticObject):
     def preCollide(self):
         self.isOnGround = False
 
+    def _secondaryFire(self):
+        pass
+
     def preStep(self):
         if 'l' in self.presses:
             self._moveLeft()
@@ -168,6 +171,8 @@ class DynamicObject(StaticObject):
             self._shoot()
         else:
             self._unShoot()
+        if 's2' in self.presses:
+            self._secondaryFire()
         if 'a' in self.presses:
             self._reload()
 
@@ -268,7 +273,7 @@ class SphereObject(DynamicObject):
         self.type = "Sphere"
 
 class BulletObject(SphereObject):
-    def __init__(self, gameworld, name, direction = None, velocity = 50.0, damage = 1.0):
+    def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 1.0):
         self.size = 0.025
         self.maxSpeed = velocity
         self.weight = 5.0
@@ -282,9 +287,9 @@ class BulletObject(SphereObject):
         speedVariation = (1-(random.random()-0.5)/5)
 
         if direction:
-            self._motor.setXParam(ode.ParamVel,  self.maxSpeed * direction[0] * speedVariation)
+            self._motor.setXParam(ode.ParamVel,  direction[0] * speedVariation * self.maxSpeed[0])
             self._motor.setXParam(ode.ParamFMax, ode.Infinity)
-            self._motor.setYParam(ode.ParamVel,  self.maxSpeed * direction[1] * speedVariation)
+            self._motor.setYParam(ode.ParamVel,  direction[1] * speedVariation * self.maxSpeed[1])
             self._motor.setYParam(ode.ParamFMax, ode.Infinity)
             
         self.setDead(False)
@@ -405,6 +410,7 @@ class Person(SphereObject):
         self.setDead(False)
         self.timeUntilRespawn = 0.0
         self.events = []
+        self.ping = 0.0
 
         self.gunIDs = {
              "Pistol":  1,
@@ -440,6 +446,7 @@ class Person(SphereObject):
         del self._headTransform
         
     def reset(self):
+        self.score = 0
         self.timeLeftUntilMustShoot = None
         self.shotsLeftInBurst = 0
         self.isCrouching = False
@@ -530,7 +537,7 @@ class Person(SphereObject):
                 'timeBetweenBursts':0.4,
                 'type2':'single',
                 'zoom':45,
-                'recoil':0.08,
+                'recoil':0.02,
                 'auto':False,
                 },
             'Support':{
@@ -644,7 +651,8 @@ class Person(SphereObject):
                 2 if self.isCrouching else 0 |
                 4 if self.isJumping else 0 |
                 8 if self.isDead() else 0 |
-                16 if self.canShoot else 0)
+                16 if self.canShoot else 0),
+                self.score
                 ]
 
     def setAttributes(self, attributes):
@@ -660,6 +668,7 @@ class Person(SphereObject):
         self.isJumping = (state & 4 == 4)
         self.setDead((state & 8 == 8))
         self.canShoot = (state & 16 == 16)
+        self.score = attributes[11]
 
     def _calculateAccuracy(self):
             
@@ -667,7 +676,6 @@ class Person(SphereObject):
         self._instability /= 1.1
 
         recoveryWeight = 2.5
-
         if self.isCrouching and self.isOnGround:
             self._accuracy  = (self._accuracy*recoveryWeight + ((self._maxAccuracy+1.0)/2.0) )/(recoveryWeight+1)
         elif self.isOnGround:
@@ -775,7 +783,8 @@ class Person(SphereObject):
                 self._world.addBullet(self._name + "b" + str(self._bulletNum), \
                                       [a+b for a,b in zip(self._body.getPosition(), self.getShootOffset())],
                                       direction,
-                                      self.velocity,
+                                      [-self._body.getLinearVel()[0] + self.velocity, \
+                                       -self._body.getLinearVel()[1] + self.velocity],
                                       self.damage,
                                       self)
                 

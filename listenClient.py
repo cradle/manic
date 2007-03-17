@@ -14,9 +14,6 @@ class ListenClient(Client, Server):
         self.chat.setNickName(self.player._name)
         self.player.setPosition(self.spawnLocation())
         self.objects += [self.player]
-        self._stats[self.player._name] = {}
-        self._stats[self.player._name]["ping"] = 0
-        self._stats[self.player._name]["score"] = 0
         print "Self", self.player._name, "connected"
         self._stepNumber = 0
         self._startTime = time.time()
@@ -26,6 +23,7 @@ class ListenClient(Client, Server):
         self.updateChat(frameTime)
         self.displayScores()
         self.displayVitals()
+        self.displayDebug()
         self.player.input(keyboard, mouse)
         return True # Keep going
         

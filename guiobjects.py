@@ -66,6 +66,7 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             'weapon8':OIS.KC_UNASSIGNED,
             'weapon9':OIS.KC_UNASSIGNED,
             'shoot':None,
+            'secondaryFire':None,
             'previous':None,
             'next':None}
 
@@ -115,9 +116,13 @@ class DynamicObject(objects.DynamicObject, StaticObject):
             presses.append("9")
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
             presses.append("s")
-        if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['previous']):
+        if self.keys['previous'] != None and mouse.getMouseState().buttonDown(self.keys['previous']):
             presses.append("mu")
-        if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
+        if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
+            presses.append("md")
+        if self.keys['secondaryFire'] != None and mouse.getMouseState().buttonDown(self.keys['secondaryFire']):
+            presses.append("s2")
+        if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
             presses.append("md")
 
         self.inputPresses(presses)
@@ -180,6 +185,7 @@ class BulletObject(objects.BulletObject, SphereObject):
             'weapon4':OIS.KC_UNASSIGNED,
             'weapon5':OIS.KC_UNASSIGNED,
             'shoot':None,
+            'secondaryFire':None,
             'previous':None,
             'next':None}
         
@@ -208,12 +214,10 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.trailNode.detachAllObjects()
         self.trail.begin("bullets", ogre.RenderOperation.OT_LINE_LIST)
         self.trail.position( self._body.getPosition() )
-        self.trail.colour(1.0,1.0,1.0,1.0)
-        self.trail.normal(0.0,0.0,1)
+        self.trail.colour(1.0,1.0,1.0,0.5)
         self.trail.position(\
             [a-(b*4*time) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
         self.trail.colour(1.0,1.0,1.0,0.0)
-        self.trail.normal(0.0,0.0,-1)
         self.trail.end()
         self.trailNode.attachObject(self.trail)
         
@@ -268,6 +272,7 @@ class Person(objects.Person, SphereObject):
 
         self.setDirection((1.0,0.0,0.0))
         self._camera = camera
+        self.zoomMode = False
 
         self.keys = {
             'up':OIS.KC_UNASSIGNED,
@@ -288,6 +293,7 @@ class Person(objects.Person, SphereObject):
             'weapon8':OIS.KC_UNASSIGNED,
             'weapon9':OIS.KC_UNASSIGNED,
             'shoot':None,
+            'secondaryFire':None,
             'previous':None,
             'next':None}
         
@@ -346,7 +352,6 @@ class Person(objects.Person, SphereObject):
             self._shootSound()
 
     def frameEnded(self, time):
-
         if self.isDead():
             self.animations['dead'].addTime(time)
             self.animations['jump'].Enabled = False
@@ -429,6 +434,7 @@ class Player(Person):
         self.keys['weapon7'] = OIS.KC_7
         self.keys['weapon8'] = OIS.KC_8
         self.keys['weapon9'] = OIS.KC_9
+        self.keys['secondaryFire'] = OIS.MB_Right
         
         self.cursorNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
         self.cursorLines = ogre.ManualObject( "__CURSOR__" + name)
@@ -460,13 +466,25 @@ class Player(Person):
         if self.isDisabled():
             self.enable()
 
-    def frameEnded(self, frameTime):
-        camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
-        self._camera.setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
-        self.soundManager.getListener().setPosition((self._body.getPosition()[0],self._body.getPosition()[1],camPosZ))
-        
+    def secondaryFire(self):
+        self.zoomMode = True
+
+    def frameEnded(self, frameTime):        
         mouse = CEGUI.MouseCursor.getSingleton().getPosition()
         rend = CEGUI.System.getSingleton().getRenderer()
+        
+        if self.zoomMode:
+            camPosX = CEGUI.MouseCursor.getSingleton().getPosition().d_x
+            camPosY = CEGUI.MouseCursor.getSingleton().getPosition().d_y
+            camPosZ = 20
+        else:
+            camPosX = self._body.getPosition()[0]
+            camPosY = self._body.getPosition()[1]
+            camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
+            
+        self._camera.setPosition((camPosX,camPosY,camPosZ))
+        self.soundManager.getListener().setPosition((camPosX,camPosY,camPosZ))
+
         
         mx = mouse.d_x / rend.getWidth()
         my = mouse.d_y / rend.getHeight()
