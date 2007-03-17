@@ -24,7 +24,7 @@ class ListenClient(Client, Server):
         self.displayScores()
         self.displayVitals()
         self.displayDebug()
-        self.player.input(keyboard, mouse)
+        self.player.inputPresses(self.player.input(keyboard, mouse))
         return True # Keep going
         
     def networkUpdate(self):

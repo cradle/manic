@@ -125,7 +125,7 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
             presses.append("md")
 
-        self.inputPresses(presses)
+        
         return presses
     
     def disable(self):
@@ -440,19 +440,7 @@ class Player(Person):
         self.cursorLines = ogre.ManualObject( "__CURSOR__" + name)
         self.cursorNode.attachObject(self.cursorLines)
         
-        # Entity
-        self._shawdowEntity = gameworld.sceneManager.createEntity('es' + name, 'ninja.mesh')
-        self._shawdowEntity.setMaterialName("white-ninja")
-
-        # Scene -> Node
-        self._shawdowNode = gameworld.sceneManager.rootSceneNode.createChildSceneNode('ns' + name)
-        self._shawdowNode.setScale(self.scale,self.scale,self.scale)
-        # Node -> Entity
-        self._shawdowNode.attachObject(self._shawdowEntity)
-        self._shawdowNode.setVisible(False)
-        
     def setPosition(self, position):
-        self._shawdowNode.setPosition(position)
         Person.setPosition(self, position)
 
     #def setAngularVel(self, vel):
