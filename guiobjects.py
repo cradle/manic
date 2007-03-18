@@ -201,6 +201,8 @@ class BulletObject(objects.BulletObject, SphereObject):
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.attachObject(self._entity)
 
+        self.trailColour = (1.0,1.0,1.0)
+
         self._updateDisplay()
 
         self.gameworld = gameworld
@@ -213,10 +215,10 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.trailNode.detachAllObjects()
         self.trail.begin("bullets", ogre.RenderOperation.OT_LINE_LIST)
         self.trail.position( self._body.getPosition() )
-        self.trail.colour(1.0,1.0,1.0,0.5)
+        self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.5)
         self.trail.position(\
             [a-(b*2*time) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
-        self.trail.colour(1.0,1.0,1.0,0.0)
+        self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.0)
         self.trail.end()
         self.trailNode.attachObject(self.trail)
         
@@ -227,6 +229,20 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('t' + self.name)
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
+
+
+class GrenadeObject(objects.GrenadeObject, BulletObject):
+    def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
+        BulletObject.__init__(self, gameworld, name, direction, velocity, damage)
+ 
+        self.trailColour = (1.0,1.0,0.0)
+
+    def frameEnded(self, time):
+        objects.GrenadeObject.frameEnded(self, time)
+        BulletObject.frameEnded(self, time)
+
+        if len(self.events) != 0:
+            print self.events
 
 class Person(objects.Person, SphereObject):
     def __init__(self, gameworld, name, camera = None):
@@ -325,15 +341,11 @@ class Person(objects.Person, SphereObject):
         objects.Person._shoot(self)
 
     def _shootSound(self):
-        if self.ammo > 0:
-            self.noAmmoSound.stop()
-            if self.sounds[self.gunName].isPlaying():
-                self.sounds[self.gunName].stop()
+        self.noAmmoSound.stop()
+        if self.sounds[self.gunName].isPlaying():
+            self.sounds[self.gunName].stop()
 
-            self.sounds[self.gunName].play()
-        else:
-            if self.ammo == 0:
-                self.noAmmoSound.play()
+        self.sounds[self.gunName].play()
 
     def setDirection(self, direction):
         super(Person, self).setDirection(direction)

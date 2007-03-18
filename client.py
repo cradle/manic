@@ -410,8 +410,11 @@ class Client(Application, Engine):
     def createStaticObject(self, size):
         return StaticObject(self, "s%s" % len(self.statics), size=size)
 
-    def createBulletObject(self, name, direction = None, velocity = None, damage = 1):
+    def createBulletObject(self, name, direction, velocity, damage):
         return BulletObject(self, name, direction, velocity, damage)
+
+    def createGrenadeObject(self, name, direction , velocity, damage):
+        return GrenadeObject(self, name, direction, velocity, damage)
 
     def createPerson(self, name):
         return Person(self, name)
@@ -637,9 +640,6 @@ class Client(Application, Engine):
                                 newObject.existsOnServer = True        
                                 newObject.setAttributes(serverObject[1])
                                 newObject.setEvents(serverObject[4])
-                                # HACK
-                                #if type(serverObject[1]) != int:
-                                #    newObject.initialisePosition(serverObject[1][0] + [0])
                                 self.objects += [newObject]
 
                     for object in self.objects:

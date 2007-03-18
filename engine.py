@@ -48,18 +48,24 @@ class Engine:
     def createBulletObject(self, name, direction, velocity, damage):
         return BulletObject(self, name, direction, velocity, damage)
 
+    def createGrenadeObject(self, name, direction, velocity, damage):
+        return GrenadeObject(self, name, direction, velocity, damage)
+
     def createPerson(self, name):
         return Person(self, name)
     
     def messageListener(self, source, message):
         print "%s: %s" % (source, message)
 
-    def addBullet(self, name, position, direction, velocity, damage, owner):
+    def addBullet(self, t, name, position, direction, velocity, damage, owner):
         if len([True for object in self.objects if object._name == name]) == 0:
-            b = self.createBulletObject(name, direction, velocity, damage)
-            b.initialisePosition([p + x for p, x in zip(position, direction)])
-            b.setOwnerName(owner._name)
-            self.objects.append(b)
+            b = None
+            if t == "bullet":
+                b = self.createBulletObject(name, direction, velocity, damage)
+            if t == "grenade":
+                b = self.createGrenadeObject(name, direction, velocity, damage)
+            b.setPosition(position)
+            self.objects += [b]
         
     def frameEnded(self, frameTime):
         timer = encode.timer()
@@ -89,23 +95,25 @@ class Engine:
         self.debugNumSteps = 0
         while self.timeUntilNextEngineUpdate <= 0.0:
             self.debugNumSteps += 1
-            for object in self.objects:
-                object.preCollide()
+            for o in self.objects:
+                o.preCollide()
             self.space.collide(0, self.collision_callback)            
-            for object in self.objects:
-                object.preStep()
+            for o in self.objects:
+                o.preStep()
             self.world.quickStep(self.stepSize)
             
             if self._stepNumber != None:
                 self._stepNumber += 1
             
-            for object in self.objects:
-                object.postStep()
-                if object.isDead():
-                    if object.type != "Person":
-                        self.objects.remove(object)
-                        object.close()
-                        del object
+            for o in self.objects[:]:
+                o.postStep()
+
+            for o in self.objects[:]:
+                if o.isDead():
+                    if o.type != "Person":
+                        self.objects.remove(o)
+                        o.close()
+                        del o
 
             self.contactgroup.empty()
             self.timeUntilNextEngineUpdate += self.stepSize
