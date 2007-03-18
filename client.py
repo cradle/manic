@@ -540,7 +540,6 @@ class Client(Application, Engine):
         myMaterial.setDepthWriteEnabled(False)
         myMaterial.setSceneBlending(ogre.SBT_TRANSPARENT_ALPHA)
         myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_DIFFUSE)
-        print myMaterial.getTechnique(0).getPass(0).isTransparent()
         
 
     def displayDebug(self):
@@ -605,7 +604,7 @@ class Client(Application, Engine):
                     self._startTime = message[3]
                     
                 if message[1] > self.lastServerUpdate:
-                    #self.timeUntilNextEngineUpdate = self.stepSize * (self._stepNumber - message[2])
+                    self.timeUntilNextEngineUpdate = message[4]
                     self.lastServerUpdate = message[1]
 
                     for object in self.objects:

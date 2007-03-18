@@ -13,6 +13,7 @@ class StaticObject(object):
         self._space = gameworld.space
         self._gameworld = gameworld
         self.type = "Static"
+        print "Creating", type(self), self._name
 
     def getBody(self):
         return None
@@ -647,11 +648,11 @@ class Person(SphereObject):
                 int(self.ammo),
                 self.timeLeftUntilNextShot if self.timeLeftUntilNextShot > 0 else 0,
                 self.timeUntilRespawn if self.timeUntilRespawn > 0 else 0,
-                (1 if self.reloading else 0 |
-                2 if self.isCrouching else 0 |
-                4 if self.isJumping else 0 |
-                8 if self.isDead() else 0 |
-                16 if self.canShoot else 0),
+                ((1 if self.reloading else 0) |
+                (2 if self.isCrouching else 0) |
+                (4 if self.isJumping else 0) |
+                (8 if self.isDead() else 0) |
+                (16 if self.canShoot else 0)),
                 self.score
                 ]
 

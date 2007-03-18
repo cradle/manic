@@ -313,7 +313,7 @@ class Person(objects.Person, SphereObject):
         self.animations['jump'].setLoop(False)
         self.animations['jump'].setWeight(4)
 
-
+        self.events = []
 
     def __del__(self):
         SphereObject.__del__(self)
@@ -346,9 +346,12 @@ class Person(objects.Person, SphereObject):
                 self._node.setOrientation(right)
 
     def setEvents(self, events):
+        self.events += events
         if len(events) != 0:
-            print events
-        if 'shoot' in events:
+            print self.events
+        if 'shoot' in self.events:
+            #TODO: Space out sounds between updates
+            self.events.remove('shoot')
             self._shootSound()
 
     def frameEnded(self, time):
@@ -378,7 +381,6 @@ class Person(objects.Person, SphereObject):
                 self.animations['idle'].setWeight(0.5)
             else:
                 self.animations['idle'].addTime(time)
-                #self.animations['run'].Enabled = False
                 self.animations['idle'].Enabled = True
                 self.animations['idle'].setWeight(2)
                 
@@ -442,12 +444,6 @@ class Player(Person):
         
     def setPosition(self, position):
         Person.setPosition(self, position)
-
-    #def setAngularVel(self, vel):
-    #    pass
-
-    #def setLinearVel(self, vel):
-    #    pass
 
     def setAttributes(self, attributes):
         Person.setAttributes(self, attributes)
@@ -526,19 +522,3 @@ class Player(Person):
             direction = (1.0,0.0,0)
             
         return direction
-
-    # Don't respond to these for now, no client side prediction
-##    def _moveLeft(self):
-##        pass
-##        
-##    def _moveRight(self):
-##        pass
-##
-##    def _rotateLeft(self):
-##        pass
-##
-##    def _rotateRight(self):
-##        pass
-##        
-##    def _jump(self):
-##        pass
