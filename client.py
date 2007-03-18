@@ -591,8 +591,6 @@ class Client(Application, Engine):
         self.timeUntilNextNetworkUpdate -= frameTime
         if self.timeUntilNextNetworkUpdate <= 0.0:
             self.network.update(frameTime)
-
-            ## Removed to remove need for jelly
             self.displayScores()
             self.displayVitals()
             

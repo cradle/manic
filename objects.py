@@ -652,7 +652,9 @@ class Person(SphereObject):
                 (4 if self.isJumping else 0) |
                 (8 if self.isDead() else 0) |
                 (16 if self.canShoot else 0)),
-                self.score
+                self.score,
+                self.ping,
+                self._instability
                 ]
 
     def setAttributes(self, attributes):
@@ -669,6 +671,8 @@ class Person(SphereObject):
         self.setDead((state & 8 == 8))
         self.canShoot = (state & 16 == 16)
         self.score = attributes[11]
+        self.ping = attributes[12]
+        self._instability = attributes[13]
 
     def _calculateAccuracy(self):
             
@@ -754,6 +758,7 @@ class Person(SphereObject):
         self.isCrouching = True
         
     def _unCrouch(self):
+        print "Uncrouch"
         self.isCrouching = False
 
     def getShootOffset(self):

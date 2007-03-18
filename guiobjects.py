@@ -125,6 +125,7 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
             presses.append("md")
 
+        self.presses = presses
         return presses
     
     def disable(self):
