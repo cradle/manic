@@ -13,7 +13,6 @@ class StaticObject(object):
         self._space = gameworld.space
         self._gameworld = gameworld
         self.type = "Static"
-        print "Creating", type(self), self._name
 
     def getBody(self):
         return None

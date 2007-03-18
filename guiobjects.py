@@ -125,7 +125,6 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
             presses.append("md")
 
-        
         return presses
     
     def disable(self):
@@ -346,9 +345,7 @@ class Person(objects.Person, SphereObject):
                 self._node.setOrientation(right)
 
     def setEvents(self, events):
-        self.events += events
-        if len(events) != 0:
-            print self.events
+        self.events = events
         if 'shoot' in self.events:
             #TODO: Space out sounds between updates
             self.events.remove('shoot')
