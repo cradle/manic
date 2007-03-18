@@ -758,7 +758,6 @@ class Person(SphereObject):
         self.isCrouching = True
         
     def _unCrouch(self):
-        print "Uncrouch"
         self.isCrouching = False
 
     def getShootOffset(self):
