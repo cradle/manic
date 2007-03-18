@@ -426,6 +426,10 @@ class Person(SphereObject):
         for name, id in self.gunIDs.items():
             self.gunNames[id] = name
 
+        self.gunName = ""
+        self.primaryGunName = "SMG"
+        self.secondayGunName = "Assault"
+
         self.reset()
         self._instability = 0.0
 
@@ -482,7 +486,7 @@ class Person(SphereObject):
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
                 'accuracy':0.7,
-                'timeBetweenShots':0.01,
+                'timeBetweenShots':0.02,
                 'damage':3.5,
                 'velocity':25.0,
                 'type':'single',
@@ -572,11 +576,8 @@ class Person(SphereObject):
                 'auto':False,
                 }
             }
-
-        self.gunName = ""
-        self.primaryGunName = "SMG"
-        self.secondayGunName = "Assault"
-        self.setGun("SMG")
+        
+        self.setGun(self.gunName)
         
     def doDamage(self, damage):
         if not self.isDead():
@@ -620,6 +621,8 @@ class Person(SphereObject):
             self.guns[self.gunName]['ammo'] = self.ammo
             self.guns[self.gunName]['reloading'] = self.reloading
             self.guns[self.gunName]['timeLeftUntilNextShot'] = self.timeLeftUntilNextShot
+        else:
+            name = "SMG"
                 
         #Load New Gun Stats
         if self.gunName != name:
@@ -735,7 +738,10 @@ class Person(SphereObject):
         else:
             self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
 
-        self.timeLeftUntilNextShot -= time
+        if self.timeLeftUntilNextShot > 0:
+            self.timeLeftUntilNextShot -= time
+        elif self.timeLeftUntilNextShot > -time:
+            self.timeLeftUntilNextShot = -time
 
         if self.timeLeftUntilNextShot <= 0.0 and self.reloading:
             self.reloading = False
@@ -767,7 +773,7 @@ class Person(SphereObject):
         self.canShoot = True
 
     def _shoot(self):
-        if (self.timeLeftUntilMustShoot and self.timeLeftUntilMustShoot <= 0 and self.ammo > 0) or\
+        while (self.timeLeftUntilMustShoot and self.timeLeftUntilMustShoot <= 0 and self.ammo > 0) or\
            self.timeLeftUntilNextShot < 0.0 and self.ammo > 0 and self.canShoot:
             if not self.automatic:
                 self.canShoot = False
@@ -795,7 +801,7 @@ class Person(SphereObject):
                 
             self.ammo -= 1
             self.events += ['shoot']
-            self.timeLeftUntilNextShot = self.timeBetweenShots
+            self.timeLeftUntilNextShot += self.timeBetweenShots
 
             if self.guns[self.gunName]['type'] == "burst":
                 self.shotsLeftInBurst -= 1
