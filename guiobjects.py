@@ -125,7 +125,6 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
             presses.append("md")
 
-        self.presses = presses
         return presses
     
     def disable(self):
@@ -323,16 +322,18 @@ class Person(objects.Person, SphereObject):
 
     def _shoot(self):
         #TODO: Make server side
-        if self.ammo == 0:
-            self.noAmmoSound.play()
         objects.Person._shoot(self)
 
     def _shootSound(self):
-        self.noAmmoSound.stop()
-        if self.sounds[self.gunName].isPlaying():
-            self.sounds[self.gunName].stop()
+        if self.ammo > 0:
+            self.noAmmoSound.stop()
+            if self.sounds[self.gunName].isPlaying():
+                self.sounds[self.gunName].stop()
 
-        self.sounds[self.gunName].play()
+            self.sounds[self.gunName].play()
+        else:
+            if self.ammo == 0:
+                self.noAmmoSound.play()
 
     def setDirection(self, direction):
         super(Person, self).setDirection(direction)
@@ -346,6 +347,8 @@ class Person(objects.Person, SphereObject):
                 self._node.setOrientation(right)
 
     def setEvents(self, events):
+        if len(events) != 0:
+            print events
         self.events = events
 
     def frameEnded(self, time):
@@ -358,9 +361,8 @@ class Person(objects.Person, SphereObject):
             self.animations['crouch'].Enabled = False
             self.animations['crouch'].setTimePosition(0)
             self.animations['jump'].setTimePosition(0)
-        else:
+        else:                
             if 'shoot' in self.events:
-                #TODO: Space out sounds between updates
                 self.events.remove('shoot')
                 self._shootSound()
                 

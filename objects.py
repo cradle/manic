@@ -71,7 +71,7 @@ class DynamicObject(StaticObject):
         self.type = "Dynamic"
         self._body.name = name
 
-        self.presses = {}
+        self.presses = None
         self._pointingDirection = (1.0,0.0,0.0)
         self.setDead(False)
 
@@ -157,30 +157,31 @@ class DynamicObject(StaticObject):
         pass
 
     def preStep(self):
-        if 'l' in self.presses:
-            self._moveLeft()
-        if 'r' in self.presses:
-            self._moveRight()
-        if 'rl' in self.presses:
-            self._rotateLeft()
-        if 'rr' in self.presses:
-            self._rotateRight()
-        if 'd' in self.presses:
-            self._crouch()
-        else:
-            self._unCrouch()
-        if 'u' in self.presses:
-            self._jump()
-        else:
-            self._unJump()
-        if 's' in self.presses:
-            self._shoot()
-        else:
-            self._unShoot()
-        if 's2' in self.presses:
-            self._secondaryFire()
-        if 'a' in self.presses:
-            self._reload()
+        if self.presses:
+            if 'l' in self.presses:
+                self._moveLeft()
+            if 'r' in self.presses:
+                self._moveRight()
+            if 'rl' in self.presses:
+                self._rotateLeft()
+            if 'rr' in self.presses:
+                self._rotateRight()
+            if 'd' in self.presses:
+                self._crouch()
+            else:
+                self._unCrouch()
+            if 'u' in self.presses:
+                self._jump()
+            else:
+                self._unJump()
+            if 's' in self.presses:
+                self._shoot()
+            else:
+                self._unShoot()
+            if 's2' in self.presses:
+                self._secondaryFire()
+            if 'a' in self.presses:
+                self._reload()
 
         # Apply wind friction
         self._body.addForce([-1*0.000001*math.fabs(x)*x for x in self._body.getLinearVel()])
@@ -477,7 +478,7 @@ class Person(SphereObject):
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
         self._pointingDirection = (1.0,0.0,0.0)
-        self.presses = {}
+        self.presses = None
         self.health = self.maxHealth
 
         self.guns = {
@@ -605,26 +606,27 @@ class Person(SphereObject):
                 self.timeUntilRespawn = self.respawnTime
             
     def preStep(self):
-        if not self.isDead():            
-            SphereObject.preStep(self)
-            if '1' in self.presses:
-                self.setGun("Pistol")
-            if '2' in self.presses:
-                self.setGun("SMPistol")
-            if '3' in self.presses:
-                self.setGun("SMG")
-            if '4' in self.presses:
-                self.setGun("Shotgun")
-            if '5' in self.presses:
-                self.setGun("Assault")
-            if '6' in self.presses:
-                self.setGun("Support")
-            if '7' in self.presses:
-                self.setGun("Sniper")
-            if 'mu' in self.presses:
-                self.setGun(self.primaryGunName)
-            if 'md' in self.presses:
-                self.setGun(self.secondaryGunName)
+        if not self.isDead():
+            if self.presses:
+                SphereObject.preStep(self)
+                if '1' in self.presses:
+                    self.setGun("Pistol")
+                if '2' in self.presses:
+                    self.setGun("SMPistol")
+                if '3' in self.presses:
+                    self.setGun("SMG")
+                if '4' in self.presses:
+                    self.setGun("Shotgun")
+                if '5' in self.presses:
+                    self.setGun("Assault")
+                if '6' in self.presses:
+                    self.setGun("Support")
+                if '7' in self.presses:
+                    self.setGun("Sniper")
+                if 'mu' in self.presses:
+                    self.setGun(self.primaryGunName)
+                if 'md' in self.presses:
+                    self.setGun(self.secondaryGunName)
         else:
             if self.timeUntilRespawn <= 0:
                 self.setDead(False)
@@ -782,6 +784,7 @@ class Person(SphereObject):
         
     def _unCrouch(self):
         self.isCrouching = False
+        print "here"
 
     def getShootOffset(self):
         return [0,0.5,0]
