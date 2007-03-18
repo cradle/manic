@@ -202,11 +202,12 @@ class DynamicObject(StaticObject):
         self._alignBodyToZAxis(self._body)
 
     def _alignBodyToZAxis(self, body):
-        rot = body.getAngularVel()
-        old_quat = body.getQuaternion()
-        quat_len = math.sqrt( old_quat[0] * old_quat[0] + old_quat[3] * old_quat[3] )
-        body.setQuaternion((old_quat[0] / quat_len, 0, 0, old_quat[3] / quat_len))
-        body.setAngularVel((0,0,rot[2]))
+        pass# If we get alignment issues, uncomment this!
+        #rot = body.getAngularVel()
+        #old_quat = body.getQuaternion()
+        #quat_len = math.sqrt( old_quat[0] * old_quat[0] + old_quat[3] * old_quat[3] )
+        #body.setQuaternion((old_quat[0] / quat_len, 0, 0, old_quat[3] / quat_len))
+        #body.setAngularVel((0,0,rot[2]))
         # http://opende.sourceforge.net/wiki/index.php/HOWTO_constrain_objects_to_2d
 
     def _shoot(self):

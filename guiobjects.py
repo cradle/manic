@@ -347,10 +347,6 @@ class Person(objects.Person, SphereObject):
 
     def setEvents(self, events):
         self.events = events
-        if 'shoot' in self.events:
-            #TODO: Space out sounds between updates
-            self.events.remove('shoot')
-            self._shootSound()
 
     def frameEnded(self, time):
         if self.isDead():
@@ -363,6 +359,11 @@ class Person(objects.Person, SphereObject):
             self.animations['crouch'].setTimePosition(0)
             self.animations['jump'].setTimePosition(0)
         else:
+            if 'shoot' in self.events:
+                #TODO: Space out sounds between updates
+                self.events.remove('shoot')
+                self._shootSound()
+                
             self.animations['dead'].Enabled = False
             self.animations['dead'].setTimePosition(0)
             
