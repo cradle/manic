@@ -1,6 +1,10 @@
 import ode, math, random, time
 
-class StaticObject(object):    
+class StaticObject(object):
+    TERRAIN = 1
+    PROJECTILE = 2
+    PLAYER = 4
+    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), geomFunc = ode.GeomBox):
         self._size = size
         self._geometry = geomFunc(gameworld.space, self._size)
@@ -13,6 +17,8 @@ class StaticObject(object):
         self._space = gameworld.space
         self._gameworld = gameworld
         self.type = "Static"
+        self._geometry.setCategoryBits(self.TERRAIN)
+        self._geometry.setCollideBits(self.PROJECTILE | self.PLAYER)
 
     def getBody(self):
         return None
@@ -296,6 +302,9 @@ class BulletObject(SphereObject):
         self.type = "Bullet"
         self.damage = damage
         self.hasSentToClients = False
+        
+        self._geometry.setCategoryBits(self.PROJECTILE)
+        self._geometry.setCollideBits(self.TERRAIN | self.PLAYER)
 
     def __del__(self):
         SphereObject.__del__(self)
@@ -429,9 +438,16 @@ class Person(SphereObject):
         self.gunName = ""
         self.primaryGunName = "SMG"
         self.secondayGunName = "Assault"
+        self._instability = 0.0
+        
+        self._geometry.setCategoryBits(self.PLAYER)
+        self._geometry.setCollideBits(self.PROJECTILE | self.TERRAIN)
+        self._torsoTransform.setCategoryBits(self.PLAYER)
+        self._torsoTransform.setCollideBits(self.PROJECTILE | self.TERRAIN)
+        self._headTransform.setCategoryBits(self.PLAYER)
+        self._headTransform.setCollideBits(self.PROJECTILE | self.TERRAIN)
 
         self.reset()
-        self._instability = 0.0
 
     def close(self):
         self._geometry.object = None

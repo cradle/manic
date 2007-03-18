@@ -124,7 +124,7 @@ class Engine:
             print "BUG! Probably not deleting some object properly"
             return
 
-        if (o1.type == "Bullet" and o2.type == "Bullet") or (o1 == o2):
+        if o1 == o2:
             contacts = []
         else:
             contacts = ode.collide(geom1, geom2)
