@@ -326,16 +326,16 @@ class BulletObject(SphereObject):
             self.disable()
 
     def getAttributes(self):
-        #if self.hasSentToClients:
-        #    return 0
-        #else:
-        return [self.to2d(self._body.getPosition()),
-                self.to2d(self._body.getLinearVel())]
+        if self.hasSentToClients:
+            return 0
+        else:
+            return [self.to2d(self._body.getPosition()),
+                    self.to2d(self._body.getLinearVel())]
 
     def setAttributes(self, attributes):
-        #if type(attributes) != int:
-        self._body.setPosition(self.to3d(attributes[0]))
-        self._body.setLinearVel(self.to3d(attributes[1]))
+        if type(attributes) != int:
+            self._body.setPosition(self.to3d(attributes[0]))
+            self._body.setLinearVel(self.to3d(attributes[1]))
 
     def clearEvents(self):
         self.hasSentToClients = True  
