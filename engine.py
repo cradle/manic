@@ -14,7 +14,7 @@ class Engine:
     NET_TIME_UNTIL_UPDATE = 2
     
     def __init__(self):
-        self.stepSize = 1.0/85.0
+        self.stepSize = 1.0/200.0
         self.timeUntilNextEngineUpdate = 0.0
         random.seed(time.time())
         self.debugStepTime = 1.0

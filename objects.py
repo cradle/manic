@@ -667,7 +667,7 @@ class Person(SphereObject):
                 'accuracy':0.98,
                 'timeBetweenShots':7.5,
                 'damage':100,
-                'velocity':100.0,
+                'velocity':120.0, # I want to make it faster than 80, but it will go through walls
                 'type':'single',
                 'ammoType':BULLET,
                 'zoom':80,
