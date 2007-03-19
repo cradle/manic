@@ -48,7 +48,7 @@ class Server(Engine):
                            o._name == client.player._name,
                            o.type,
                            o.getEvents()] for o in self.objects],
-                        time.time()])
+                        time.time(), self.timeUntilNextEngineUpdate])
             #parameter above is whether or not the player is the current player
             client.player.setEvents(client.player.getEvents())
             

@@ -603,7 +603,8 @@ class Client(Application, Engine):
             for message in self.network._messages:
                     
                 if message[1] > self.lastServerUpdate:
-                    self.timeUntilNextEngineUpdate = self.stepSize
+                    self.timeUntilNextEngineUpdate = message[Engine.NET_TIME_UNTIL_UPDATE]
+                    print message[Engine.NET_TIME_UNTIL_UPDATE]
                     self.lastServerUpdate = message[Engine.NET_TIME]
 
                     for object in self.objects:

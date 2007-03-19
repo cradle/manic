@@ -204,6 +204,7 @@ class BulletObject(objects.BulletObject, SphereObject):
         self._node.attachObject(self._entity)
 
         self.trailColour = (1.0,1.0,1.0)
+        self.trailLength = 1.0
 
         self._updateDisplay()
 
@@ -221,7 +222,7 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.trail.position( self._body.getPosition() )
         self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.5)
         self.trail.position(\
-            [a-(b*2*time) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
+            [a-(b*2*self.trailLength*0.02) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
         self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.0)
         self.trail.end()
         self.trailNode.attachObject(self.trail)
@@ -240,6 +241,7 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         objects.GrenadeObject.__init__(self, gameworld, name, direction, velocity, damage)
         BulletObject.reset(self, name)
         self.trailColour = (1.0,1.0,0.0)
+        self.trailLength = 3
         self._entity.setMaterialName("grenade")
         self._entity.getMaterial().setAmbient(self.trailColour)
         self._entity.setDefaultDimensions(0.1,0.1)

@@ -11,6 +11,7 @@ class Engine:
     NET_OBJECTS_TYPE = 3
     NET_OBJECTS_EVENTS = 4
     NET_TIME = 1
+    NET_TIME_UNTIL_UPDATE = 2
     
     def __init__(self):
         self.stepSize = 1.0/85.0
@@ -163,7 +164,7 @@ class Engine:
                                     self.messageListener(">",a.ownerName + " committed suicide")
                                     self.addScore(a.ownerName, -1)
                                 else:
-                                    self.messageListener(">",a.ownerName + " killed " + a.ownerName)
+                                    self.messageListener(">",a.ownerName + " killed " + b.ownerName)
                                     self.addScore(a.ownerName, 1)
                     
             # Assume that if collision normal is facing up we are 'on ground'
