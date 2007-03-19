@@ -9,6 +9,7 @@ from guiobjects import *
 import objects
 import networkclient
 import gamenet
+from encode import timer
 
 def cegui_reldim ( x ) :
     return CEGUI.UDim((x),0)
@@ -24,7 +25,8 @@ class Application(object):
         self.sceneManager = None
         self.world = None
         self.debug = True
-        self.debugNetworkTime = 666
+        self.debugNetworkTime = 0
+        self.debugChatTime = 0
 
     def go(self):
         "Starts the rendering loop."
@@ -547,12 +549,13 @@ class Client(Application, Engine):
         
 
     def displayDebug(self):
-        self._debugWindow.setText("FrameTime:%0.4f\n1StepTime:%0.4f\nNumSteps:%i\nStepTime:%0.4f\nNetworkTime:%0.4f" % \
+        self._debugWindow.setText("FrameTime:%0.4f\n1StepTime:%0.4f\nNumSteps:%i\nStepTime:%0.4f\nNetworkTime:%0.4f\nChatTime:%0.4f" % \
                                   (self.debugFrameTime,
                                    (self.debugStepTime / self.debugNumSteps) if self.debugNumSteps else 0,
                                    self.debugNumSteps,
                                    self.debugStepTime,
-                                   self.debugNetworkTime
+                                   self.debugNetworkTime,
+                                   self.debugChatTime
                                    )
                                   )
 
@@ -584,15 +587,22 @@ class Client(Application, Engine):
             self.timeUntilNextChatUpdate = self.timeBetweenChatUpdates
     
     def frameEnded(self, frameTime, keyboard,  mouse):
+        t = timer()
+
             
         Engine.frameEnded(self, frameTime)
         self.displayDebug()
 
+        t.start()
         self.updateChat(frameTime)
+        t.stop()
+        t.debugChatTime = t.time()
         
         self.keyboard = keyboard
         self.mouse = mouse
         self.timeUntilNextNetworkUpdate -= frameTime
+        t.start()
+
         if self.timeUntilNextNetworkUpdate <= 0.0:
             self.network.update(frameTime)
             self.displayScores()
@@ -652,6 +662,8 @@ class Client(Application, Engine):
         if self.player != None:
             self.network.send(self.player.input(self.keyboard,  self.mouse))
 
+        t.stop()
+        self.debugNetworkTime = t.time()
         return True # Keep running
     
 if __name__ == "__main__":
