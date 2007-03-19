@@ -604,7 +604,7 @@ class Client(Application, Engine):
                     
                 if message[1] > self.lastServerUpdate:
                     self.timeUntilNextEngineUpdate = message[Engine.NET_TIME_UNTIL_UPDATE]
-                    print message[Engine.NET_TIME_UNTIL_UPDATE]
+                    #print message[Engine.NET_TIME_UNTIL_UPDATE]
                     self.lastServerUpdate = message[Engine.NET_TIME]
 
                     for object in self.objects:

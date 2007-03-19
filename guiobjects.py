@@ -136,13 +136,16 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         self._entity.setVisible(True)
         
     def setPosition(self, position):
-        #curPos = self._body.getPosition()
-        #curVel = self._body.getLinearVel()
+        curPos = self._body.getPosition()
+        curVel = self._body.getLinearVel()
         #if position and \
         #   (math.fabs(position[0] - curPos[0]) > math.fabs(curVel[0]) or \
         #    math.fabs(position[1] - curPos[1]) > math.fabs(curVel[1])):
             #position = [(x+y)/2 for x,y in zip(position, curPos)]
         objects.DynamicObject.setPosition(self, position)
+        if position:
+            print "%2.4f, %2.4f" % ((position[0] - curPos[0]),\
+                  (position[1] - curPos[1]))
 
     def __del__(self):
         StaticObject.__del__(self)
