@@ -17,6 +17,10 @@ class ListenClient(Client, Server):
         print "Self", self.player._name, "connected"
         self._stepNumber = 0
         self._startTime = time.time()
+
+        bot = guiobjects.Person(self, "b1")
+        bot.setPosition(self.spawnLocation())
+        self.objects += [bot]
         
     def frameEnded(self, frameTime, keyboard, mouse):            
         Server.frameEnded(self, frameTime)

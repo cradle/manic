@@ -50,6 +50,7 @@ class Server(Engine):
                            o.getEvents()] for o in self.objects],
                         time.time(), self.timeUntilNextEngineUpdate])
             #parameter above is whether or not the player is the current player
+            #TODO, I really shouldn't have to call this
             client.player.setEvents(client.player.getEvents())
             
                 

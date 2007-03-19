@@ -28,7 +28,7 @@ class NetworkClient(DatagramProtocol):
         self.timeBetweenPings = 0.5
         self.timeUntilNextPing = 0.0
         self.debugSendPacketLength = 0
-        self.debugReceievePacketLength = 0
+        self.debugReceivePacketLength = 0
 
     def gotIP(self, ip):
         print "Got IP", ip
@@ -45,7 +45,7 @@ class NetworkClient(DatagramProtocol):
         self.transport.connect(self.serverIP, self.port)
         
     def datagramReceived(self, data, (host, port)):
-        self.debugReceievePacketLength = len(data)
+        self.debugReceivePacketLength = len(data)
         message = banana.decode(zlib.decompress(data))
         if type(message[0]) == str and message[0] == "pong":
             for ping in self.pings:

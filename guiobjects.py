@@ -300,11 +300,14 @@ class Person(objects.Person, SphereObject):
         self._node.attachObject(self.reloadSound)
         self._node.attachObject(self.noAmmoSound)
 
+        self.hitSounds = []
+        for num in range(1,5):
+            self.hitSounds += [self.soundManager.createSound("BHP%i%s" % (num, self._name),
+                                                             "BulletHitPlayer%i.wav" % num, False)]
+
         self.setDirection((1.0,0.0,0.0))
         self._camera = camera
         self.zoomMode = False
-
-        self.soundEvents = []
 
         self.keys = {
             'up':OIS.KC_UNASSIGNED,
@@ -346,12 +349,18 @@ class Person(objects.Person, SphereObject):
         self.animations['jump'].setWeight(4)
 
         self.events = []
+        self.soundEvents = []
 
     def __del__(self):
         SphereObject.__del__(self)
         objects.Person.__del__(self)
         for sound in [self.sounds[name] for name in self.sounds]:
             self.soundManager.destroySound(sound)
+
+    def _hitSound(self):
+        sound = random.choice(self.hitSounds)
+        sound.stop()
+        sound.play()
 
     def _shoot(self):
         #TODO: Make server side
@@ -376,15 +385,23 @@ class Person(objects.Person, SphereObject):
                 self._node.setOrientation(right)
 
     def setEvents(self, events):
-        if len(events) != 0:
-            print events
         self.events = events
-        if 'shoot' in events:
-            numShots = events.count('shoot')
-            t = (1.0/15.0) / (numShots+1) # self.timeBetweenNetworkUpdates
-            self.soundEvents += [{'sound':'shoot', 'time':t*i} for i in range(numShots)] 
+        for sound in ['shoot', 'hit']:
+            if sound in events:
+                numSounds = events.count(sound)
+                t = (1.0/15.0) / (numSounds+1) # self.timeBetweenNetworkUpdates
+                self.soundEvents += [{'sound':sound, 'time':t*i} for i in range(numSounds)] 
 
     def frameEnded(self, time):
+        for sound in self.soundEvents:
+            sound['time'] -= time
+            if sound['time'] <= 0:
+                if 'shoot' == sound['sound']:
+                    self._shootSound()
+                if 'hit' == sound['sound']:
+                    self._hitSound()
+                self.soundEvents.remove(sound)
+                    
         if self.isDead():
             self.animations['dead'].addTime(time)
             self.animations['jump'].Enabled = False
@@ -395,13 +412,6 @@ class Person(objects.Person, SphereObject):
             self.animations['crouch'].setTimePosition(0)
             self.animations['jump'].setTimePosition(0)
         else:
-            for sound in self.soundEvents:
-                sound['time'] -= time
-                if sound['time'] <= 0:
-                    if 'shoot' == sound['sound']:
-                        self.soundEvents.remove(sound)
-                        self._shootSound()
-                
             self.animations['dead'].Enabled = False
             self.animations['dead'].setTimePosition(0)
             

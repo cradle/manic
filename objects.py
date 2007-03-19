@@ -554,6 +554,8 @@ class Person(SphereObject):
         self._pointingDirection = (1.0,0.0,0.0)
         self.presses = None
         self.health = self.maxHealth
+        self.events = []
+        self.soundEvents = []
 
         self.guns = {
             'Pistol':{
@@ -695,6 +697,8 @@ class Person(SphereObject):
         self.setGun(self.gunName)
         
     def doDamage(self, damage):
+        self.events += ['hit']
+        
         if not self.isDead():
             self.health -= damage
             if self.health <= 0:
@@ -963,7 +967,6 @@ class Person(SphereObject):
         
             
     def postStep(self):
-        # Temp variable to prevent clobbering
         SphereObject.postStep(self)
         if self.isOnGround:
             # People have a lot of friction against movement, if we aren't moving. Slam on the brakes
