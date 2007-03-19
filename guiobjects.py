@@ -168,7 +168,9 @@ class SphereObject(objects.SphereObject, DynamicObject):
 class BulletObject(objects.BulletObject, SphereObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
         objects.BulletObject.__init__(self, gameworld, name, direction, velocity, damage)
+        self.reset(name)
 
+    def reset(self, name):
         self.keys = {
             'up':OIS.KC_I,
             'down':OIS.KC_K,
@@ -189,23 +191,25 @@ class BulletObject(objects.BulletObject, SphereObject):
             'next':None}
         
         self.name = name
-        self._entity = gameworld.sceneManager.createBillboardSet("bb" + name)
+        self._entity = self._gameworld.sceneManager.createBillboardSet("bb" + name)
         self._entity.setDefaultDimensions(0.05,0.05)
 
         self._entity.createBillboard(0,0,0)
         
-        self.trailNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
+        self.trailNode = self._gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
         self.trail = ogre.ManualObject( "__TRAIL__" + name)
         self.trailNode.attachObject(self.trail)
                 
-        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
+        self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.attachObject(self._entity)
 
         self.trailColour = (1.0,1.0,1.0)
 
         self._updateDisplay()
 
-        self.gameworld = gameworld
+    def close(self):
+        SphereObject.close(self)
+        objects.BulletObject.close(self)
 
     def frameEnded(self, time):
         objects.BulletObject.frameEnded(self, time)
@@ -223,26 +227,35 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.trailNode.attachObject(self.trail)
         
     def __del__(self):
-        self.gameworld.sceneManager.destroyBillboardSet("bb" + self.name)
+        self._gameworld.sceneManager.destroyBillboardSet("bb" + self.name)
         self.trailNode.detachAllObjects()
         self.trail.clear()
-        self.gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('t' + self.name)
+        self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('t' + self.name)
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 
 
 class GrenadeObject(objects.GrenadeObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
-        BulletObject.__init__(self, gameworld, name, direction, velocity, damage)
- 
+        objects.GrenadeObject.__init__(self, gameworld, name, direction, velocity, damage)
+        BulletObject.reset(self, name)
         self.trailColour = (1.0,1.0,0.0)
+        self._entity.setMaterialName("grenade")
+        self._entity.getMaterial().setAmbient(self.trailColour)
+        self._entity.setDefaultDimensions(0.1,0.1)
 
     def frameEnded(self, time):
         objects.GrenadeObject.frameEnded(self, time)
         BulletObject.frameEnded(self, time)
 
-        if len(self.events) != 0:
-            print self.events
+    def close(self):
+        self._geometry.object = None
+        BulletObject.close(self)
+        objects.GrenadeObject.close(self)
+        
+    def __del__(self):
+        BulletObject.__del__(self)
+        objects.GrenadeObject.__del__(self)
 
 class Person(objects.Person, SphereObject):
     def __init__(self, gameworld, name, camera = None):

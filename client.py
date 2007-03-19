@@ -373,7 +373,6 @@ class Client(Application, Engine):
         self.serverRoundTripTime = 0.0
         self.lastServerUpdate = time.time()
         self.player = None
-        self._stepNumber = None
     
     def sendText(self):
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
@@ -538,11 +537,13 @@ class Client(Application, Engine):
         self._vitalsWindow = vitals
         sheet.addChildWindow(vitals)
 
-        myMaterial = ogre.MaterialManager.getSingleton().create("bullets","debugger");
+        myMaterial = ogre.MaterialManager.getSingleton().create("bullets","debugger")
         myMaterial.setLightingEnabled(False)
         myMaterial.setDepthWriteEnabled(False)
         myMaterial.setSceneBlending(ogre.SBT_TRANSPARENT_ALPHA)
         myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_DIFFUSE)
+
+        myMaterial = ogre.MaterialManager.getSingleton().create("grenade","debugger")
         
 
     def displayDebug(self):
@@ -561,7 +562,7 @@ class Client(Application, Engine):
 
     def displayScores(self):
         text = ""
-        players = [object for object in self.objects if object.type == "Person"]
+        players = [object for object in self.objects if object.type == objects.PERSON]
         for player in players:
             text += " %s, %i, %.2f\n" % \
                     (player._name, player.score, player.ping)
@@ -600,51 +601,47 @@ class Client(Application, Engine):
             self.timeUntilNextNetworkUpdate = self.timeBetweenNetworkUpdates
 
             for message in self.network._messages:
-                if not self._stepNumber:
-                    self._stepNumber = message[2]
-                    self._startTime = message[3]
                     
                 if message[1] > self.lastServerUpdate:
-                    self.timeUntilNextEngineUpdate = message[4]
-                    self.lastServerUpdate = message[1]
+                    self.timeUntilNextEngineUpdate = self.stepSize
+                    self.lastServerUpdate = message[Engine.NET_TIME]
 
                     for object in self.objects:
                         object.existsOnServer = False
 
-                    for serverObject in message[0]:
+                    for serverObject in message[Engine.NET_OBJECTS]:
                         hasObject = False
                         for object in self.objects:
-                            if serverObject[0] == object._name:
+                            if serverObject[Engine.NET_OBJECTS_NAME] == object._name:
                                 hasObject = True
                                 object.existsOnServer = True
-                                object.setAttributes(serverObject[1])
-                                object.setEvents(serverObject[4])
+                                object.setAttributes(serverObject[Engine.NET_OBJECTS_ATTRIBUTES])
+                                object.setEvents(serverObject[Engine.NET_OBJECTS_EVENTS])
                         if not hasObject:
                             newObject = None
                             if serverObject[2] == True:
-                                newObject = Player(self, serverObject[0], self.camera)
-                                self.chat.setNickName(serverObject[0])
+                                newObject = Player(self, serverObject[Engine.NET_OBJECTS_NAME], self.camera)
+                                self.chat.setNickName(serverObject[Engine.NET_OBJECTS_NAME])
                                 newObject.enable()
                                 self.player = newObject
                             else:
-                                if serverObject[3] == "Person":
-                                    newObject = Person(self, serverObject[0])
-                                elif serverObject[3] == "Bullet":
-                                    newObject = BulletObject(self, serverObject[0])
-                                elif serverObject[3] == "Dynamic":
-                                    newObject = DynamicObject(self, serverObject[0])
-                                elif serverObject[3] == "Sphere":
-                                    newObject = SphereObject(self, serverObject[0])
+                                if serverObject[Engine.NET_OBJECTS_TYPE] == objects.PERSON:
+                                    newObject = Person(self, serverObject[Engine.NET_OBJECTS_NAME])
+                                elif serverObject[Engine.NET_OBJECTS_TYPE] == objects.BULLET:
+                                    newObject = BulletObject(self, serverObject[Engine.NET_OBJECTS_NAME])
+                                elif serverObject[Engine.NET_OBJECTS_TYPE] == objects.GRENADE:
+                                    newObject = GrenadeObject(self, serverObject[Engine.NET_OBJECTS_NAME])
+                                else:
+                                    print "Unknown object to create", serverObject[Engine.NET_OBJECTS_TYPE], objects.PERSON
 
                             if newObject:
                                 newObject.existsOnServer = True        
-                                newObject.setAttributes(serverObject[1])
-                                newObject.setEvents(serverObject[4])
+                                newObject.setAttributes(serverObject[Engine.NET_OBJECTS_ATTRIBUTES])
+                                newObject.setEvents(serverObject[Engine.NET_OBJECTS_EVENTS])
                                 self.objects += [newObject]
 
                     for object in self.objects:
                         if not object.existsOnServer:
-                            #self.messageListener("Server", object._name + " timed out")
                             self.objects.remove(object)
                             object.close()
                             del object

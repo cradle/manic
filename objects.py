@@ -1,6 +1,17 @@
 import ode, math, random, time
+import engine
+
+#TYPES
+STATIC = 0
+DYNAMIC = 1
+SPHERE = 2
+PERSON = 3
+BULLET = 4
+GRENADE = 5
 
 class StaticObject(object):
+
+    #COLLISION TYPES
     TERRAIN = 1
     PROJECTILE = 2
     PLAYER = 4
@@ -16,7 +27,7 @@ class StaticObject(object):
         self._world = gameworld.world
         self._space = gameworld.space
         self._gameworld = gameworld
-        self.type = "Static"
+        self.type = STATIC
         self._geometry.setCategoryBits(self.TERRAIN)
         self._geometry.setCollideBits(self.PROJECTILE | self.PLAYER)
 
@@ -68,7 +79,7 @@ class DynamicObject(StaticObject):
 
         self.isOnGround = False
         self.isJumping = False
-        self.type = "Dynamic"
+        self.type = DYNAMIC
         self._body.name = name
 
         self.presses = None
@@ -278,18 +289,19 @@ class SphereObject(DynamicObject):
         if type(size) == float or type(size) == int:
             self._body.getMass().setSphereTotal(weight, size)
             
-        self.type = "Sphere"
+        self.type = SPHERE
 
 class BulletObject(SphereObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 1.0):
         
-        SphereObject.__init__(self, gameworld, name, 0.025, geomFunc = ode.GeomSphere, weight = 5.0)
-
         self.size = 0.025
         self.maxSpeed = velocity
         self.weight = 5.0
         self.damage = damage
         self._gameworld = gameworld
+        
+        SphereObject.__init__(self, gameworld, name, 0.025, geomFunc = ode.GeomSphere, weight = 5.0)
+
         
         if type(self.size) == float or type(self.size) == int:
             self._body.getMass().setSphereTotal(self.weight, self.size)
@@ -303,7 +315,7 @@ class BulletObject(SphereObject):
             self._motor.setYParam(ode.ParamFMax, ode.Infinity)
             
         self.setDead(False)
-        self.type = "Bullet"
+        self.type = BULLET
         self.damage = damage
         self.hasSentToClients = False
         self.events = []
@@ -313,6 +325,10 @@ class BulletObject(SphereObject):
 
     def __del__(self):
         SphereObject.__del__(self)
+        self.lastFrameTime = 0.1
+
+    def hitObject(self,b):
+        self.setDead()
 
     def setOwnerName(self, name):
         self.ownerName = name
@@ -340,40 +356,59 @@ class BulletObject(SphereObject):
     def clearEvents(self):
         self.hasSentToClients = True  
 
-class GrenadeObject(BulletObject):       
+class GrenadeObject(BulletObject):
+    def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
+        BulletObject.__init__(self, gameworld, name, direction, velocity, damage)
+        self.timeUntilArmed = 0.25
+        self.timeUntilExploded = self.timeUntilArmed + 2.5
+        self.lastFrameTime = 0.1
+        self.type = GRENADE
+        self.exploded = False
+
+    def hitObject(self, b):
+        if self.timeUntilArmed <= 0:
+            BulletObject.hitObject(self, b)
+        else:
+            self.events += ["ricochet"]
+            print "Hit", b._name
+    
     def setDead(self, dead = True):
         BulletObject.setDead(self, dead)
-        if dead == True:
-            self.events = ["explode"]
-        self.lastFrameTime = 0.1
+        if dead == True and not self.exploded:
+            self.events += ["explode"]
 
-        self.lastPosition = self._body.getPosition()
+    def postStep(self):
+        BulletObject.postStep(self)
+        if self.isDead() and not self.exploded:
+            self.explode()
 
-    def preStep(self):
-        BulletObject.preStep(self)
-        self.lastPosition = self._body.getPosition()
-
-    def frameEnded(self, time):
-        BulletObject.frameEnded(self, time)
-        self.lastFrameTime = time
-
-    def close(self):
+    def explode(self):
         for i in range(50):
-            direction = [random.random()-0.5, random.random()-0.5, random.random()-0.5]
+            direction = [random.random()-0.5, random.random()-0.5, 0]
             length = math.sqrt(direction[0]*direction[0] + direction[1]*direction[1])
             direction[0] /= length
             direction[1] /= length
             velocity = random.randint(5,14)
-            self._gameworld.addBullet('bullet',
+            self._gameworld.addBullet(BULLET,
                   self._name + "s" + str(i), \
                   [self._body.getPosition()[0]+self._body.getLinearVel()[0]*self.lastFrameTime,
                    self._body.getPosition()[1]+self._body.getLinearVel()[1]*self.lastFrameTime, 0],
                   direction,
                   [velocity, velocity],
                   5, #Damage
-                  self._geometry.object)
+                  self._geometry.object._name)
             
-        BulletObject.close(self)
+        self.exploded = True
+
+    def frameEnded(self, time):
+        self.timeUntilArmed -= time
+        self.timeUntilExploded -= time
+
+        if self.timeUntilExploded <= 0:
+            self.setDead()
+        
+        BulletObject.frameEnded(self, time)
+        self.lastFrameTime = time
 
         
 class Person(SphereObject):
@@ -441,7 +476,7 @@ class Person(SphereObject):
         self._torsoTransform.setBody(self.torsoBody)
         self._headTransform.setBody(self.torsoBody)
         
-        self.type = "Person"
+        self.type = PERSON
         self.ownerName = name
         self._bulletNum = 0
         self.timeNeededToPrepareJump = 0.25
@@ -480,6 +515,7 @@ class Person(SphereObject):
         self.primaryGunName = "SMG"
         self.secondayGunName = "Assault"
         self._instability = 0.0
+        self.score = 0
         
         self._geometry.setCategoryBits(self.PLAYER)
         self._geometry.setCollideBits(self.PROJECTILE | self.TERRAIN)
@@ -507,7 +543,6 @@ class Person(SphereObject):
         del self._headTransform
         
     def reset(self):
-        self.score = 0
         self.timeLeftUntilMustShoot = None
         self.shotsLeftInBurst = 0
         self.isCrouching = False
@@ -532,7 +567,7 @@ class Person(SphereObject):
                 'damage':10,
                 'velocity':35.0,
                 'type':'single',
-                'ammoType':'bullet',
+                'ammoType':BULLET,
                 'zoom':35,
                 'recoil':0.1,
                 'auto':False,
@@ -548,7 +583,7 @@ class Person(SphereObject):
                 'damage':3.5,
                 'velocity':25.0,
                 'type':'single',
-                'ammoType':'bullet',
+                'ammoType':BULLET,
                 'zoom':30,
                 'recoil':0.03,
                 'auto':True,
@@ -564,7 +599,7 @@ class Person(SphereObject):
                 'damage':5,
                 'velocity':40.0,
                 'type':'single',
-                'ammoType':'bullet',
+                'ammoType':BULLET,
                 'zoom':40,
                 'recoil':0.03,
                 'auto':True,
@@ -580,7 +615,7 @@ class Person(SphereObject):
                 'damage':7,
                 'velocity':25.0,
                 'type':'scatter',
-                'ammoType':'bullet',
+                'ammoType':BULLET,
                 'bulletsPerShot':11,
                 'zoom':35,
                 'recoil':0.0,
@@ -597,7 +632,7 @@ class Person(SphereObject):
                 'damage':8.0,
                 'velocity':45.0,
                 'type':'burst',
-                'ammoType':'bullet',
+                'ammoType':BULLET,
                 'bulletsPerBurst':3,
                 'timeBetweenBurstShots':0.035,
                 'timeBetweenBursts':0.4,
@@ -617,7 +652,7 @@ class Person(SphereObject):
                 'damage':10,
                 'velocity':50.0,
                 'type':'single',
-                'ammoType':'bullet',
+                'ammoType':BULLET,
                 'bulletsPerShot':3,
                 'zoom':60,
                 'recoil':0.075,
@@ -634,7 +669,7 @@ class Person(SphereObject):
                 'damage':100,
                 'velocity':70.0,
                 'type':'single',
-                'ammoType':'bullet',
+                'ammoType':BULLET,
                 'zoom':80,
                 'recoil':1.0,
                 'auto':False,
@@ -650,7 +685,7 @@ class Person(SphereObject):
                 'damage':1,
                 'velocity':25.0,
                 'type':'single',
-                'ammoType':'grenade',
+                'ammoType':GRENADE,
                 'zoom':50,
                 'recoil':0.0,
                 'auto':False,
@@ -873,6 +908,7 @@ class Person(SphereObject):
                 direction[1] /= length
                 position = [a+b for a,b in zip(self._body.getPosition(), self.getShootOffset())]
                 position = [p + x for p, x in zip(position, direction)]
+                position[2] = 0
                 self._bulletNum += 1
                 self._world.addBullet(self.guns[self.gunName]['ammoType'],
                                       self._name + "b" + str(self._bulletNum), \
@@ -883,7 +919,7 @@ class Person(SphereObject):
                                       # self._body.getLinearVel()[1] + (self._body.getLinearVel()[1]/(math.fabs(self._body.getLinearVel()[1]))*self.velocity)],
                                       [self.velocity, self.velocity],
                                       self.damage,
-                                      self)
+                                      self._geometry.object._name)
                 
             self.ammo -= 1
             self.events += ['shoot']

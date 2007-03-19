@@ -3,7 +3,15 @@ from objects import *
 import time
 import encode
 
-class Engine:    
+class Engine:
+    NET_OBJECTS = 0
+    NET_OBJECTS_NAME = 0
+    NET_OBJECTS_ATTRIBUTES = 1
+    NET_OBJECTS_IS_CURRENT_PLAYER = 2
+    NET_OBJECTS_TYPE = 3
+    NET_OBJECTS_EVENTS = 4
+    NET_TIME = 1
+    
     def __init__(self):
         self.stepSize = 1.0/85.0
         self.timeUntilNextEngineUpdate = 0.0
@@ -15,7 +23,6 @@ class Engine:
     def go(self):
         self._createWorld()
         self._startTime = time.time()
-        self._stepNumber = 0
         lastFrame = time.time()
         timeSinceLastFrame = 0.0
         while self.frameEnded(timeSinceLastFrame):
@@ -60,11 +67,12 @@ class Engine:
     def addBullet(self, t, name, position, direction, velocity, damage, owner):
         if len([True for object in self.objects if object._name == name]) == 0:
             b = None
-            if t == "bullet":
+            if t == BULLET:
                 b = self.createBulletObject(name, direction, velocity, damage)
-            if t == "grenade":
+            if t == GRENADE:
                 b = self.createGrenadeObject(name, direction, velocity, damage)
             b.setPosition(position)
+            b.setOwnerName(owner)
             self.objects += [b]
         
     def frameEnded(self, frameTime):
@@ -102,15 +110,12 @@ class Engine:
                 o.preStep()
             self.world.quickStep(self.stepSize)
             
-            if self._stepNumber != None:
-                self._stepNumber += 1
-            
             for o in self.objects[:]:
                 o.postStep()
 
             for o in self.objects[:]:
                 if o.isDead():
-                    if o.type != "Person":
+                    if o.type != PERSON:
                         self.objects.remove(o)
                         o.close()
                         del o
@@ -129,7 +134,7 @@ class Engine:
         o2 = geom2.object
 
         if o1 == None or o2 == None:
-            print "BUG! Probably not deleting some object properly"
+            print "BUG! Probably not deleting some object properly", type(o1), type(o2)
             return
 
         if o1 == o2:
@@ -137,26 +142,28 @@ class Engine:
         else:
             contacts = ode.collide(geom1, geom2)
 
-        for contact in contacts:
+        for contact in contacts[0:1]:
             contact.setMode(ode.ContactBounce + ode.ContactApprox1_1)
             contact.setBounce(0.01)
             contact.setBounceVel(0.0)
             contact.setMu(1.7)
         
             for a,b,geom in [[o1,o2,geom2],[o2,o1,geom1]]:
-                if a.type == "Bullet":
-                    a.setDead()
-                    if b.type == "Person":
+                if a.type == GRENADE or a.type == BULLET:
+                    a.hitObject(b)
+                    contact.setBounce(1.0)
+                    contact.setMu(0.0)
+                    if a.isDead() and b.type == PERSON:
                         print "Hit",b._name, "on the", geom.location
                         if not b.isDead():
                             b.doDamage(a.damage)
                             if b.isDead():
                                 b.setSpawnPosition(self.spawnLocation())
-                                if a == b:
+                                if a.ownerName == b._name:
                                     self.messageListener(">",a.ownerName + " committed suicide")
                                     self.addScore(a.ownerName, -1)
                                 else:
-                                    self.messageListener(">",a.ownerName + " killed " + b.ownerName)
+                                    self.messageListener(">",a.ownerName + " killed " + a.ownerName)
                                     self.addScore(a.ownerName, 1)
                     
             # Assume that if collision normal is facing up we are 'on ground'
