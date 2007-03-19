@@ -667,7 +667,7 @@ class Person(SphereObject):
                 'accuracy':0.98,
                 'timeBetweenShots':7.5,
                 'damage':100,
-                'velocity':120.0, # I want to make it faster than 80, but it will go through walls
+                'velocity':120.0,
                 'type':'single',
                 'ammoType':BULLET,
                 'zoom':80,
@@ -834,11 +834,11 @@ class Person(SphereObject):
                 self.gunName)
 
         if self.reloading:
-            text += "\n Reloading: %3i%%" % (self.timeLeftUntilNextShot * 100 / self.reloadTime)
+            text += "\n Reloading: %3i%%" % (100 - self.timeLeftUntilNextShot * 100 / self.reloadTime)
         else:
             text += "\n Ammo: %i/%i" % (self.ammo, self.maxAmmo)
             if self.timeLeftUntilNextShot > 0:
-                text += " (%3i%%)" % (self.timeLeftUntilNextShot * 100 / self.timeBetweenShots)
+                text += " (%3i%%)" % (100 - self.timeLeftUntilNextShot * 100 / self.timeBetweenShots)
 
         return text
 

@@ -304,6 +304,8 @@ class Person(objects.Person, SphereObject):
         self._camera = camera
         self.zoomMode = False
 
+        self.soundEvents = []
+
         self.keys = {
             'up':OIS.KC_UNASSIGNED,
             'down':OIS.KC_UNASSIGNED,
@@ -377,6 +379,10 @@ class Person(objects.Person, SphereObject):
         if len(events) != 0:
             print events
         self.events = events
+        if 'shoot' in events:
+            numShots = events.count('shoot')
+            t = (1.0/15.0) / (numShots+1) # self.timeBetweenNetworkUpdates
+            self.soundEvents += [{'sound':'shoot', 'time':t*i} for i in range(numShots)] 
 
     def frameEnded(self, time):
         if self.isDead():
@@ -388,10 +394,13 @@ class Person(objects.Person, SphereObject):
             self.animations['crouch'].Enabled = False
             self.animations['crouch'].setTimePosition(0)
             self.animations['jump'].setTimePosition(0)
-        else:                
-            if 'shoot' in self.events:
-                self.events.remove('shoot')
-                self._shootSound()
+        else:
+            for sound in self.soundEvents:
+                sound['time'] -= time
+                if sound['time'] <= 0:
+                    if 'shoot' == sound['sound']:
+                        self.soundEvents.remove(sound)
+                        self._shootSound()
                 
             self.animations['dead'].Enabled = False
             self.animations['dead'].setTimePosition(0)

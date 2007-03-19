@@ -205,9 +205,6 @@ class GameKeyListener(OIS.KeyListener):
                 
             chat.disable()
             self.chatAlpha = 0.3
-            
-            #chat.setVisible(not chat.isVisible())
-            #chat.setEnabled(chat.isVisible())
 
 class GameMouseListener(OIS.MouseListener):
     def __init__(self, game):
@@ -378,7 +375,6 @@ class Client(Application, Engine):
     
     def sendText(self):
         e = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
-        #self.messageListener("Me", e.getText().c_str())
         self.chat.sendMessage(e.getText().c_str())
         e.setText("")
 
@@ -386,8 +382,7 @@ class Client(Application, Engine):
         if message.startswith("/me") and len(message[3:].strip()) > 0 :
             self.appendText("*" + name + " " + message[3:].strip())
         else:
-            self.appendText(name + ": " + message)
-            
+            self.appendText(name + ": " + message)            
 
     def appendText(self, text):
         st = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Static")
@@ -525,7 +520,7 @@ class Client(Application, Engine):
 
         debug = winMgr.createWindow("TaharezLook/StaticText", "DebugWindow")
         debug.setPosition(CEGUI.UVector2(CEGUI.UDim(0.8,0), CEGUI.UDim(0.01,0)))
-        debug.setSize(CEGUI.UVector2(CEGUI.UDim(0.18,0), CEGUI.UDim(0.2,0)))
+        debug.setSize(CEGUI.UVector2(CEGUI.UDim(0.18,0), CEGUI.UDim(0.25,0)))
         debug.setProperty("HorzFormatting","WordWrapLefteAligned")
         debug.setProperty("VertFormatting", "TopAligned")
         self._debugWindow = debug
@@ -549,13 +544,22 @@ class Client(Application, Engine):
         
 
     def displayDebug(self):
-        self._debugWindow.setText("FrameTime:%0.4f\n1StepTime:%0.4f\nNumSteps:%i\nStepTime:%0.4f\nNetworkTime:%0.4f\nChatTime:%0.4f" % \
+        self._debugWindow.setText( ("FrameTime:    %0.4f\n" +
+                                     "1StepTime:   %0.4f\n" +
+                                     "NumSteps:    %4i\n" +
+                                     "StepTime:    %0.4f\n" +
+                                     "NetworkTime: %0.4f\n" +
+                                     "ChatTime:    %0.4f\n" +
+                                     "SNDPacketLen:%5i\n" +
+                                     "RCVPacketLen:%5i\n") % \
                                   (self.debugFrameTime,
                                    (self.debugStepTime / self.debugNumSteps) if self.debugNumSteps else 0,
                                    self.debugNumSteps,
                                    self.debugStepTime,
                                    self.debugNetworkTime,
-                                   self.debugChatTime
+                                   self.debugChatTime,
+                                   self.network.debugSendPacketLength,
+                                   self.network.debugReceivePacketLength,
                                    )
                                   )
 
@@ -567,7 +571,7 @@ class Client(Application, Engine):
         text = ""
         players = [object for object in self.objects if object.type == objects.PERSON]
         for player in players:
-            text += " %s, %i, %.2f\n" % \
+            text += " %s, %2i, %.2f\n" % \
                     (player._name, player.score, player.ping)
 
         self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05*len(players),0)))

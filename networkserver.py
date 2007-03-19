@@ -40,17 +40,24 @@ class Client():
         return self.messages.pop()
 
     def send(self, data):
-        self.transport.write(zlib.compress(banana.encode(data),4), self.address)
+        toSend = zlib.compress(banana.encode(data),4)
+        self.transport.write(toSend, self.address)
+        NetworkServer.debugSendPacketLength = len(toSend)
     
 class NetworkServer(DatagramProtocol):
+    debugSendPacketLength = 0
+    
     def __init__(self, connectedCallback):
         self.clients = []
         self.reactor = reactor
         self.reactor.startRunning()
         self.reactor.listenUDP(10001, self)
         self.connectedCallback = connectedCallback
+        self.debugSendPacketLength = 0
+        self.debugReceivePacketLength = 0
         
     def datagramReceived(self, data, address):
+        self.debugReceivePacketLength = len(data)
         # Allocate the received datagram to the correct client
         client = Client(address, self.transport)
         if client not in self.clients:
@@ -62,5 +69,6 @@ class NetworkServer(DatagramProtocol):
         client.push(banana.decode(zlib.decompress(data)))
 
     def update(self, time = 0):
+        self.debugSendPacketLength = NetworkServer.debugSendPacketLength
         self.reactor.runUntilCurrent()
         self.reactor.doIteration(0)
