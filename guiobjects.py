@@ -346,7 +346,7 @@ class Person(objects.Person, SphereObject):
         self.animations['crouch'].setLength(self.animations['crouch'].getLength()/2.0)
         self.animations['jump'] = self._entity.getAnimationState('JumpNoHeight')
         self.animations['jump'].setLoop(False)
-        self.animations['jump'].setWeight(4)
+        self.animations['jump'].setWeight(8)
 
         self.events = []
         self.soundEvents = []
@@ -434,13 +434,12 @@ class Person(objects.Person, SphereObject):
             if self.isCrouching and self.isOnGround:
                 self.animations['crouch'].addTime(time)
                 self.animations['crouch'].Enabled = True
-                self.animations['jump'].setTimePosition(0)
             else:
                 self.animations['crouch'].setTimePosition(0)
                 self.animations['crouch'].Enabled = False
 
             if self.isJumping:
-                self.animations['jump'].addTime(time)
+                self.animations['jump'].addTime(time*2)
                 self.animations['jump'].Enabled = True
             else:
                 self.animations['jump'].setTimePosition(0)

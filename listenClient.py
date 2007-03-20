@@ -32,7 +32,8 @@ class ListenClient(Client, Server):
         return True # Keep going
         
     def networkUpdate(self):
-        self.player.setEvents(self.player.getEvents())
+        for o in self.objects:
+            o.setEvents(o.getEvents())
         Server.networkUpdate(self)
         
     def sleep(self):

@@ -296,11 +296,11 @@ class BulletObject(SphereObject):
         
         self.size = 0.025
         self.maxSpeed = velocity
-        self.weight = 5.0
+        self.weight = 3.0
         self.damage = damage
         self._gameworld = gameworld
         
-        SphereObject.__init__(self, gameworld, name, 0.025, geomFunc = ode.GeomSphere, weight = 5.0)
+        SphereObject.__init__(self, gameworld, name, self.size, geomFunc = ode.GeomSphere, weight = self.weight)
 
         
         if type(self.size) == float or type(self.size) == int:
@@ -479,7 +479,7 @@ class Person(SphereObject):
         self.type = PERSON
         self.ownerName = name
         self._bulletNum = 0
-        self.timeNeededToPrepareJump = 0.25
+        self.timeNeededToPrepareJump = 0.125
         self.maxStopForce = 70000/self.feetSize
         self.maxSpinForce = 70000/self.feetSize
         self.maxSpinVelocity = 10/self.feetSize
@@ -561,7 +561,7 @@ class Person(SphereObject):
             'Pistol':{
                 'maxAmmo':7,
                 'ammo':7,
-                'reloadTime':1.5,
+                'reloadTime':0.8,
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
                 'accuracy':0.98,
@@ -612,7 +612,7 @@ class Person(SphereObject):
                 'reloadTime':5.0,
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
-                'accuracy':0.75,
+                'accuracy':0.8,
                 'timeBetweenShots':0.6,
                 'damage':7,
                 'velocity':25.0,
@@ -629,14 +629,14 @@ class Person(SphereObject):
                 'reloadTime':2.2,
                 'timeLeftUntilNextShot':0.0,
                 'reloading':False,
-                'accuracy':0.85,
+                'accuracy':0.88,
                 'timeBetweenShots':0.1,
                 'damage':11.0,
-                'velocity':45.0,
+                'velocity':55.0,
                 'type':'burst',
                 'ammoType':BULLET,
                 'bulletsPerBurst':3,
-                'timeBetweenBurstShots':0.030,
+                'timeBetweenBurstShots':0.03,
                 'timeBetweenBursts':0.3,
                 'type2':'single',
                 'zoom':45,
