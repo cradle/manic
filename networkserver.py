@@ -41,6 +41,7 @@ class Client():
 
     def send(self, data):
         toSend = zlib.compress(banana.encode(data),4)
+        #toSend = banana.encode(data)
         self.transport.write(toSend, self.address)
         NetworkServer.debugSendPacketLength = len(toSend)
     

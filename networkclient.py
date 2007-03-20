@@ -3,6 +3,8 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 from twisted.spread import jelly
 from twisted.spread import banana
+from collections import deque
+from encode import timer
 import zlib
 import time
 
@@ -13,7 +15,7 @@ class ping(object):
 
 class NetworkClient(DatagramProtocol):
     def __init__(self, host = "127.0.0.1", port = 10001):
-        self._messages = []
+        self._messages = deque()
         self.reactor = reactor
         self.serverIP = None
         self.port = port
@@ -45,8 +47,12 @@ class NetworkClient(DatagramProtocol):
         self.transport.connect(self.serverIP, self.port)
         
     def datagramReceived(self, data, (host, port)):
+        t = timer()
         self.debugReceivePacketLength = len(data)
+        t.start()
         message = banana.decode(zlib.decompress(data))
+        t.stop()
+        #message = banana.decode(data)
         if type(message[0]) == str and message[0] == "pong":
             for ping in self.pings:
                 if ping.number == message[1]:
@@ -54,8 +60,9 @@ class NetworkClient(DatagramProtocol):
                     self.serverOffset = time.time() - (message[2] + self.roundTripTime/2)
                     self.pings = [p for p in self.pings if p.number <= ping.number]
         else:
-            self._messages += [message]
-        
+            self._messages.append(message)
+        if ("%0.6f" % t.time())  != "0.0000":
+            print "%0.6f" % t.time() 
     # Possibly invoked if there is no server listening on the
     # address to which we are sending.
     def connectionRefused(self):
@@ -71,11 +78,13 @@ class NetworkClient(DatagramProtocol):
             self.timeUntilNextPing -= elapsedTime
             if self.timeUntilNextPing <= 0.0:
                 self.ping()
-                while self.timeUntilNextPing <= 0.0:
-                    self.timeUntilNextPing += self.timeBetweenPings
+                self.timeUntilNextPing = self.timeBetweenPings
                 
         self.reactor.runUntilCurrent()
         self.reactor.doIteration(0)
+
+    def clearMessages(self):
+        self._messages.clear()
 
 if __name__ == "__main__":
     # 0 means any port, we don’t care in this case

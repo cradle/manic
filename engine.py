@@ -149,9 +149,9 @@ class Engine:
             contact.setBounceVel(0.0)
             contact.setMu(1.7)
         
-            for a,b,geom in [[o1,o2,geom2],[o2,o1,geom1]]:
+            for a,b,geom in [[o1,o2,geom2],[o2,o1,geom1]]:  
+                a.hitObject(b, contact.getContactGeomParams()[0])
                 if a.type == GRENADE or a.type == BULLET:
-                    a.hitObject(b)
                     contact.setBounce(1.0)
                     contact.setMu(0.0)
                     if a.isDead() and b.type == PERSON:

@@ -1,7 +1,9 @@
 from twisted.spread import jelly
 from twisted.spread import banana
 from zlib import compress, decompress
+import random
 import time
+import cerealizer as cerealizer
 
 class timer:
     def __init__(self):
@@ -19,6 +21,9 @@ class timer:
 
 def a(var):
     t = timer()
+
+
+    
     t.start(); data = banana.encode(var); t.stop()
     print "Enc B       :", t.time(), len(data)
     t.start(); banana.decode(data); t.stop()
@@ -35,6 +40,28 @@ def a(var):
     print "Enc B (zip1):", t.time(), len(data)
     t.start(); banana.decode(decompress(data)); t.stop()
     print "Dec B (zip1):", t.time()
+
+
+    
+    t.start(); data = cerealizer.dumps(var); t.stop()
+    print "Enc C       :", t.time(), len(data)
+    t.start(); cerealizer.loads(data); t.stop()
+    print "Dec C       :", t.time()
+    t.start(); data = compress(cerealizer.dumps(var),9); t.stop()
+    print "Enc C (zip9):", t.time(), len(data)
+    t.start(); cerealizer.loads(decompress(data)); t.stop()
+    print "Dec C (zip9):", t.time()
+    t.start(); data = compress(cerealizer.dumps(var),4); t.stop()
+    print "Enc C (zip4):", t.time(), len(data)
+    t.start(); cerealizer.loads(decompress(data)); t.stop()
+    print "Dec C (zip4):", t.time()
+    t.start(); data = compress(cerealizer.dumps(var),1); t.stop()
+    print "Enc C (zip1):", t.time(), len(data)
+    t.start(); cerealizer.loads(decompress(data)); t.stop()
+    print "Dec C (zip1):", t.time()
+
+
+    
     t.start(); data = banana.encode(jelly.jelly(var)); t.stop()
     print "Enc BJ      :", t.time(), len(data)
     t.start(); jelly.unjelly(banana.decode(data)); t.stop()

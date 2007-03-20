@@ -37,6 +37,9 @@ class StaticObject(object):
     def close(self):
         self._geometry.object = None
 
+    def hitObject(self, other, position):
+        pass
+
     def __del__(self):
         self._geometry.disable()
         self._world = None
@@ -324,7 +327,7 @@ class BulletObject(SphereObject):
         SphereObject.__del__(self)
         self.lastFrameTime = 0.1
 
-    def hitObject(self,b):
+    def hitObject(self, other, position):
         self.setDead()
 
     def setOwnerName(self, name):
@@ -337,6 +340,12 @@ class BulletObject(SphereObject):
         
         if self.isDead():
             self.disable()
+
+    def optimiseVector(self, v):
+        return [int(i*100) for i in v]
+
+    def deoptimiseVector(self, v):
+        return [float(f)/100.0 for f in v]
 
     def getAttributes(self):
         if self.hasSentToClients:
@@ -362,15 +371,16 @@ class GrenadeObject(BulletObject):
         self.type = GRENADE
         self.exploded = False
 
-    def hitObject(self, b):
+    def hitObject(self, other, position):
         if self.timeUntilArmed <= 0:
-            BulletObject.hitObject(self, b)
+            BulletObject.hitObject(self, other, position)
         else:
             self.events += ["ricochet"]
-            print "Hit", b._name
+            print "Hit", other._name
     
     def setDead(self, dead = True):
         BulletObject.setDead(self, dead)
+        # TODO: Move to explode
         if dead == True and not self.exploded:
             self.events += ["explode"]
 
@@ -697,10 +707,12 @@ class Person(SphereObject):
             }
         
         self.setGun(self.gunName)
+
+    def hitObject(self, other, position):
+        if other.type == BULLET:
+            self.events += ['hit']
         
-    def doDamage(self, damage):
-        self.events += ['hit']
-        
+    def doDamage(self, damage):        
         if not self.isDead():
             self.health -= damage
             if self.health <= 0:

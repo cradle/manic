@@ -608,14 +608,18 @@ class Client(Application, Engine):
         t.start()
 
         if self.timeUntilNextNetworkUpdate <= 0.0:
-            self.network.update(frameTime)
-            self.displayScores()
-            self.displayVitals()
-            
             self.timeUntilNextNetworkUpdate = self.timeBetweenNetworkUpdates
 
+            u = timer()
+            u.start()
+            self.network.update(frameTime)
+            u.stop()
+            #if ("%0.6f" % u.time())  != "0.0000":
+            #    print "%0.6f" % u.time() 
+            self.displayScores()
+            self.displayVitals()
+
             for message in self.network._messages:
-                    
                 if message[1] > self.lastServerUpdate:
                     self.timeUntilNextEngineUpdate = message[Engine.NET_TIME_UNTIL_UPDATE]
                     #print message[Engine.NET_TIME_UNTIL_UPDATE]
@@ -661,7 +665,7 @@ class Client(Application, Engine):
                             object.close()
                             del object
                         
-            self.network._messages = []
+            self.network.clearMessages()
             
         if self.player != None:
             self.network.send(self.player.input(self.keyboard,  self.mouse))
@@ -672,5 +676,6 @@ class Client(Application, Engine):
     
 if __name__ == "__main__":
     world = Client()
-    world.go()
+    import cProfile
+    cProfile.run('world.go()', 'profile.txt')
     os._exit(0)
