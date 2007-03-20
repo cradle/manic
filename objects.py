@@ -1,4 +1,4 @@
-import ode, math, random, time
+import ode, random, math, time
 import engine
 
 #TYPES
@@ -8,6 +8,15 @@ SPHERE = 2
 PERSON = 3
 BULLET = 4
 GRENADE = 5
+
+class Generator(object):
+    _objectNum = 0
+
+    def nextID():
+        Generator._objectNum += 1
+        return Generator._objectNum
+
+    nextID = staticmethod(nextID)
 
 class StaticObject(object):
 
@@ -30,6 +39,10 @@ class StaticObject(object):
         self.type = STATIC
         self._geometry.setCategoryBits(self.TERRAIN)
         self._geometry.setCollideBits(self.PROJECTILE | self.PLAYER)
+        self._gameID = Generator.nextID()
+        
+    def shouldSendToClients(self):
+        return True
 
     def getBody(self):
         return None
@@ -195,14 +208,14 @@ class DynamicObject(StaticObject):
                 self._reload()
 
         # Apply wind friction
-        self._body.addForce([-0.05*math.fabs(x)*x for x in self._body.getLinearVel()])
+        self._body.addForce([-0.05*abs(x)*x for x in self._body.getLinearVel()])
 
         #if self.isOnGround:
         #    # Apply rolling friction
         #    self._body.addTorque([x*-0.5 for x in self._body.getAngularVel()])
         
     def postStep(self):
-        self._alignToZAxis()
+        #self._alignToZAxis()
         self._motor.setXParam(ode.ParamFMax, 0)
         self._motor.setYParam(ode.ParamFMax, 0)
         self._motor.setAngleParam(ode.ParamFMax, 0)
@@ -323,6 +336,8 @@ class BulletObject(SphereObject):
         self._geometry.setCategoryBits(self.PROJECTILE)
         self._geometry.setCollideBits(self.TERRAIN | self.PLAYER)
 
+        self.hasStepped = False
+
     def __del__(self):
         SphereObject.__del__(self)
         self.lastFrameTime = 0.1
@@ -334,30 +349,24 @@ class BulletObject(SphereObject):
         self.ownerName = name
 
     def postStep(self):
-        SphereObject.postStep(self)
-        self._motor.setXParam(ode.ParamFMax, 0)
-        self._motor.setYParam(ode.ParamFMax, 0)
-        
-        if self.isDead():
-            self.disable()
-
-    def optimiseVector(self, v):
-        return [int(i*100) for i in v]
-
-    def deoptimiseVector(self, v):
-        return [float(f)/100.0 for f in v]
+        if not self.hasStepped:
+            # Optimisation, bullets should be very light weight
+            self.hasStepped = True
+            
+            SphereObject.postStep(self)
+            self._motor.setXParam(ode.ParamFMax, 0)
+            self._motor.setYParam(ode.ParamFMax, 0)
 
     def getAttributes(self):
-        if self.hasSentToClients:
-            return 0
-        else:
-            return [self.to2d(self._body.getPosition()),
-                    self.to2d(self._body.getLinearVel())]
+        return [self.to2d(self._body.getPosition()),
+                self.to2d(self._body.getLinearVel())]
 
     def setAttributes(self, attributes):
-        if type(attributes) != int:
-            self._body.setPosition(self.to3d(attributes[0]))
-            self._body.setLinearVel(self.to3d(attributes[1]))
+        self._body.setPosition(self.to3d(attributes[0]))
+        self._body.setLinearVel(self.to3d(attributes[1]))
+
+    def shouldSendToClients(self):
+        return not self.hasSentToClients
 
     def clearEvents(self):
         self.hasSentToClients = True  
@@ -428,7 +437,9 @@ class Person(SphereObject):
         headSize = (1.0 ,0.4 ,1.0 )# Box
         weight = 70
         self.weight = weight
-        self._name = name        
+        self._name = name   
+        self._gameID = Generator.nextID()
+     
         self._size = self.feetSize
         
         self._geometry = ode.GeomSphere(gameworld.space, self.feetSize)
@@ -935,8 +946,8 @@ class Person(SphereObject):
                                       position,
                                       direction,
                                       ## TODO: Add player velocity
-                                      #[self._body.getLinearVel()[0] + (self._body.getLinearVel()[0]/(math.fabs(self._body.getLinearVel()[0]))*self.velocity), \
-                                      # self._body.getLinearVel()[1] + (self._body.getLinearVel()[1]/(math.fabs(self._body.getLinearVel()[1]))*self.velocity)],
+                                      #[self._body.getLinearVel()[0] + (self._body.getLinearVel()[0]/(abs(self._body.getLinearVel()[0]))*self.velocity), \
+                                      # self._body.getLinearVel()[1] + (self._body.getLinearVel()[1]/(abs(self._body.getLinearVel()[1]))*self.velocity)],
                                       [self.velocity, self.velocity],
                                       self.damage,
                                       self._geometry.object._name)
@@ -990,7 +1001,7 @@ class Person(SphereObject):
             self._motor.setAngleParam(ode.ParamVel, 0)
         self._calculateAccuracy()
         v = self.torsoBody.getAngularVel()[2]
-        self._body.addForce((-self.weight*v*math.fabs(v)*0.25,0,0))
+        self._body.addForce((-self.weight*v*abs(v)*0.25,0,0))
             
         self.torsoBody.setQuaternion((1,0,0,0))
         self.torsoBody.setAngularVel((0,0,0))

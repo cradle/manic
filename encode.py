@@ -4,6 +4,7 @@ from zlib import compress, decompress
 import random
 import time
 import cerealizer as cerealizer
+import Flatten
 
 class timer:
     def __init__(self):
@@ -59,6 +60,25 @@ def a(var):
     print "Enc C (zip1):", t.time(), len(data)
     t.start(); cerealizer.loads(decompress(data)); t.stop()
     print "Dec C (zip1):", t.time()
+
+
+    
+    t.start(); data = Flatten.serialize(var); t.stop()
+    print "Enc F       :", t.time(), len(data)
+    t.start(); Flatten.unserialize(data); t.stop()
+    print "Dec F       :", t.time()
+    t.start(); data = compress(Flatten.serialize(var),9); t.stop()
+    print "Enc F (zip9):", t.time(), len(data)
+    t.start(); Flatten.unserialize(decompress(data)); t.stop()
+    print "Dec F (zip9):", t.time()
+    t.start(); data = compress(Flatten.serialize(var),4); t.stop()
+    print "Enc F (zip4):", t.time(), len(data)
+    t.start(); Flatten.unserialize(decompress(data)); t.stop()
+    print "Dec F (zip4):", t.time()
+    t.start(); data = compress(Flatten.serialize(var),1); t.stop()
+    print "Enc F (zip1):", t.time(), len(data)
+    t.start(); Flatten.unserialize(decompress(data)); t.stop()
+    print "Dec F (zip1):", t.time()
 
 
     

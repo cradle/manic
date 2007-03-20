@@ -1,10 +1,9 @@
 # -*- coding: cp1252 -*-
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
-from twisted.spread import jelly
-from twisted.spread import banana
 from collections import deque
 from encode import timer
+import cerealizer
 import zlib
 import time
 
@@ -50,8 +49,9 @@ class NetworkClient(DatagramProtocol):
         t = timer()
         self.debugReceivePacketLength = len(data)
         t.start()
-        message = banana.decode(zlib.decompress(data))
+        message = cerealizer.loads(zlib.decompress(data))
         t.stop()
+        #message = banana.decode(zlib.decompress(data))
         #message = banana.decode(data)
         if type(message[0]) == str and message[0] == "pong":
             for ping in self.pings:
@@ -61,15 +61,15 @@ class NetworkClient(DatagramProtocol):
                     self.pings = [p for p in self.pings if p.number <= ping.number]
         else:
             self._messages.append(message)
-        if ("%0.6f" % t.time())  != "0.0000":
-            print "%0.6f" % t.time() 
+    #    if ("%0.6f" % t.time())  != "0.0000":
+    #        print "%0.6f" % t.time() 
     # Possibly invoked if there is no server listening on the
     # address to which we are sending.
     def connectionRefused(self):
         print "No Server"
 
     def send(self, obj):
-        data = zlib.compress(banana.encode(obj),4)
+        data = zlib.compress(cerealizer.dumps(obj),1)
         self.transport.write(data)
         self.debugSendPacketLength = len(data)
 

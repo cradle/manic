@@ -139,8 +139,8 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         curPos = self._body.getPosition()
         curVel = self._body.getLinearVel()
         #if position and \
-        #   (math.fabs(position[0] - curPos[0]) > math.fabs(curVel[0]) or \
-        #    math.fabs(position[1] - curPos[1]) > math.fabs(curVel[1])):
+        #   (abs(position[0] - curPos[0]) > abs(curVel[0]) or \
+        #    abs(position[1] - curPos[1]) > abs(curVel[1])):
             #position = [(x+y)/2 for x,y in zip(position, curPos)]
         objects.DynamicObject.setPosition(self, position)
 
@@ -168,9 +168,9 @@ class SphereObject(objects.SphereObject, DynamicObject):
 class BulletObject(objects.BulletObject, SphereObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
         objects.BulletObject.__init__(self, gameworld, name, direction, velocity, damage)
-        self.reset(name)
+        self.reset()
 
-    def reset(self, name):
+    def reset(self):
         self.keys = {
             'up':OIS.KC_I,
             'down':OIS.KC_K,
@@ -190,25 +190,34 @@ class BulletObject(objects.BulletObject, SphereObject):
             'previous':None,
             'next':None}
         
-        self.name = name
-        self._entity = self._gameworld.sceneManager.createBillboardSet("bb" + name)
+        self._entity = self._gameworld.sceneManager.createBillboardSet("bb" + self._name)
         self._entity.setDefaultDimensions(0.05,0.05)
 
         self._entity.createBillboard(0,0,0)
         
-        self.trailNode = self._gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
-        self.trail = ogre.ManualObject( "__TRAIL__" + name)
+        self.trailNode = self._gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + self._name)
+        self.trail = ogre.ManualObject( "__TRAIL__" + self._name)
         self.trailNode.attachObject(self.trail)
                 
-        self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
+        self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + self._name)
         self._node.attachObject(self._entity)
 
         self.trailColour = (1.0,1.0,1.0)
-        self.trailLength = 1.0
+        self.trailLength = 0.04
 
         self._updateDisplay()
+        
+        self.trail.begin("bullets", ogre.RenderOperation.OT_LINE_LIST)
+        self.trail.position( self._body.getPosition() )
+        self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.5)
+        self.trail.position( self._body.getPosition() )
+        self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.0)
+        self.trail.end()
+
+        self.trailPosFunc = lambda a,b: a-b*self.trailLength
 
     def close(self):
+        del self.trailPosFunc
         SphereObject.close(self)
         objects.BulletObject.close(self)
 
@@ -216,22 +225,18 @@ class BulletObject(objects.BulletObject, SphereObject):
         objects.BulletObject.frameEnded(self, time)
         SphereObject.frameEnded(self, time)
         
-        self.trail.clear()
-        self.trailNode.detachAllObjects()
-        self.trail.begin("bullets", ogre.RenderOperation.OT_LINE_LIST)
+        self.trail.beginUpdate(0)
         self.trail.position( self._body.getPosition() )
         self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.5)
-        self.trail.position(\
-            [a-(b*2*self.trailLength*0.02) for a,b in zip(self._body.getPosition(), self._body.getLinearVel())])
+        self.trail.position(map(self.trailPosFunc, self._body.getPosition(), self._body.getLinearVel()))
         self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.0)
         self.trail.end()
-        self.trailNode.attachObject(self.trail)
         
     def __del__(self):
-        self._gameworld.sceneManager.destroyBillboardSet("bb" + self.name)
+        self._gameworld.sceneManager.destroyBillboardSet("bb" + self._name)
         self.trailNode.detachAllObjects()
         self.trail.clear()
-        self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('t' + self.name)
+        self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('t' + self._name)
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 
@@ -239,9 +244,9 @@ class BulletObject(objects.BulletObject, SphereObject):
 class GrenadeObject(objects.GrenadeObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
         objects.GrenadeObject.__init__(self, gameworld, name, direction, velocity, damage)
-        BulletObject.reset(self, name)
+        BulletObject.reset(self)
         self.trailColour = (1.0,1.0,0.0)
-        self.trailLength = 3
+        self.trailLength = 0.2
         self._entity.setMaterialName("grenade")
         self._entity.getMaterial().setAmbient(self.trailColour)
         self._entity.setDefaultDimensions(0.1,0.1)
@@ -415,7 +420,7 @@ class Person(objects.Person, SphereObject):
             self.animations['dead'].Enabled = False
             self.animations['dead'].setTimePosition(0)
             
-            if math.fabs(self._body.getLinearVel()[0]) > 0.1:
+            if abs(self._body.getLinearVel()[0]) > 0.1:
                 modifier = 0.3
                 if not self.isOnGround:
                     modifier = 0.15
@@ -486,7 +491,14 @@ class Player(Person):
         
         self.cursorNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
         self.cursorLines = ogre.ManualObject( "__CURSOR__" + name)
+        self.cursorLines.begin("Red", ogre.RenderOperation.OT_LINE_LIST)
+        for i in range(12):
+            self.cursorLines.position( (0,0,0) )
+        self.cursorLines.end()
         self.cursorNode.attachObject(self.cursorLines)
+        
+
+        self.addLists = lambda a,b: a+b
         
     def setPosition(self, position):
         Person.setPosition(self, position)
@@ -523,8 +535,6 @@ class Player(Person):
         campt = camray.getPoint(camray.intersects(ogre.Plane(ogre.Vector3(0,0,1), 0)).second)
         campt = self.addLists(campt, (0,0,2)) # Zoom Offset
         campt = self.addLists(campt, self.getShootOffset())
-        self.cursorLines.clear()
-        self.cursorLines.begin("Red", ogre.RenderOperation.OT_LINE_LIST)
 
         selfPos = self._geometry.getPosition()
         xd = campt[0] - selfPos[0]
@@ -533,6 +543,8 @@ class Player(Person):
 
         radius = (1-self.getAccuracy())*distance/2
         r = 0.3/(40/camPosZ)
+        
+        self.cursorLines.beginUpdate(0)
         # Static Crosshair
         self.cursorLines.position( self.addLists(campt, (-r,0,0) ))
         self.cursorLines.position( self.addLists(campt, (r,0,0) ))
@@ -551,9 +563,6 @@ class Player(Person):
         self.cursorLines.end()
 
         Person.frameEnded(self, frameTime)
-
-    def addLists(self, a, b):
-        return [a+b for a,b in zip(a,b)]
 
     def getDirection(self):
         if self._camera:

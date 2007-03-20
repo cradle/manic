@@ -592,7 +592,6 @@ class Client(Application, Engine):
     
     def frameEnded(self, frameTime, keyboard,  mouse):
         t = timer()
-
             
         Engine.frameEnded(self, frameTime)
         self.displayDebug()
@@ -660,7 +659,7 @@ class Client(Application, Engine):
                                 self.objects += [newObject]
 
                     for object in self.objects:
-                        if not object.existsOnServer:
+                        if not object.existsOnServer and object.type == objects.PERSON:
                             self.objects.remove(object)
                             object.close()
                             del object

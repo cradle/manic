@@ -45,14 +45,11 @@ class Server(Engine):
         for client in self.network.clients:                
             client.send([[[o._name,
                            o.getAttributes(),
-                           o._name == client.player._name,
+                           1 if o._name == client.player._name else 0,
                            o.type,
-                           o.getEvents()] for o in self.objects],
+                           o.getEvents()] for o in self.objects if o.shouldSendToClients()],
                         time.time(), self.timeUntilNextEngineUpdate])
             #parameter above is whether or not the player is the current player
-            
-            ## TODO, I really shouldn't have to call this
-            #client.player.setEvents(client.player.getEvents())
                             
             while client.hasMoreMessages():
                 client.player.inputPresses(client.pop())

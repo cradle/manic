@@ -42,6 +42,7 @@ class ListenClient(Client, Server):
 
 if __name__ == "__main__":
     engine = ListenClient()
-    engine.go()
+    import cProfile
+    cProfile.run('engine.go()', 'profile.txt')
     import os
     os._exit(0)
