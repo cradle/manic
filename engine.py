@@ -114,13 +114,6 @@ class Engine:
             for o in self.objects[:]:
                 o.postStep()
 
-            for o in self.objects[:]:
-                if o.isDead():
-                    if o.type != PERSON:
-                        self.objects.remove(o)
-                        o.close()
-                        del o
-
             self.contactgroup.empty()
             self.timeUntilNextEngineUpdate += self.stepSize
 

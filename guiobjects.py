@@ -246,7 +246,7 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         objects.GrenadeObject.__init__(self, gameworld, name, direction, velocity, damage)
         BulletObject.reset(self)
         self.trailColour = (1.0,1.0,0.0)
-        self.trailLength = 0.2
+        self.trailLength = 0.1
         self._entity.setMaterialName("grenade")
         self._entity.getMaterial().setAmbient(self.trailColour)
         self._entity.setDefaultDimensions(0.1,0.1)

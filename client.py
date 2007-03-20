@@ -655,6 +655,7 @@ class Client(Application, Engine):
                             if newObject:
                                 newObject.existsOnServer = True        
                                 newObject.setAttributes(serverObject[Engine.NET_OBJECTS_ATTRIBUTES])
+                                print "Velocity", serverObject[Engine.NET_OBJECTS_ATTRIBUTES][1]
                                 newObject.setEvents(serverObject[Engine.NET_OBJECTS_EVENTS])
                                 self.objects += [newObject]
 

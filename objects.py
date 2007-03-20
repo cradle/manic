@@ -340,7 +340,6 @@ class BulletObject(SphereObject):
 
     def __del__(self):
         SphereObject.__del__(self)
-        self.lastFrameTime = 0.1
 
     def hitObject(self, other, position):
         self.setDead()
@@ -350,7 +349,7 @@ class BulletObject(SphereObject):
 
     def postStep(self):
         if not self.hasStepped:
-            # Optimisation, bullets should be very light weight
+            # Optimisation, bullet objects should be very light weight
             self.hasStepped = True
             
             SphereObject.postStep(self)
@@ -655,12 +654,12 @@ class Person(SphereObject):
                 'accuracy':0.88,
                 'timeBetweenShots':0.1,
                 'damage':11.0,
-                'velocity':55.0,
+                'velocity':65.0,
                 'type':'burst',
                 'ammoType':BULLET,
                 'bulletsPerBurst':3,
                 'timeBetweenBurstShots':0.03,
-                'timeBetweenBursts':0.3,
+                'timeBetweenBursts':0.5,
                 'type2':'single',
                 'zoom':45,
                 'recoil':0.02,
@@ -755,6 +754,9 @@ class Person(SphereObject):
                     self.setGun(self.primaryGunName)
                 if 'md' in self.presses:
                     self.setGun(self.secondaryGunName)
+                
+            if self.timeLeftUntilMustShoot and self.timeLeftUntilMustShoot < 0:
+                self._shoot()
         else:
             if self.timeUntilRespawn <= 0:
                 self.setDead(False)
@@ -878,8 +880,6 @@ class Person(SphereObject):
 
         if self.timeLeftUntilMustShoot:
             self.timeLeftUntilMustShoot -= time
-            if self.timeLeftUntilMustShoot < 0:
-                self._shoot()
         
         # TODO: I hate flags!!! 
         if self.wantsToJump:
