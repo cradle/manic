@@ -135,9 +135,6 @@ class DynamicObject(StaticObject):
     def to3d(self, vector):
         return vector + [0]
 
-    def initialisePosition(self, position):
-        StaticObject.setPosition(self, position)
-
     def getAttributes(self):
         return [self.to2d(self._body.getPosition()),
          self.to2d(self._body.getQuaternion()),
@@ -531,6 +528,11 @@ class Person(SphereObject):
         self._torsoTransform.object = None
         self._headTransform.object = None
 
+    def setPosition(self, position):
+        SphereObject.setPosition(self, position)
+        if position:
+            self.torsoBody.setPosition(position)
+
     def __del__(self):
         self._torsoGeometry.disable()
         self._torsoTransform.disable()
@@ -843,6 +845,8 @@ class Person(SphereObject):
             text += "\n Ammo: %i/%i" % (self.ammo, self.maxAmmo)
             if self.timeLeftUntilNextShot > 0:
                 text += " (%3i%%)" % (100 - self.timeLeftUntilNextShot * 100 / self.timeBetweenShots)
+            if float(self.ammo)/self.maxAmmo <= 0.2:
+                text += "\n Press R to reload"
 
         return text
 
