@@ -771,7 +771,7 @@ class Person(SphereObject):
         # Massive corners cut here for the sake of network traffic
         return SphereObject.getAttributes(self) + \
                [int(self.health),
-                int(self.gunID),
+                int(self.gunIDs[self.gunName]),
                 int(self.gun['ammo']),
                 self.gun['timeLeftUntilNextShot'] if self.gun['timeLeftUntilNextShot'] > 0 else 0,
                 self.timeUntilRespawn if self.timeUntilRespawn > 0 else 0,
