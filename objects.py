@@ -329,7 +329,6 @@ class BulletObject(SphereObject):
             
         self.setDead(False)
         self.type = BULLET
-        self.damage = damage
         self.hasSentToClients = False
         self.events = []
         
@@ -428,6 +427,7 @@ class GrenadeObject(BulletObject):
                   5, #Damage
                   self._geometry.object._name)
             b.needToTellClient = False
+            b.ownerName = self.ownerName
             
         self.exploded = True
 
@@ -544,9 +544,7 @@ class Person(SphereObject):
         for name, id in self.gunIDs.items():
             self.gunNames[id] = name
 
-        self.gunName = ""
-        self.primaryGunName = "SMG"
-        self.secondayGunName = "Assault"
+        self.gunName = None
         self._instability = 0.0
         self.score = 0
         
@@ -558,6 +556,8 @@ class Person(SphereObject):
         self._headTransform.setCollideBits(self.PROJECTILE | self.TERRAIN)
 
         self.reset()
+        
+        self.setGun("Assault")
 
     def close(self):
         self._geometry.object = None
@@ -582,7 +582,6 @@ class Person(SphereObject):
         
     def reset(self):
         self.timeLeftUntilMustShoot = None
-        self.shotsLeftInBurst = 0
         self.isCrouching = False
         self.canShoot = True
         self.isJumping = False
@@ -597,11 +596,8 @@ class Person(SphereObject):
 
         self.guns = {
             'Pistol':{
-                'maxAmmo':7,
                 'ammo':7,
                 'reloadTime':0.8,
-                'timeLeftUntilNextShot':0.0,
-                'reloading':False,
                 'accuracy':0.98,
                 'timeBetweenShots':0.0,
                 'damage':15,
@@ -613,11 +609,8 @@ class Person(SphereObject):
                 'auto':False,
                 },
             'SMPistol':{
-                'maxAmmo':30,
                 'ammo':30,
                 'reloadTime':1.4,
-                'timeLeftUntilNextShot':0.0,
-                'reloading':False,
                 'accuracy':0.75,
                 'timeBetweenShots':0.02,
                 'damage':5,
@@ -629,11 +622,8 @@ class Person(SphereObject):
                 'auto':True,
                 },
             'SMG':{
-                'maxAmmo':50,
                 'ammo':50,
                 'reloadTime':2.5,
-                'timeLeftUntilNextShot':0.0,
-                'reloading':False,
                 'accuracy':0.85,
                 'timeBetweenShots':0.07,
                 'damage':5,
@@ -645,11 +635,8 @@ class Person(SphereObject):
                 'auto':True,
                 },
             'Shotgun':{
-                'maxAmmo':5,
                 'ammo':5,
                 'reloadTime':5.0,
-                'timeLeftUntilNextShot':0.0,
-                'reloading':False,
                 'accuracy':0.8,
                 'timeBetweenShots':0.6,
                 'damage':7,
@@ -662,11 +649,8 @@ class Person(SphereObject):
                 'auto':False,
                 },
             'Assault':{
-                'maxAmmo':30,
                 'ammo':30,
                 'reloadTime':2.2,
-                'timeLeftUntilNextShot':0.0,
-                'reloading':False,
                 'accuracy':0.88,
                 'timeBetweenShots':0.1,
                 'damage':11.0,
@@ -674,6 +658,7 @@ class Person(SphereObject):
                 'type':'burst',
                 'ammoType':BULLET,
                 'bulletsPerBurst':3,
+                'shotsLeftInBurst':3,
                 'timeBetweenBurstShots':0.03,
                 'timeBetweenBursts':0.5,
                 'type2':'single',
@@ -682,11 +667,8 @@ class Person(SphereObject):
                 'auto':False,
                 },
             'Support':{
-                'maxAmmo':100,
                 'ammo':100,
                 'reloadTime':5.0,
-                'timeLeftUntilNextShot':0.0,
-                'reloading':False,
                 'accuracy':0.85,
                 'timeBetweenShots':0.18,
                 'damage':10,
@@ -699,11 +681,8 @@ class Person(SphereObject):
                 'auto':True,
                 },
             'Sniper':{
-                'maxAmmo':5,
                 'ammo':5,
                 'reloadTime':15.0,
-                'timeLeftUntilNextShot':0.0,
-                'reloading':False,
                 'accuracy':0.98,
                 'timeBetweenShots':7.5,
                 'damage':100,
@@ -715,11 +694,8 @@ class Person(SphereObject):
                 'auto':False,
                 },
             'GrenadeLauncher':{
-                'maxAmmo':1,
                 'ammo':1,
                 'reloadTime':3.0,
-                'timeLeftUntilNextShot':0.0,
-                'reloading':False,
                 'accuracy':1.0,
                 'timeBetweenShots':5.0,
                 'damage':1,
@@ -731,8 +707,14 @@ class Person(SphereObject):
                 'auto':False,
                 }
             }
-        
-        self.setGun(self.gunName)
+
+        for gun in self.guns.values():
+            gun['maxAmmo'] = gun['ammo']
+            gun['timeLeftUntilNextShot'] = 0.0
+            gun['maxAccuracy'] = gun['accuracy']
+            gun['reloading'] = False
+            if gun['type'] == 'burst':
+                gun['shotsLeftInBurst'] = gun['bulletsPerBurst']
 
     def hitObject(self, other, position):
         if other.type == BULLET:
@@ -781,41 +763,19 @@ class Person(SphereObject):
                 self.setPosition(self.spawnPosition)
 
     def setGun(self, name):
-        #Store Old Gun Stats
-        if self.gunName != "":
-            self.guns[self.gunName]['ammo'] = self.ammo
-            self.guns[self.gunName]['reloading'] = self.reloading
-            self.guns[self.gunName]['timeLeftUntilNextShot'] = self.timeLeftUntilNextShot
-        else:
-            name = "SMG"
-                
-        #Load New Gun Stats
-        if self.gunName != name:
+        if not self.timeLeftUntilMustShoot:
+            self.gun = self.guns[name]
             self.gunName = name
-            self.maxAmmo = self.guns[self.gunName]['maxAmmo']
-            self.ammo = self.guns[self.gunName]['ammo']
-            self.reloading = self.guns[self.gunName]['reloading'] 
-            self.reloadTime = self.guns[self.gunName]['reloadTime']
-            self.timeLeftUntilNextShot = self.guns[self.gunName]['timeLeftUntilNextShot']
-            self.timeBetweenShots = self.guns[self.gunName]['timeBetweenShots']
-            self._accuracy = self.guns[self.gunName]['accuracy']
-            self._maxAccuracy = self.guns[self.gunName]['accuracy']
-            self.damage = self.guns[self.gunName]['damage']
-            self.velocity = self.guns[self.gunName]['velocity']
-            self.recoil = self.guns[self.gunName]['recoil']
-            self.automatic = self.guns[self.gunName]['auto']
-            if self.guns[self.gunName]['type'] == "burst":
-                self.shotsLeftInBurst = self.guns[self.gunName]['bulletsPerBurst']
 
     def getAttributes(self):
         # Massive corners cut here for the sake of network traffic
         return SphereObject.getAttributes(self) + \
                [int(self.health),
-                int(self.gunIDs[self.gunName]),
-                int(self.ammo),
-                self.timeLeftUntilNextShot if self.timeLeftUntilNextShot > 0 else 0,
+                int(self.gunID),
+                int(self.gun['ammo']),
+                self.gun['timeLeftUntilNextShot'] if self.gun['timeLeftUntilNextShot'] > 0 else 0,
                 self.timeUntilRespawn if self.timeUntilRespawn > 0 else 0,
-                ((1 if self.reloading else 0) |
+                ((1 if self.gun['reloading'] else 0) |
                 (2 if self.isCrouching else 0) |
                 (4 if self.isJumping else 0) |
                 (8 if self.isDead() else 0) |
@@ -829,11 +789,11 @@ class Person(SphereObject):
         SphereObject.setAttributes(self,attributes)
         self.health = attributes[5]
         self.setGun(self.gunNames[attributes[6]])
-        self.ammo = attributes[7]
-        self.timeLeftUntilNextShot = attributes[8]
+        self.gun['ammo'] = attributes[7]
+        self.gun['timeLeftUntilNextShot'] = attributes[8]
         self.timeUntilRespawn = attributes[9]
         state = attributes[10]
-        self.reloading = (state & 1 == 1)
+        self.gun['reloading'] = (state & 1 == 1)
         self.isCrouching = (state & 2 == 2)
         self.isJumping = (state & 4 == 4)
         self.setDead((state & 8 == 8))
@@ -843,27 +803,26 @@ class Person(SphereObject):
         self._instability = attributes[13]
 
     def _calculateAccuracy(self):
-            
-        self._accuracy -= self._instability
+        self.gun['accuracy'] -= self._instability
         self._instability /= 1.1
 
         recoveryWeight = 2.5
         if self.isCrouching and self.isOnGround:
-            self._accuracy  = (self._accuracy*recoveryWeight + ((self._maxAccuracy+1.0)/2.0) )/(recoveryWeight+1)
+            self.gun['accuracy']  = (self.gun['accuracy']*recoveryWeight + ((self.gun['maxAccuracy']+1.0)/2.0) )/(recoveryWeight+1)
         elif self.isOnGround:
-            self._accuracy  = (self._accuracy*recoveryWeight + self._maxAccuracy)/(recoveryWeight+1)
+            self.gun['accuracy']  = (self.gun['accuracy']*recoveryWeight + self.gun['maxAccuracy'])/(recoveryWeight+1)
         else:
-            self._accuracy  = (self._accuracy*recoveryWeight + self._maxAccuracy * 0.75)/(recoveryWeight + 1)
+            self.gun['accuracy']  = (self.gun['accuracy']*recoveryWeight + self.gun['maxAccuracy'] * 0.75)/(recoveryWeight + 1)
             
 
     def getAccuracy(self):
-        if self.guns[self.gunName]['type'] == "scatter":
-            return self._maxAccuracy
+        if self.gun['type'] == "scatter":
+            return self.gun['maxAccuracy']
         else:
-            return self._accuracy
+            return self.gun['accuracy']
 
     def setAccuracy(self, accuracy):
-        self._accuracy = accuracy
+        self.gun['accuracy'] = accuracy
 
     def getEvents(self):
         return self.events
@@ -880,13 +839,13 @@ class Person(SphereObject):
                 self.maxHealth,
                 self.gunName)
 
-        if self.reloading:
-            text += "\n Reloading: %3i%%" % (100 - self.timeLeftUntilNextShot * 100 / self.reloadTime)
+        if self.gun['reloading']:
+            text += "\n Reloading: %3i%%" % (100 - self.gun['timeLeftUntilNextShot'] * 100 / self.gun['reloadTime'])
         else:
-            text += "\n Ammo: %i/%i" % (self.ammo, self.maxAmmo)
-            if self.timeLeftUntilNextShot > 0:
-                text += " (%3i%%)" % (100 - self.timeLeftUntilNextShot * 100 / self.timeBetweenShots)
-            if float(self.ammo)/self.maxAmmo <= 0.2:
+            text += "\n Ammo: %i/%i" % (self.gun['ammo'], self.gun['maxAmmo'])
+            if self.gun['timeLeftUntilNextShot'] > 0:
+                text += " (%3i%%)" % (100 - self.gun['timeLeftUntilNextShot'] * 100 / self.gun['timeBetweenShots'])
+            if float(self.gun['ammo'])/self.gun['maxAmmo'] <= 0.2:
                 text += "\n Press R to reload"
 
         return text
@@ -903,13 +862,13 @@ class Person(SphereObject):
         else:
             self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
 
-        if self.timeLeftUntilNextShot > 0:
-            self.timeLeftUntilNextShot -= time
-        elif self.timeLeftUntilNextShot > -time:
-            self.timeLeftUntilNextShot = -time
+        if self.gun['timeLeftUntilNextShot'] > 0:
+            self.gun['timeLeftUntilNextShot'] -= time
+        elif self.gun['timeLeftUntilNextShot'] > -time:
+            self.gun['timeLeftUntilNextShot'] = -time
 
-        if self.timeLeftUntilNextShot <= 0.0 and self.reloading:
-            self.reloading = False
+        if self.gun['timeLeftUntilNextShot'] <= 0.0 and self.gun['reloading']:
+            self.gun['reloading'] = False
 
     def _calculateScatter(self):
         a = None
@@ -917,13 +876,13 @@ class Person(SphereObject):
         return random.random()*(1-a)-0.5*(1-a)
 
     def _reload(self):
-        if not self.reloading and self.ammo != self.maxAmmo:
-            self.ammo = self.maxAmmo
-            self.timeLeftUntilNextShot = self.reloadTime
-            self.reloading = True
+        if not self.gun['reloading'] and self.gun['ammo'] != self.gun['maxAmmo']:
+            self.gun['ammo'] = self.gun['maxAmmo']
+            self.gun['reloading'] = True
+            self.gun['timeLeftUntilNextShot'] = self.gun['reloadTime']
             self.timeLeftUntilMustShoot = None
-            if self.guns[self.gunName]['type'] == "burst":
-                self.shotsLeftInBurst = self.guns[self.gunName]['bulletsPerBurst']
+            if self.gun['type'] == "burst":
+                self.gun['shotsLeftInBurst'] = self.gun['bulletsPerBurst']
             
     def _crouch(self):
         self.isCrouching = True
@@ -938,13 +897,13 @@ class Person(SphereObject):
         self.canShoot = True
 
     def _shoot(self):
-        while (self.timeLeftUntilMustShoot and self.timeLeftUntilMustShoot <= 0 and self.ammo > 0) or\
-           self.timeLeftUntilNextShot < 0.0 and self.ammo > 0 and self.canShoot:
-            if not self.automatic:
+        while (self.timeLeftUntilMustShoot and self.timeLeftUntilMustShoot <= 0 and self.gun['ammo'] > 0) or\
+           self.gun['timeLeftUntilNextShot'] < 0.0 and self.gun['ammo'] > 0 and self.canShoot:
+            if not self.gun['auto']:
                 self.canShoot = False
             numShots = 1
-            if self.guns[self.gunName]['type'] == "scatter":
-                numShots = self.guns[self.gunName]['bulletsPerShot']
+            if self.gun['type'] == "scatter":
+                numShots = self.gun['bulletsPerShot']
 
             for i in range(numShots):
                 direction = [self.getDirection()[0]+self._calculateScatter(),
@@ -957,32 +916,32 @@ class Person(SphereObject):
                 position = [p + x for p, x in zip(position, direction)]
                 position[2] = 0
                 self._bulletNum += 1
-                self._world.addBullet(self.guns[self.gunName]['ammoType'],
+                self._world.addBullet(self.gun['ammoType'],
                                       self._name + "b" + str(self._bulletNum), \
                                       position,
                                       direction,
                                       ## TODO: Add player velocity
-                                      #[self._body.getLinearVel()[0] + (self._body.getLinearVel()[0]/(abs(self._body.getLinearVel()[0]))*self.velocity), \
-                                      # self._body.getLinearVel()[1] + (self._body.getLinearVel()[1]/(abs(self._body.getLinearVel()[1]))*self.velocity)],
-                                      [self.velocity, self.velocity],
-                                      self.damage,
+                                      #[self._body.getLinearVel()[0] + (self._body.getLinearVel()[0]/(abs(self._body.getLinearVel()[0]))*self.gun['velocity']), \
+                                      # self._body.getLinearVel()[1] + (self._body.getLinearVel()[1]/(abs(self._body.getLinearVel()[1]))*self.gun['velocity'])],
+                                      [self.gun['velocity'], self.gun['velocity']],
+                                      self.gun['damage'],
                                       self._geometry.object._name)
                 
-            self.ammo -= 1
+            self.gun['ammo'] -= 1
             self.events += ['shoot']
-            if self.ammo > 0:
-                self.timeLeftUntilNextShot += self.timeBetweenShots
+            if self.gun['ammo'] > 0:
+                self.gun['timeLeftUntilNextShot'] += self.gun['timeBetweenShots']
 
-            if self.guns[self.gunName]['type'] == "burst":
-                self.shotsLeftInBurst -= 1
-                if self.shotsLeftInBurst <= 0:
-                    self.shotsLeftInBurst = self.guns[self.gunName]['bulletsPerBurst']
+            if self.gun['type'] == "burst":
+                self.gun['shotsLeftInBurst'] -= 1
+                if self.gun['shotsLeftInBurst'] <= 0:
+                    self.gun['shotsLeftInBurst'] = self.gun['bulletsPerBurst']
                     self.timeLeftUntilMustShoot = None
-                    self.timeLeftUntilNextShot = self.guns[self.gunName]['timeBetweenBursts']
+                    self.gun['timeLeftUntilNextShot'] = self.gun['timeBetweenBursts']
                 else:
-                    self.timeLeftUntilMustShoot = self.guns[self.gunName]['timeBetweenBurstShots']
+                    self.timeLeftUntilMustShoot = self.gun['timeBetweenBurstShots']
                 
-            self._instability += self.recoil
+            self._instability += self.gun['recoil']
         
     def _jump(self):
         if self.isOnGround and self.timeLeftUntilCanJump <= 0:

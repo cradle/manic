@@ -1,0 +1,3 @@
+makeExe
+makeZip
+pushZip
