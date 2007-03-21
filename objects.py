@@ -337,6 +337,7 @@ class BulletObject(SphereObject):
         self._geometry.setCollideBits(self.TERRAIN | self.PLAYER)
 
         self.hasStepped = False
+        self.needToTellClient = True
 
     def __del__(self):
         SphereObject.__del__(self)
@@ -365,7 +366,7 @@ class BulletObject(SphereObject):
         self._body.setLinearVel(self.to3d(attributes[1]))
 
     def shouldSendToClients(self):
-        return not self.hasSentToClients
+        return not self.hasSentToClients and self.needToTellClient
 
     def clearEvents(self):
         self.hasSentToClients = True  
@@ -378,6 +379,7 @@ class GrenadeObject(BulletObject):
         self.lastFrameTime = 0.1
         self.type = GRENADE
         self.exploded = False
+        self.seed = random.randint(0,10000)
 
     def hitObject(self, other, position):
         if self.timeUntilArmed <= 0:
@@ -385,6 +387,18 @@ class GrenadeObject(BulletObject):
         else:
             self.events += ["ricochet"]
             print "Hit", other._name
+
+    def getAttributes(self):
+        return BulletObject.getAttributes(self) + [
+            self.timeUntilArmed,
+            self.timeUntilExploded,
+            self.seed]
+
+    def setAttributes(self, attributes):
+        BulletObject.setAttributes(self, attributes)
+        self.timeUntilArmed = attributes[2]
+        self.timeUntilExploded = attributes[3]
+        self.seed = attributes[4]
     
     def setDead(self, dead = True):
         BulletObject.setDead(self, dead)
@@ -398,13 +412,14 @@ class GrenadeObject(BulletObject):
             self.explode()
 
     def explode(self):
+        random.seed(self.seed)
         for i in range(50):
             direction = [random.random()-0.5, random.random()-0.5, 0]
             length = math.sqrt(direction[0]*direction[0] + direction[1]*direction[1])
             direction[0] /= length
             direction[1] /= length
             velocity = random.randint(5,14)
-            self._gameworld.addBullet(BULLET,
+            b = self._gameworld.addBullet(BULLET,
                   self._name + "s" + str(i), \
                   [self._body.getPosition()[0]+self._body.getLinearVel()[0]*self.lastFrameTime,
                    self._body.getPosition()[1]+self._body.getLinearVel()[1]*self.lastFrameTime, 0],
@@ -412,6 +427,7 @@ class GrenadeObject(BulletObject):
                   [velocity, velocity],
                   5, #Damage
                   self._geometry.object._name)
+            b.needToTellClient = False
             
         self.exploded = True
 

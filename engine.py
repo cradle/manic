@@ -66,7 +66,8 @@ class Engine:
         print "%s: %s" % (source, message)
 
     def addBullet(self, t, name, position, direction, velocity, damage, owner):
-        if len([True for object in self.objects if object._name == name]) == 0:
+        match = [object for object in self.objects if object._name == name]
+        if len(match) == 0:
             b = None
             if t == BULLET:
                 b = self.createBulletObject(name, direction, velocity, damage)
@@ -75,6 +76,9 @@ class Engine:
             b.setPosition(position)
             b.setOwnerName(owner)
             self.objects += [b]
+            return b
+        else:
+            return match[0]
         
     def frameEnded(self, frameTime):
         timer = encode.timer()
@@ -113,6 +117,13 @@ class Engine:
             
             for o in self.objects[:]:
                 o.postStep()
+
+            for o in self.objects[:]:
+                if o.isDead():
+                    if o.type != PERSON:
+                        self.objects.remove(o)
+                        o.close()
+                        del o
 
             self.contactgroup.empty()
             self.timeUntilNextEngineUpdate += self.stepSize
