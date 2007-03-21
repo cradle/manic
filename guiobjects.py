@@ -75,55 +75,53 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         self._updateDisplay()
 
     def input(self, keyboard, mouse):
-        presses = [self.getDirection()]
+        presses = [self.getDirection(),0]
         
         if CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1").hasInputFocus():
             return presses
 
         if keyboard.isKeyDown(self.keys['left']):
-            presses.append("l")
+            presses[1] |= objects.LEFT
         if keyboard.isKeyDown(self.keys['right']):
-            presses.append("r")
+            presses[1] |= objects.RIGHT
         if keyboard.isKeyDown(self.keys['rotate-left']):
-            presses.append("rl")
+            presses[1] |= objects.ROTATE_LEFT
         if keyboard.isKeyDown(self.keys['rotate-right']):
-            presses.append("rr")
+            presses[1] |= objects.ROTATE_RIGHT
         if keyboard.isKeyDown(self.keys['up']):
-            presses.append("u")
+            presses[1] |= objects.UP
         if keyboard.isKeyDown(self.keys['down']):
-            presses.append("d")
+            presses[1] |= objects.DOWN
         if keyboard.isKeyDown(self.keys['reload']):
-            presses.append("a")
+            presses[1] |= objects.RELOAD
         if keyboard.isKeyDown(self.keys['downdown']):
-            presses.append("p")
+            presses[1] |= objects.DOWNDOWN
         if keyboard.isKeyDown(self.keys['weapon1']):
-            presses.append("1")
+            presses[1] |= objects.WEAPON1
         if keyboard.isKeyDown(self.keys['weapon2']):
-            presses.append("2")
+            presses[1] |= objects.WEAPON2
         if keyboard.isKeyDown(self.keys['weapon3']):
-            presses.append("3")
+            presses[1] |= objects.WEAPON3
         if keyboard.isKeyDown(self.keys['weapon4']):
-            presses.append("4")
+            presses[1] |= objects.WEAPON4
         if keyboard.isKeyDown(self.keys['weapon5']):
-            presses.append("5")
+            presses[1] |= objects.WEAPON5
         if keyboard.isKeyDown(self.keys['weapon6']):
-            presses.append("6")
+            presses[1] |= objects.WEAPON6
         if keyboard.isKeyDown(self.keys['weapon7']):
-            presses.append("7")
+            presses[1] |= objects.WEAPON7
         if keyboard.isKeyDown(self.keys['weapon8']):
-            presses.append("8")
+            presses[1] |= objects.WEAPON8
         if keyboard.isKeyDown(self.keys['weapon9']):
-            presses.append("9")
+            presses[1] |= objects.WEAPON9
         if self.keys['shoot'] != None and mouse.getMouseState().buttonDown(self.keys['shoot']):
-            presses.append("s")
-        if self.keys['previous'] != None and mouse.getMouseState().buttonDown(self.keys['previous']):
-            presses.append("mu")
-        if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
-            presses.append("md")
-        if self.keys['secondaryFire'] != None and mouse.getMouseState().buttonDown(self.keys['secondaryFire']):
-            presses.append("s2")
-        if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
-            presses.append("md")
+            presses[1] |= objects.SHOOT
+##        if self.keys['previous'] != None and mouse.getMouseState().buttonDown(self.keys['previous']):
+##            presses.append("mu")
+##        if self.keys['next'] != None and mouse.getMouseState().buttonDown(self.keys['next']):
+##            presses.append("md")
+##        if self.keys['secondaryFire'] != None and mouse.getMouseState().buttonDown(self.keys['secondaryFire']):
+##            presses.append("s2")
 
         return presses
     
@@ -240,6 +238,15 @@ class BulletObject(objects.BulletObject, SphereObject):
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 
+class ShrapnelObject(objects.ShrapnelObject, BulletObject):
+    def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
+        print "Creating"
+        objects.ShrapnelObject.__init__(self, gameworld, name, direction, velocity, damage)
+        BulletObject.reset(self)
+
+    def frameEnded(self, time):
+        objects.ShrapnelObject.frameEnded(self, time)
+        BulletObject.frameEnded(self, time)
 
 class GrenadeObject(objects.GrenadeObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):

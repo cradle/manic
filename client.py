@@ -409,6 +409,9 @@ class Client(Application, Engine):
     def createBulletObject(self, name, direction, velocity, damage):
         return BulletObject(self, name, direction, velocity, damage)
 
+    def createShrapnelObject(self, name, direction, velocity, damage):
+        return ShrapnelObject(self, name, direction, velocity, damage)
+
     def createGrenadeObject(self, name, direction , velocity, damage):
         return GrenadeObject(self, name, direction, velocity, damage)
 
@@ -649,6 +652,8 @@ class Client(Application, Engine):
                                     newObject = BulletObject(self, serverObject[Engine.NET_OBJECTS_NAME])
                                 elif serverObject[Engine.NET_OBJECTS_TYPE] == objects.GRENADE:
                                     newObject = GrenadeObject(self, serverObject[Engine.NET_OBJECTS_NAME])
+                                elif serverObject[Engine.NET_OBJECTS_TYPE] == objects.SHRAPNEL:
+                                    newObject = ShrapnelObject(self, serverObject[Engine.NET_OBJECTS_NAME])
                                 else:
                                     print "Unknown object to create", serverObject[Engine.NET_OBJECTS_TYPE], objects.PERSON
 

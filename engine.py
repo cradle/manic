@@ -56,6 +56,9 @@ class Engine:
     def createBulletObject(self, name, direction, velocity, damage):
         return BulletObject(self, name, direction, velocity, damage)
 
+    def createShrapnelObject(self, name, direction, velocity, damage):
+        return BulletObject(self, name, direction, velocity, damage)
+
     def createGrenadeObject(self, name, direction, velocity, damage):
         return GrenadeObject(self, name, direction, velocity, damage)
 
@@ -69,9 +72,11 @@ class Engine:
         match = [object for object in self.objects if object._name == name]
         if len(match) == 0:
             b = None
-            if t == BULLET:
+            if t == SHRAPNEL:
+                b = self.createShrapnelObject(name, direction, velocity, damage)
+            elif t == BULLET:
                 b = self.createBulletObject(name, direction, velocity, damage)
-            if t == GRENADE:
+            elif t == GRENADE:
                 b = self.createGrenadeObject(name, direction, velocity, damage)
             b.setPosition(position)
             b.setOwnerName(owner)

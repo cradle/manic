@@ -8,6 +8,27 @@ SPHERE = 2
 PERSON = 3
 BULLET = 4
 GRENADE = 5
+SHRAPNEL = 6
+
+#Keys
+LEFT = 1
+RIGHT = 2
+ROTATE_LEFT = 4
+ROTATE_RIGHT = 8
+UP = 16
+DOWN = 32
+SHOOT = 64
+RELOAD = 128
+DOWNDOWN = 256
+WEAPON1 = 512
+WEAPON2 = 1024
+WEAPON3 = 2048
+WEAPON4 = 8192
+WEAPON5 = 16384
+WEAPON6 = 32768
+WEAPON7 = 65536
+WEAPON8 = 131072
+WEAPON9 = 262144
 
 class Generator(object):
     _objectNum = 0
@@ -182,29 +203,30 @@ class DynamicObject(StaticObject):
 
     def preStep(self):
         if self.presses:
-            if 'l' in self.presses:
+            keys = self.presses[1]
+            if keys & LEFT:
                 self._moveLeft()
-            if 'r' in self.presses:
+            if keys & RIGHT:
                 self._moveRight()
-            if 'rl' in self.presses:
+            if keys & ROTATE_LEFT:
                 self._rotateLeft()
-            if 'rr' in self.presses:
+            if keys & ROTATE_RIGHT:
                 self._rotateRight()
-            if 'd' in self.presses:
+            if keys & DOWN:
                 self._crouch()
             else:
                 self._unCrouch()
-            if 'u' in self.presses:
+            if keys & UP:
                 self._jump()
             else:
                 self._unJump()
-            if 's' in self.presses:
+            if keys & SHOOT:
                 self._shoot()
             else:
                 self._unShoot()
-            if 's2' in self.presses:
-                self._secondaryFire()
-            if 'a' in self.presses:
+            #if 's2' in self.presses:
+            #    self._secondaryFire()
+            if keys & RELOAD:
                 self._reload()
 
         # Apply wind friction
@@ -305,11 +327,11 @@ class SphereObject(DynamicObject):
         self.type = SPHERE
 
 class BulletObject(SphereObject):
-    def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 1.0):
+    def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 1.0, weight = 3.0):
         
         self.size = 0.025
         self.maxSpeed = velocity
-        self.weight = 3.0
+        self.weight = weight
         self.damage = damage
         self._gameworld = gameworld
         
@@ -322,10 +344,13 @@ class BulletObject(SphereObject):
         speedVariation = (1-(random.random()-0.5)/5)
 
         if direction:
-            self._motor.setXParam(ode.ParamVel,  direction[0] * speedVariation * self.maxSpeed[0])
-            self._motor.setXParam(ode.ParamFMax, ode.Infinity)
-            self._motor.setYParam(ode.ParamVel,  direction[1] * speedVariation * self.maxSpeed[1])
-            self._motor.setYParam(ode.ParamFMax, ode.Infinity)
+            self._body.setLinearVel((direction[0] * speedVariation * self.maxSpeed[0],
+                                     direction[1] * speedVariation * self.maxSpeed[1],
+                                     0))
+##            self._motor.setXParam(ode.ParamVel,  direction[0] * speedVariation * self.maxSpeed[0])
+##            self._motor.setXParam(ode.ParamFMax, ode.Infinity)
+##            self._motor.setYParam(ode.ParamVel,  direction[1] * speedVariation * self.maxSpeed[1])
+##            self._motor.setYParam(ode.ParamFMax, ode.Infinity)
             
         self.setDead(False)
         self.type = BULLET
@@ -348,13 +373,14 @@ class BulletObject(SphereObject):
         self.ownerName = name
 
     def postStep(self):
-        if not self.hasStepped:
-            # Optimisation, bullet objects should be very light weight
-            self.hasStepped = True
-            
-            SphereObject.postStep(self)
-            self._motor.setXParam(ode.ParamFMax, 0)
-            self._motor.setYParam(ode.ParamFMax, 0)
+        pass;
+##        if not self.hasStepped:
+##            # Optimisation, bullet objects should be very light weight
+##            self.hasStepped = True
+##            
+##            SphereObject.postStep(self)
+##            self._motor.setXParam(ode.ParamFMax, 0)
+##            self._motor.setYParam(ode.ParamFMax, 0)
 
     def getAttributes(self):
         return [self.to2d(self._body.getPosition()),
@@ -370,18 +396,33 @@ class BulletObject(SphereObject):
     def clearEvents(self):
         self.hasSentToClients = True  
 
+class ShrapnelObject(BulletObject):
+    def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
+        BulletObject.__init__(self, gameworld, name, direction, velocity, damage, 1.0)
+        self.ricochetTime = 0.15
+
+    def hitObject(self, other, position):
+        if other.type != STATIC or self.ricochetTime <= 0:
+            BulletObject.hitObject(self, other, position)
+
+    def frameEnded(self, time):
+        self.ricochetTime -= time
+
 class GrenadeObject(BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
+        self.ownerName = ""
         BulletObject.__init__(self, gameworld, name, direction, velocity, damage)
         self.timeUntilArmed = 0.25
         self.timeUntilExploded = self.timeUntilArmed + 2.5
         self.lastFrameTime = 0.1
         self.type = GRENADE
+        self.explodePos = None
         self.exploded = False
         self.seed = random.randint(0,10000)
 
     def hitObject(self, other, position):
         if self.timeUntilArmed <= 0:
+            self.explodePos = position
             BulletObject.hitObject(self, other, position)
         else:
             self.events += ["ricochet"]
@@ -412,16 +453,17 @@ class GrenadeObject(BulletObject):
 
     def explode(self):
         random.seed(self.seed)
+        if not self.explodePos:
+            self.explodePos = self._body.getPosition()
         for i in range(50):
             direction = [random.random()-0.5, random.random()-0.5, 0]
             length = math.sqrt(direction[0]*direction[0] + direction[1]*direction[1])
             direction[0] /= length
             direction[1] /= length
-            velocity = random.randint(5,14)
-            b = self._gameworld.addBullet(BULLET,
+            velocity = random.randint(7,17)
+            b = self._gameworld.addBullet(SHRAPNEL,
                   self._name + "s" + str(i), \
-                  [self._body.getPosition()[0]+self._body.getLinearVel()[0]*self.lastFrameTime,
-                   self._body.getPosition()[1]+self._body.getLinearVel()[1]*self.lastFrameTime, 0],
+                  map((lambda a,b: a+b/5), self.explodePos, direction),
                   direction,
                   [velocity, velocity],
                   5, #Damage
@@ -589,6 +631,10 @@ class Person(SphereObject):
         self.timeLeftUntilCanJump = self.timeNeededToPrepareJump
         self.wantsToJump = False
         self._pointingDirection = (1.0,0.0,0.0)
+        self._body.setLinearVel((0,0,0))
+        self._body.setAngularVel((0,0,0))
+        self.torsoBody.setAngularVel((0,0,0))
+        self.torsoBody.setLinearVel((0,0,0))
         self.presses = None
         self.health = self.maxHealth
         self.events = []
@@ -731,27 +777,28 @@ class Person(SphereObject):
     def preStep(self):
         if not self.isDead():
             if self.presses:
+                keys = self.presses[1]
                 SphereObject.preStep(self)
-                if '1' in self.presses:
+                if keys & WEAPON1:
                     self.setGun("Pistol")
-                if '2' in self.presses:
+                if keys & WEAPON2:
                     self.setGun("SMPistol")
-                if '3' in self.presses:
+                if keys & WEAPON3:
                     self.setGun("SMG")
-                if '4' in self.presses:
+                if keys & WEAPON4:
                     self.setGun("Shotgun")
-                if '5' in self.presses:
+                if keys & WEAPON5:
                     self.setGun("Assault")
-                if '6' in self.presses:
+                if keys & WEAPON6:
                     self.setGun("GrenadeLauncher")
-                if '7' in self.presses:
+                if keys & WEAPON7:
                     self.setGun("Support")
-                if '8' in self.presses:
+                if keys & WEAPON8:
                     self.setGun("Sniper")
-                if 'mu' in self.presses:
-                    self.setGun(self.primaryGunName)
-                if 'md' in self.presses:
-                    self.setGun(self.secondaryGunName)
+##                if keys & WEAPON9:
+##                    self.setGun(self.primaryGunName)
+##                if 'md' in self.presses:
+##                    self.setGun(self.secondaryGunName)
                 
             if self.timeLeftUntilMustShoot and self.timeLeftUntilMustShoot < 0:
                 self._shoot()
