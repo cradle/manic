@@ -259,7 +259,7 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         self._entity.setDefaultDimensions(0.1,0.1)
 
         self.light = gameworld.sceneManager.createLight("light" + name)
-        #self.light.setAttenuation(0.9)
+        self.light.setAttenuation(range = 200, constant = 0.0, linear = 0.0, quadratic = 0.01)
         self.light.setDiffuseColour ((0.5,0.5,0.3))
         self.light.setType(ogre.Light.LT_POINT)
         self._node.attachObject(self.light)
