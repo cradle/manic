@@ -597,9 +597,8 @@ class Person(SphereObject):
         self._headTransform.setCategoryBits(self.PLAYER)
         self._headTransform.setCollideBits(self.PROJECTILE | self.TERRAIN)
 
+        self.gunName = "Assault"
         self.reset()
-        
-        self.setGun("Assault")
 
     def close(self):
         self._geometry.object = None
@@ -761,6 +760,8 @@ class Person(SphereObject):
             gun['reloading'] = False
             if gun['type'] == 'burst':
                 gun['shotsLeftInBurst'] = gun['bulletsPerBurst']
+
+        self.setGun(self.gunName)
 
     def hitObject(self, other, position):
         if other.type == BULLET:
