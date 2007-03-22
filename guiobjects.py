@@ -192,6 +192,8 @@ class BulletObject(objects.BulletObject, SphereObject):
         self._entity.setDefaultDimensions(0.05,0.05)
 
         self._entity.createBillboard(0,0,0)
+        self.trailColour = (1.0,1.0,1.0)
+        self._entity.getMaterial().setAmbient(self.trailColour)
         
         self.trailNode = self._gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + self._name)
         self.trail = ogre.ManualObject( "__TRAIL__" + self._name)
@@ -200,14 +202,13 @@ class BulletObject(objects.BulletObject, SphereObject):
         self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + self._name)
         self._node.attachObject(self._entity)
 
-        self.trailColour = (1.0,1.0,1.0)
         self.trailLength = 0.04
 
         self._updateDisplay()
         
         self.trail.begin("bullets", ogre.RenderOperation.OT_LINE_LIST)
         self.trail.position( self._body.getPosition() )
-        self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.5)
+        self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],1.0)
         self.trail.position( self._body.getPosition() )
         self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.0)
         self.trail.end()
@@ -225,7 +226,7 @@ class BulletObject(objects.BulletObject, SphereObject):
         
         self.trail.beginUpdate(0)
         self.trail.position( self._body.getPosition() )
-        self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.5)
+        self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],1.0)
         self.trail.position(map(self.trailPosFunc, self._body.getPosition(), self._body.getLinearVel()))
         self.trail.colour(self.trailColour[0],self.trailColour[1],self.trailColour[2],0.0)
         self.trail.end()
@@ -240,7 +241,6 @@ class BulletObject(objects.BulletObject, SphereObject):
 
 class ShrapnelObject(objects.ShrapnelObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
-        print "Creating"
         objects.ShrapnelObject.__init__(self, gameworld, name, direction, velocity, damage)
         BulletObject.reset(self)
 
@@ -258,16 +258,24 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         self._entity.getMaterial().setAmbient(self.trailColour)
         self._entity.setDefaultDimensions(0.1,0.1)
 
+        self.light = gameworld.sceneManager.createLight("light" + name)
+        #self.light.setAttenuation(0.9)
+        self.light.setDiffuseColour ((0.5,0.5,0.3))
+        self.light.setType(ogre.Light.LT_POINT)
+        self._node.attachObject(self.light)
+
     def frameEnded(self, time):
         objects.GrenadeObject.frameEnded(self, time)
         BulletObject.frameEnded(self, time)
 
     def close(self):
         self._geometry.object = None
+        self.light.setVisible(False)
         BulletObject.close(self)
         objects.GrenadeObject.close(self)
         
     def __del__(self):
+        self._node.detachAllObjects()
         BulletObject.__del__(self)
         objects.GrenadeObject.__del__(self)
 
@@ -295,6 +303,15 @@ class Person(objects.Person, SphereObject):
         self._node.setScale(scale,scale,scale)
         # Node -> Entity
         self._node.attachObject(self._entity)
+
+        self.light = gameworld.sceneManager.createLight("light" + name)
+        #self.light.setDiffuseColour ((1.0,1.0,1.0))
+        self.light.setType(ogre.Light.LT_POINT)
+        self.light.setAttenuation(range = 100, constant = 0.0, linear = 0.0, quadratic = 0.05)
+        self.light.setCastShadows(True)     
+        #self._node.attachObject(self.light)
+
+        
         self.gameworld = gameworld
         
         self.soundManager = gameworld.soundManager
@@ -362,6 +379,9 @@ class Person(objects.Person, SphereObject):
 
         self.events = []
         self.soundEvents = []
+        self.muzzleFlash = False
+        self.light.setVisible(False)
+        self.muzzleFlashColour = (1.0,1.0,1.0)
 
     def __del__(self):
         SphereObject.__del__(self)
@@ -410,10 +430,25 @@ class Person(objects.Person, SphereObject):
             if sound['time'] <= 0:
                 if 'shoot' == sound['sound']:
                     self._shootSound()
+                    self.light.setPosition(
+                        self._body.getPosition()[0] + self.getShootOffset()[0] + self._pointingDirection[0],
+                        self._body.getPosition()[1] + self.getShootOffset()[1] + self._pointingDirection[1],
+                        0)
+                    self.light.setDiffuseColour(self.muzzleFlashColour)
+                    self.muzzleFlash = True
+                    self.light.setVisible(True)
                 if 'hit' == sound['sound']:
                     self._hitSound()
                 self.soundEvents.remove(sound)
-                    
+
+        if self.muzzleFlash:
+            colour = self.light.getDiffuseColour()
+            if colour[0] <= 0:
+                self.muzzleFlash = False
+                self.light.setVisible(False)
+            else:
+                self.light.setDiffuseColour(colour[0]-time*20, colour[1]-time*20, colour[2]-time*20)
+            
         if self.isDead():
             self.animations['dead'].addTime(time)
             self.animations['jump'].Enabled = False
@@ -437,7 +472,7 @@ class Person(objects.Person, SphereObject):
                 else: # "right"
                     self.animations['run'].addTime(time * self._body.getLinearVel()[0] * modifier)
                 self.animations['run'].Enabled = True
-                self.animations['idle'].setWeight(0.5)
+                self.animations['idle'].setWeight(0.1)
             else:
                 self.animations['idle'].addTime(time)
                 self.animations['idle'].Enabled = True
@@ -498,9 +533,11 @@ class Player(Person):
         
         self.cursorNode = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + name)
         self.cursorLines = ogre.ManualObject( "__CURSOR__" + name)
-        self.cursorLines.begin("Red", ogre.RenderOperation.OT_LINE_LIST)
+        self.cursorLines.begin("cursor", ogre.RenderOperation.OT_LINE_LIST)
+        self.cursorColour = (0.3,0.8,1.0,1.0)
         for i in range(12):
             self.cursorLines.position( (0,0,0) )
+            self.cursorLines.colour(self.cursorColour)
         self.cursorLines.end()
         self.cursorNode.attachObject(self.cursorLines)
         

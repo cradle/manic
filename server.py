@@ -77,5 +77,6 @@ class Server(Engine):
 
 if __name__ == "__main__":
     engine = Server()
-    engine.go()
+    import cProfile
+    cProfile.run('engine.go()', 'server-profile.txt')
     os._exit(0)

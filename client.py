@@ -438,7 +438,13 @@ class Client(Application, Engine):
     
     def _createScene(self):
         Engine._createWorld(self)
-        self.sceneManager.setAmbientLight((0.75, 0.75, 0.75, 0.0))
+        self.sceneManager.setAmbientLight((0.0, 0.0, 0.0, 0.0))
+        self.sceneManager.setShadowTechnique(ogre.SHADOWTYPE_STENCIL_ADDITIVE)
+
+        light = self.sceneManager.createLight("sunlight")
+        light.setType(ogre.Light.LT_DIRECTIONAL)   # or .type
+        light.setDirection((-0.4,-0.4,-1))
+        light.setDiffuseColour(0.1,0.1,0.1)
 
 ##        entity = self.sceneManager.createEntity('bgE', 'game.mesh')
 ##        entity.setNormaliseNormals(True)
@@ -537,13 +543,20 @@ class Client(Application, Engine):
         self._vitalsWindow = vitals
         sheet.addChildWindow(vitals)
 
-        myMaterial = ogre.MaterialManager.getSingleton().create("bullets","debugger")
+        # Materials
+        myMaterial = ogre.MaterialManager.getSingleton().create("bullets","a")
         myMaterial.setLightingEnabled(False)
         myMaterial.setDepthWriteEnabled(False)
         myMaterial.setSceneBlending(ogre.SBT_TRANSPARENT_ALPHA)
         myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_DIFFUSE)
 
-        myMaterial = ogre.MaterialManager.getSingleton().create("grenade","debugger")
+        myMaterial = ogre.MaterialManager.getSingleton().create("cursor","b")
+        myMaterial.setLightingEnabled(False)
+        myMaterial.setDepthWriteEnabled(False)
+        myMaterial.setSceneBlending(ogre.SBT_TRANSPARENT_ALPHA)
+        myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_AMBIENT | ogre.TVC_DIFFUSE)
+
+        myMaterial = ogre.MaterialManager.getSingleton().create("grenade","c")
         
 
     def displayDebug(self):
@@ -681,5 +694,5 @@ class Client(Application, Engine):
 if __name__ == "__main__":
     world = Client()
     import cProfile
-    cProfile.run('world.go()', 'profile.txt')
+    cProfile.run('world.go()', 'client-profile.txt')
     os._exit(0)

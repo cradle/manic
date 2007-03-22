@@ -460,13 +460,13 @@ class GrenadeObject(BulletObject):
             length = math.sqrt(direction[0]*direction[0] + direction[1]*direction[1])
             direction[0] /= length
             direction[1] /= length
-            velocity = random.randint(7,17)
+            velocity = random.randint(10,25)
             b = self._gameworld.addBullet(SHRAPNEL,
                   self._name + "s" + str(i), \
                   map((lambda a,b: a+b/5), self.explodePos, direction),
                   direction,
                   [velocity, velocity],
-                  5, #Damage
+                  8, #Damage
                   self._geometry.object._name)
             b.needToTellClient = False
             b.ownerName = self.ownerName
