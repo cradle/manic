@@ -1,6 +1,7 @@
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
-import cerealizer
+from twisted.spread import banana
+#import cerealizer
 import time
 import zlib
 
@@ -39,9 +40,9 @@ class Client():
         return self.messages.pop()
 
     def send(self, data):
-        #toSend = zlib.compress(banana.encode(data),4)
+        toSend = zlib.compress(banana.encode(data),4)
         #toSend = banana.encode(data)
-        toSend = zlib.compress(cerealizer.dumps(data), 4)
+        #toSend = zlib.compress(cerealizer.dumps(data), 4)
         self.transport.write(toSend, self.address)
         NetworkServer.debugSendPacketLength = len(toSend)
     

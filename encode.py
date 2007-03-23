@@ -3,8 +3,8 @@ from twisted.spread import banana
 from zlib import compress, decompress
 import random
 import time
-import cerealizer as cerealizer
-import Flatten
+#import cerealizer as cerealizer
+#import Flatten
 
 class timer:
     def __init__(self):

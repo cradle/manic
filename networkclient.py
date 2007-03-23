@@ -1,9 +1,9 @@
 # -*- coding: cp1252 -*-
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
+from twisted.spread import banana
 from collections import deque
 from encode import timer
-import cerealizer
 import zlib
 import time
 
@@ -49,10 +49,10 @@ class NetworkClient(DatagramProtocol):
         t = timer()
         self.debugReceivePacketLength = len(data)
         t.start()
-        message = cerealizer.loads(zlib.decompress(data))
-        t.stop()
-        #message = banana.decode(zlib.decompress(data))
+        message = banana.decode(zlib.decompress(data))
         #message = banana.decode(data)
+        #message = cerealizer.loads(zlib.decompress(data))
+        t.stop()
         if type(message[0]) == str and message[0] == "pong":
             for ping in self.pings:
                 if ping.number == message[1]:
