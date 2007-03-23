@@ -347,10 +347,6 @@ class BulletObject(SphereObject):
             self._body.setLinearVel((direction[0] * speedVariation * self.maxSpeed[0],
                                      direction[1] * speedVariation * self.maxSpeed[1],
                                      0))
-##            self._motor.setXParam(ode.ParamVel,  direction[0] * speedVariation * self.maxSpeed[0])
-##            self._motor.setXParam(ode.ParamFMax, ode.Infinity)
-##            self._motor.setYParam(ode.ParamVel,  direction[1] * speedVariation * self.maxSpeed[1])
-##            self._motor.setYParam(ode.ParamFMax, ode.Infinity)
             
         self.setDead(False)
         self.type = BULLET
@@ -371,16 +367,6 @@ class BulletObject(SphereObject):
 
     def setOwnerName(self, name):
         self.ownerName = name
-
-    def postStep(self):
-        pass;
-##        if not self.hasStepped:
-##            # Optimisation, bullet objects should be very light weight
-##            self.hasStepped = True
-##            
-##            SphereObject.postStep(self)
-##            self._motor.setXParam(ode.ParamFMax, 0)
-##            self._motor.setYParam(ode.ParamFMax, 0)
 
     def getAttributes(self):
         return [self.to2d(self._body.getPosition()),
@@ -406,6 +392,7 @@ class ShrapnelObject(BulletObject):
             BulletObject.hitObject(self, other, position)
 
     def frameEnded(self, time):
+        BulletObject.frameEnded(self, time)
         self.ricochetTime -= time
 
 class GrenadeObject(BulletObject):

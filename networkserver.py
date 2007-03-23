@@ -49,11 +49,11 @@ class Client():
 class NetworkServer(DatagramProtocol):
     debugSendPacketLength = 0
     
-    def __init__(self, connectedCallback):
+    def __init__(self, connectedCallback, port = 10001):
         self.clients = []
         self.reactor = reactor
         self.reactor.startRunning()
-        self.reactor.listenUDP(10001, self)
+        self.reactor.listenUDP(port, self)
         self.connectedCallback = connectedCallback
         self.debugSendPacketLength = 0
         self.debugReceivePacketLength = 0
@@ -68,7 +68,7 @@ class NetworkServer(DatagramProtocol):
         else:
             client = self.clients[self.clients.index(client)]
 
-        client.push(cerealizer.loads(zlib.decompress(data)))
+        client.push(banana.decode(zlib.decompress(data)))
 
     def update(self, time = 0):
         self.debugSendPacketLength = NetworkServer.debugSendPacketLength

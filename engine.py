@@ -57,7 +57,7 @@ class Engine:
         return BulletObject(self, name, direction, velocity, damage)
 
     def createShrapnelObject(self, name, direction, velocity, damage):
-        return BulletObject(self, name, direction, velocity, damage)
+        return ShrapnelObject(self, name, direction, velocity, damage)
 
     def createGrenadeObject(self, name, direction, velocity, damage):
         return GrenadeObject(self, name, direction, velocity, damage)
@@ -78,6 +78,8 @@ class Engine:
                 b = self.createBulletObject(name, direction, velocity, damage)
             elif t == GRENADE:
                 b = self.createGrenadeObject(name, direction, velocity, damage)
+            else:
+                print "BUG: Unknown object type", t
             b.setPosition(position)
             b.setOwnerName(owner)
             self.objects += [b]

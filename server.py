@@ -8,14 +8,14 @@ from objects import Person, StaticObject, DynamicObject, SphereObject
 class Server(Engine):
     def __init__(self):
         Engine.__init__(self)
-        self.network = networkserver.NetworkServer(self.clientConnected)
+        port = 10001
+        self.network = networkserver.NetworkServer(self.clientConnected, port)
         self.timeBetweenNetworkUpdates = 1.0/15.0
         self.timeUntilNextNetworkUpdate = 0.0
         self.clientNumber = 0
 	self.debugNetworkTime = 0.0
 	ip = "cradle.dyndns.org"
-	port = str(10001)
-	self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AV", "enter", "-".join([ip, port]))
+	self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AV", "enter", "-".join([ip, str(port)]))
 	self.chat.registerMessageListener(self.messageListener)
 	self.chat.setNickName("admin")
 	self.timeBetweenChatUpdates = 0.5
@@ -30,7 +30,7 @@ class Server(Engine):
         client.player = self.createPerson("p%i" % self.clientNumber)
         client.player.setPosition(self.spawnLocation())
         self.objects += [client.player]
-        self.chat.send("Client"+ client.player._name+ " connected")
+        self.chat.sendMessage(client.player._name+ " connected")
 
     def _createWorld(self):
         Engine._createWorld(self)
@@ -45,7 +45,7 @@ class Server(Engine):
 
         for client in self.network.clients:
             if client.timedOut():
-                self.chat.send("Client" + client.player._name + "timed out, disconnecting")
+                self.chat.sendMessage(client.player._name + " timed out, disconnecting")
                 client.player.close()
                 self.objects.remove(client.player)
                 self.network.clients.remove(client)

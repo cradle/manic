@@ -243,7 +243,7 @@ class ShrapnelObject(objects.ShrapnelObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
         objects.ShrapnelObject.__init__(self, gameworld, name, direction, velocity, damage)
         BulletObject.reset(self)
-
+        
     def frameEnded(self, time):
         objects.ShrapnelObject.frameEnded(self, time)
         BulletObject.frameEnded(self, time)

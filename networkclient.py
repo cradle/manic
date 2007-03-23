@@ -69,7 +69,7 @@ class NetworkClient(DatagramProtocol):
         print "No Server"
 
     def send(self, obj):
-        data = zlib.compress(cerealizer.dumps(obj),1)
+        data = zlib.compress(banana.encode(obj),1)
         self.transport.write(data)
         self.debugSendPacketLength = len(data)
 
