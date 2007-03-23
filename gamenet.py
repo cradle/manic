@@ -231,8 +231,6 @@ class NetCode:
 
         def setNickName(self, nick):
                 self.nickName = nick
-                print "Nickname Set, Logging in"
-                # Go!
                 self.reactor.connectTCP(self.server, 5222, self.factory)
                 self.reactor.startRunning()
 

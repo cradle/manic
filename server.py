@@ -2,6 +2,7 @@ from engine import Engine
 import networkserver
 import os
 import time, encode
+import gamenet
 from objects import Person, StaticObject, DynamicObject, SphereObject
 
 class Server(Engine):
@@ -11,15 +12,25 @@ class Server(Engine):
         self.timeBetweenNetworkUpdates = 1.0/15.0
         self.timeUntilNextNetworkUpdate = 0.0
         self.clientNumber = 0
-        self.debugNetworkTime = 0.0
+	self.debugNetworkTime = 0.0
+	ip = "cradle.dyndns.org"
+	port = str(10001)
+	self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AV", "enter", "-".join([ip, port]))
+	self.chat.registerMessageListener(self.messageListener)
+	self.chat.setNickName("admin")
+	self.timeBetweenChatUpdates = 0.5
+	self.timeUntilNextChatUpdate = 0.0
         print "Server started"
+
+    def messageListener(self, name, message):
+    	print name, ":", message
 
     def clientConnected(self, client):
         self.clientNumber += 1
         client.player = self.createPerson("p%i" % self.clientNumber)
         client.player.setPosition(self.spawnLocation())
         self.objects += [client.player]
-        print "Client", client.player._name, " connected"
+        self.chat.send("Client"+ client.player._name+ " connected")
 
     def _createWorld(self):
         Engine._createWorld(self)
@@ -34,7 +45,7 @@ class Server(Engine):
 
         for client in self.network.clients:
             if client.timedOut():
-                print "Client", client.player._name, "timed out, disconnecting"
+                self.chat.send("Client" + client.player._name + "timed out, disconnecting")
                 client.player.close()
                 self.objects.remove(client.player)
                 self.network.clients.remove(client)
