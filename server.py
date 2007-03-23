@@ -15,9 +15,9 @@ class Server(Engine):
         self.clientNumber = 0
 	self.debugNetworkTime = 0.0
 	ip = "cradle.dyndns.org"
-	self.chat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AV", "enter", "-".join([ip, str(port)]))
-	self.chat.registerMessageListener(self.messageListener)
-	self.chat.setNickName("admin")
+	self.serverChat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AV-admin", "enter", "-".join([ip, str(port)]))
+	self.serverChat.registerMessageListener(self.messageListener)
+	self.serverChat.setNickName("admin")
 	self.timeBetweenChatUpdates = 0.5
 	self.timeUntilNextChatUpdate = 0.0
         print "Server started"
@@ -30,7 +30,7 @@ class Server(Engine):
         client.player = self.createPerson("p%i" % self.clientNumber)
         client.player.setPosition(self.spawnLocation())
         self.objects += [client.player]
-        self.chat.sendMessage(client.player._name+ " connected")
+        self.serverChat.sendMessage(client.player._name+ " connected")
 
     def _createWorld(self):
         Engine._createWorld(self)
@@ -45,7 +45,7 @@ class Server(Engine):
 
         for client in self.network.clients:
             if client.timedOut():
-                self.chat.sendMessage(client.player._name + " timed out, disconnecting")
+                self.serverChat.sendMessage(client.player._name + " timed out, disconnecting")
                 client.player.close()
                 self.objects.remove(client.player)
                 self.network.clients.remove(client)

@@ -411,9 +411,6 @@ class GrenadeObject(BulletObject):
         if self.timeUntilArmed <= 0:
             self.explodePos = position
             BulletObject.hitObject(self, other, position)
-        else:
-            self.events += ["ricochet"]
-            print "Hit", other._name
 
     def getAttributes(self):
         return BulletObject.getAttributes(self) + [
@@ -426,12 +423,6 @@ class GrenadeObject(BulletObject):
         self.timeUntilArmed = attributes[2]
         self.timeUntilExploded = attributes[3]
         self.seed = attributes[4]
-    
-    def setDead(self, dead = True):
-        BulletObject.setDead(self, dead)
-        # TODO: Move to explode
-        if dead == True and not self.exploded:
-            self.events += ["explode"]
 
     def postStep(self):
         BulletObject.postStep(self)
@@ -633,7 +624,7 @@ class Person(SphereObject):
                 'accuracy':0.98,
                 'timeBetweenShots':0.0,
                 'damage':15,
-                'velocity':35.0,
+                'velocity':55.0,
                 'type':'single',
                 'ammoType':BULLET,
                 'zoom':35,

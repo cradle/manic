@@ -239,10 +239,18 @@ class BulletObject(objects.BulletObject, SphereObject):
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 
+    def hitObject(self, other, position):
+        objects.BulletObject.hitObject(self, other, position)
+        self._gameworld.sfx.play("BulletHit%i.wav" % random.randint(1,8), self._body.getPosition())
+
 class ShrapnelObject(objects.ShrapnelObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
         objects.ShrapnelObject.__init__(self, gameworld, name, direction, velocity, damage)
         BulletObject.reset(self)
+
+    def hitObject(self, other, position):
+        BulletObject.hitObject(self, other, position)
+        objects.ShrapnelObject.hitObject(self, other, position)
         
     def frameEnded(self, time):
         objects.ShrapnelObject.frameEnded(self, time)
@@ -278,6 +286,15 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         self._node.detachAllObjects()
         BulletObject.__del__(self)
         objects.GrenadeObject.__del__(self)
+
+    def explode(self):
+        objects.GrenadeObject.explode(self)
+        self._gameworld.sfx.play("GrenadeLauncherExplode.wav", self._body.getPosition())
+
+    def hitObject(self, other, position):
+        objects.GrenadeObject.hitObject(self, other, position)
+        if self.timeUntilArmed > 0:
+            self._gameworld.sfx.play("GrenadeLauncherBounce.wav", self._body.getPosition())
 
 class Person(objects.Person, SphereObject):
     def __init__(self, gameworld, name, camera = None):
@@ -319,6 +336,13 @@ class Person(objects.Person, SphereObject):
         self.sounds = {}
         for gun in self.guns.keys():
             self.sounds[gun] = self.soundManager.createSound(gun + "-" + name, gun + ".wav", False)
+            self.sounds[gun].setMaxDistance(150)
+            self.sounds[gun].setRolloffFactor(0.0025)
+            self.sounds[gun].setReferenceDistance(2)
+
+        self.sounds['Sniper'].setReferenceDistance(150)
+        self.sounds['Sniper'].setMaxDistance(200)
+        self.sounds['Sniper'].setPitch(0.75)
         
         self.reloadSound = self.soundManager.createSound("reload-" + name, "reload.wav", False)
         self.noAmmoSound = self.soundManager.createSound("noammo-" + name, "noammo.wav", False)
@@ -333,6 +357,9 @@ class Person(objects.Person, SphereObject):
         for num in range(1,5):
             self.hitSounds += [self.soundManager.createSound("BHP%i%s" % (num, self._name),
                                                              "BulletHitPlayer%i.wav" % num, False)]
+            self.hitSounds[-1].setMaxDistance(500)
+            self.hitSounds[-1].setRolloffFactor(0.25)
+            self.hitSounds[-1].setReferenceDistance(5)
 
         self.setDirection((1.0,0.0,0.0))
         self._camera = camera
@@ -505,6 +532,8 @@ class Person(objects.Person, SphereObject):
 class Player(Person):
     def __init__(self, gameworld, name, camera):
         super(Player, self).__init__(gameworld, name, camera)
+        
+        self._node.attachObject(self.soundManager.getListener())
 
         self.cursor = CEGUI.MouseCursor.getSingleton()
         
@@ -569,7 +598,9 @@ class Player(Person):
             camPosZ = (self._camera.getPosition()[2] + self.guns[self.gunName]['zoom'])/2
             
         self._camera.setPosition((camPosX,camPosY,camPosZ))
-        self.soundManager.getListener().setPosition((camPosX,camPosY,camPosZ))
+        #self.soundManager.getListener().setPosition(self._body.getPosition())
+        #self.soundManager.getListener().setDirection(self.getDirection())
+        #self.soundManager.getListener().setPosition((camPosX,camPosY,camPosZ))
 
         
         mx = mouse.d_x / rend.getWidth()
@@ -621,3 +652,27 @@ class Player(Person):
             direction = (1.0,0.0,0)
             
         return direction
+
+class SFX(object):
+    def __init__(self, soundManager):
+        self.soundNum = 0
+        self.soundManager = soundManager
+        self.sounds = []
+
+    def play(self, soundFile, position):
+        self.update()
+        s = self.soundManager.createSound("sfx%i" % self.soundNum, soundFile, False)
+        self.soundNum += 1
+        s.setPosition(position)
+        s.setMaxDistance(200)
+        s.setRolloffFactor(0.1)
+        s.setReferenceDistance(2.0)
+        s.play()
+        self.sounds.append(s)
+
+    def update(self):
+        for s in self.sounds[:]:
+            if s.isStopped():
+                self.soundManager.destroySound(s)
+                self.sounds.remove(s)
+    

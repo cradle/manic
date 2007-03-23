@@ -488,6 +488,8 @@ class Client(Application, Engine):
         
         self.soundManager  = OgreAL.SoundManager()
         self.soundManager.getListener().setDirection((0,25,75))
+
+        self.sfx = SFX(self.soundManager)
             
         ##
         ## Build a window with some text and formatting options via radio buttons etc
