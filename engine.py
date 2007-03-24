@@ -14,7 +14,7 @@ class Engine:
     NET_TIME_UNTIL_UPDATE = 2
     
     def __init__(self):
-        self.stepSize = 1.0/150.0
+        self.stepSize = 1.0/100.0
         self.timeUntilNextEngineUpdate = 0.0
         random.seed(time.time())
         self.debugStepTime = 1.0
@@ -159,8 +159,12 @@ class Engine:
             contact.setBounce(0.01)
             contact.setBounceVel(0.0)
             contact.setMu(1.7)
-        
-            for a,b,geom in [[o1,o2,geom2],[o2,o1,geom1]]:  
+
+            generateContact = True
+            
+            for a,b,geom in [[o1,o2,geom2],[o2,o1,geom1]]:
+                generateContact = generateContact and not \
+                                  (a.type == BULLET and b.type == STATIC)
                 a.hitObject(b, contact.getContactGeomParams()[0])
                 if a.type == GRENADE or a.type == BULLET:
                     contact.setBounce(1.0)
