@@ -32,9 +32,9 @@ class Engine:
     
     def _createWorld(self):
         self.world = ode.World()
-        #self.world.setQuickStepNumIterations(10)
+        self.world.setQuickStepNumIterations(5)
         self.world.setGravity((0,-9.81,0))
-        self.space = ode.Space(type=1)
+        self.space = ode.QuadTreeSpace((-10,-10,-10),(10,10,10),8)#ode.Space(type=1)
         self.contactgroup = ode.JointGroup()
         self.objects = []
         self.limboObjects = []
@@ -188,9 +188,10 @@ class Engine:
                 o2.isOnGround = True
             if normal[1] > 0.0: # normal.y points "up"
                 o1.isOnGround = True
-                    
-            joint = ode.ContactJoint(self.world, self.contactgroup, contact)
-            joint.attach(geom1.getBody(), geom2.getBody())
+
+            if generateContact:
+                joint = ode.ContactJoint(self.world, self.contactgroup, contact)
+                joint.attach(geom1.getBody(), geom2.getBody())
 
     def engineMessageListener(self, message):
         pass

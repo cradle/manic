@@ -329,7 +329,7 @@ class SphereObject(DynamicObject):
 class BulletObject(SphereObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 1.0, weight = 3.0):
         
-        self.size = 0.025
+        self.size = 0.01#0.025
         self.maxSpeed = velocity
         self.weight = weight
         self.damage = damage
@@ -347,7 +347,9 @@ class BulletObject(SphereObject):
             self._body.setLinearVel((direction[0] * speedVariation * self.maxSpeed[0],
                                      direction[1] * speedVariation * self.maxSpeed[1],
                                      0))
-            
+
+        del self._motor
+        
         self.setDead(False)
         self.type = BULLET
         self.hasSentToClients = False
@@ -364,6 +366,9 @@ class BulletObject(SphereObject):
 
     def hitObject(self, other, position):
         self.setDead()
+
+    def postStep(self):
+        pass
 
     def setOwnerName(self, name):
         self.ownerName = name
