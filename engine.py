@@ -172,10 +172,10 @@ class Engine:
                             if b.isDead():
                                 b.setSpawnPosition(self.spawnLocation())
                                 if a.ownerName == b._name:
-                                    self.messageListener(">",a.ownerName + " committed suicide")
+                                    self.engineMessageListener(a.ownerName + " committed suicide")
                                     self.addScore(a.ownerName, -1)
                                 else:
-                                    self.messageListener(">",a.ownerName + " killed " + b.ownerName)
+                                    self.engineMessageListener(a.ownerName + " killed " + b.ownerName)
                                     self.addScore(a.ownerName, 1)
                     
             # Assume that if collision normal is facing up we are 'on ground'
@@ -187,3 +187,6 @@ class Engine:
                     
             joint = ode.ContactJoint(self.world, self.contactgroup, contact)
             joint.attach(geom1.getBody(), geom2.getBody())
+
+    def engineMessageListener(self, message):
+        pass

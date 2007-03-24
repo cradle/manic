@@ -244,7 +244,7 @@ class BulletObject(objects.BulletObject, SphereObject):
         self._gameworld.sfx.play("BulletHit%i.wav" % random.randint(1,8),
                                  self._body.getPosition(),
                                  maxDistance = 500,
-                                 rolloffFactor = 0.75,
+                                 rolloffFactor = 1.5,
                                  refDistance = 5)
 
 class ShrapnelObject(objects.ShrapnelObject, BulletObject):
