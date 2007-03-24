@@ -256,9 +256,9 @@ class ShrapnelObject(objects.ShrapnelObject, BulletObject):
         BulletObject.reset(self)
 
     def hitObject(self, other, position):
-        if self.ricochetTime <= 0:
-            BulletObject.hitObject(self, other, position)
         objects.ShrapnelObject.hitObject(self, other, position)
+        if other.type != objects.STATIC or self.ricochetTime <= 0:
+            BulletObject.hitObject(self, other, position)
         
     def frameEnded(self, time):
         objects.ShrapnelObject.frameEnded(self, time)

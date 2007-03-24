@@ -406,7 +406,6 @@ class GrenadeObject(BulletObject):
         BulletObject.__init__(self, gameworld, name, direction, velocity, damage)
         self.timeUntilArmed = 0.25
         self.timeUntilExploded = self.timeUntilArmed + 2.5
-        self.lastFrameTime = 0.1
         self.type = GRENADE
         self.explodePos = None
         self.exploded = False
@@ -464,7 +463,6 @@ class GrenadeObject(BulletObject):
             self.setDead()
         
         BulletObject.frameEnded(self, time)
-        self.lastFrameTime = time
 
         
 class Person(SphereObject):

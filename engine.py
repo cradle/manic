@@ -159,12 +159,8 @@ class Engine:
             contact.setBounce(0.01)
             contact.setBounceVel(0.0)
             contact.setMu(1.7)
-
-            generateContact = True
             
             for a,b,geom in [[o1,o2,geom2],[o2,o1,geom1]]:
-                generateContact = generateContact and not \
-                                  (a.type == BULLET and b.type == STATIC)
                 a.hitObject(b, contact.getContactGeomParams()[0])
                 if a.type == GRENADE or a.type == BULLET:
                     contact.setBounce(1.0)
@@ -189,9 +185,8 @@ class Engine:
             if normal[1] > 0.0: # normal.y points "up"
                 o1.isOnGround = True
 
-            if generateContact:
-                joint = ode.ContactJoint(self.world, self.contactgroup, contact)
-                joint.attach(geom1.getBody(), geom2.getBody())
+            joint = ode.ContactJoint(self.world, self.contactgroup, contact)
+            joint.attach(geom1.getBody(), geom2.getBody())
 
     def engineMessageListener(self, message):
         pass
