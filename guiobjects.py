@@ -6,6 +6,9 @@ import CEGUI
 import OgreAL
 import math, random
 
+def add(a,b):
+    return a+b
+
 class StaticObject(objects.StaticObject):    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
         super(StaticObject, self).__init__(gameworld, name, size, geomFunc)   
@@ -569,9 +572,8 @@ class Player(Person):
             self.cursorLines.colour(self.cursorColour)
         self.cursorLines.end()
         self.cursorNode.attachObject(self.cursorLines)
-        
 
-        self.addLists = lambda a,b: a+b
+        self.addLists = add
         
     def setPosition(self, position):
         Person.setPosition(self, position)
