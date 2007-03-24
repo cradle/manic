@@ -242,9 +242,9 @@ class BulletObject(objects.BulletObject, SphereObject):
     def hitObject(self, other, position):
         objects.BulletObject.hitObject(self, other, position)
         self._gameworld.sfx.play("BulletHit%i.wav" % random.randint(1,8),
-                                 self._body.getPosition().
+                                 self._body.getPosition(),
                                  maxDistance = 500,
-                                 rolloffFactor = 0.25,
+                                 rolloffFactor = 0.75,
                                  refDistance = 5)
 
 class ShrapnelObject(objects.ShrapnelObject, BulletObject):
@@ -415,7 +415,7 @@ class Person(objects.Person, SphereObject):
             "BulletHitPlayer%i.wav" % random.randint(1,4),
             self._node.getPosition(),
             maxDistance = 500,
-            rolloffFactor = 0.25,
+            rolloffFactor = 1.0,
             refDistance = 5)
 
     def _shoot(self):
@@ -662,7 +662,6 @@ class SFX(object):
         print "Maximum Sound Sources:", self.maxSounds
 
     def play(self, soundFile, position, refDistance = 2.0, rolloffFactor = 0.1, maxDistance = 200.0):
-        print "Num Sounds:", len(self.sounds)
         self.update()
         if len(self.sounds) < self.maxSounds:
             s = self.soundManager.createSound("sfx%i" % self.soundNum, soundFile, False)

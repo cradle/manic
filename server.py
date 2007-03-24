@@ -16,13 +16,13 @@ class Server(Engine):
 	self.debugNetworkTime = 0.0
 	ip = "cradle.dyndns.org"
 	self.serverChat = gamenet.NetCode("cradle", "cradle.dyndns.org", "AV-admin", "enter", "-".join([ip, str(port)]))
-	self.serverChat.registerMessageListener(self.messageListener)
+	self.serverChat.registerMessageListener(self.messageListenerConsole)
 	self.serverChat.setNickName("admin")
 	self.timeBetweenChatUpdates = 0.5
 	self.timeUntilNextChatUpdate = 0.0
         print "Server started"
 
-    def messageListener(self, name, message):
+    def messageListenerConsole(self, name, message):
     	print "%s: %s> %s" % (time.asctime(), name, message)
 
     def clientConnected(self, client):
