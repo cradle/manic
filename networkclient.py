@@ -39,7 +39,7 @@ class NetworkClient(DatagramProtocol):
     def ping(self):
         if self.serverIP != None:
             self.pingNumber += 1
-            self.send(["ping", self.pingNumber, self.roundTripTime])
+            self.send(["p", self.pingNumber, int(self.roundTripTime*100)])
             self.pings.append(ping(self.pingNumber, time.time()))
         
     def startProtocol(self):
@@ -53,7 +53,7 @@ class NetworkClient(DatagramProtocol):
         #message = banana.decode(data)
         #message = cerealizer.loads(zlib.decompress(data))
         t.stop()
-        if type(message[0]) == str and message[0] == "pong":
+        if type(message[0]) == str and message[0] == "p":
             for ping in self.pings:
                 if ping.number == message[1]:
                     self.roundTripTime = time.time() - ping.time;

@@ -589,7 +589,7 @@ class Client(Application, Engine):
         text = ""
         players = [object for object in self.objects if object.type == objects.PERSON]
         for player in players:
-            text += " %s, %2i, %.2f\n" % \
+            text += " %s, %2i, %4i\n" % \
                     (player._name, player.score, player.ping)
 
         self._scoreWindow.setSize(CEGUI.UVector2(CEGUI.UDim(0.15,0), CEGUI.UDim(0.01 + 0.05*len(players),0)))

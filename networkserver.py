@@ -12,7 +12,7 @@ class Client():
         self.transport = transport
         self.lastMessageTime = time.time()
         self.timeout = 10.0
-        self.ping = 0.0
+        self.ping = 0
         self.player = None
         self.packetNumber = 0
 
@@ -23,8 +23,8 @@ class Client():
         return (time.time() - self.lastMessageTime) > self.timeout
 
     def push(self, data):
-        if type(data) == list and len(data) > 0 and data[0] == "ping":
-            self.send(["pong", data[1], time.time()])
+        if type(data) == list and len(data) > 0 and data[0] == "p":
+            self.send(["p", data[1], time.time()])
             self.ping = data[2]
             if self.player:
                 self.player.ping = data[2]

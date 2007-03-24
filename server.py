@@ -23,7 +23,7 @@ class Server(Engine):
         print "Server started"
 
     def messageListener(self, name, message):
-    	print name, ":", message
+    	print "%s: %s> %s" % (time.asctime(), name, message)
 
     def clientConnected(self, client):
         self.clientNumber += 1
