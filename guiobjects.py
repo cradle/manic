@@ -9,6 +9,13 @@ import math, random
 def add(a,b):
     return a+b
 
+#http://tomayko.com/weblog/2004/09/13/cleanest-python-find-in-list-function
+def find(f, seq):
+  """Return first item in sequence where f(item) == True."""
+  for item in seq:
+    if f(item): 
+      return item
+
 class StaticObject(objects.StaticObject):    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
         super(StaticObject, self).__init__(gameworld, name, size, geomFunc)   
@@ -244,7 +251,7 @@ class BulletObject(objects.BulletObject, SphereObject):
 
     def hitObject(self, other, position):
         objects.BulletObject.hitObject(self, other, position)
-        self._gameworld.sfx.play("BulletHit%i.wav" % random.randint(1,8),
+        self._gameworld.sfx.play("BulletHit.wav",# % random.randint(10,10),
                                  self._body.getPosition(),
                                  maxDistance = 500,
                                  rolloffFactor = 1.5,
@@ -660,25 +667,30 @@ class SFX(object):
     def __init__(self, soundManager):
         self.soundNum = 0
         self.soundManager = soundManager
-        self.sounds = []
+        self.sounds = {}
         self.maxSounds = soundManager.maxSources()
         print "Maximum Sound Sources:", self.maxSounds
 
     def play(self, soundFile, position, refDistance = 2.0, rolloffFactor = 0.1, maxDistance = 200.0):
-        self.update()
-        if len(self.sounds) < self.maxSounds:
-            s = self.soundManager.createSound("sfx%i" % self.soundNum, soundFile, False)
-            self.soundNum += 1
+        # You can't change the rolloff (etc) of a sound after playing it once
+        if soundFile in self.sounds:
+            s = self.sounds[soundFile]
+            s.stop()
             s.setPosition(position)
-            s.setMaxDistance(maxDistance)
-            s.setRolloffFactor(rolloffFactor)
-            s.setReferenceDistance(refDistance)
             s.play()
-            self.sounds.append(s)
-
-    def update(self):
-        for sf in self.sounds[:]:
-            if sf.isStopped():
-                self.soundManager.destroySound(sf)
-                self.sounds.remove(sf)
+        else:
+            if len(self.sounds) >= self.maxSounds: 
+                sound = find(lambda s: s[1].isStopped(), self.sounds.items())
+                if sound:
+                    self.soundManager.destroySound(self.sounds.pop(sound[0]))
+                
+            if len(self.sounds) < self.maxSounds:
+                s = self.soundManager.createSound("sfx%i" % self.soundNum, soundFile, False)
+                self.soundNum += 1
+                s.setPosition(position)
+                s.setMaxDistance(maxDistance)
+                s.setRolloffFactor(rolloffFactor)
+                s.setReferenceDistance(refDistance)
+                s.play()
+                self.sounds[soundFile] = s
     

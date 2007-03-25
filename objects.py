@@ -329,7 +329,7 @@ class SphereObject(DynamicObject):
 class BulletObject(SphereObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 1.0, weight = 3.0):
         
-        self.size = 0.01#0.025
+        self.size = 0.000001#0.01#0.025
         self.maxSpeed = velocity
         self.weight = weight
         self.damage = damage
@@ -391,6 +391,7 @@ class ShrapnelObject(BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
         BulletObject.__init__(self, gameworld, name, direction, velocity, damage, 1.0)
         self.ricochetTime = 0.15
+        self.needToTellClient = False
 
     def hitObject(self, other, position):
         if other.type != STATIC or self.ricochetTime <= 0:
@@ -448,9 +449,8 @@ class GrenadeObject(BulletObject):
                   map((lambda a,b: a+b/5), self.explodePos, direction),
                   direction,
                   [velocity, velocity],
-                  8, #Damage
+                  7, #Damage
                   self._geometry.object._name)
-            b.needToTellClient = False
             b.ownerName = self.ownerName
             
         self.exploded = True

@@ -34,7 +34,9 @@ class Engine:
         self.world = ode.World()
         self.world.setQuickStepNumIterations(5)
         self.world.setGravity((0,-9.81,0))
-        self.space = ode.QuadTreeSpace((-10,-10,-10),(10,10,10),8)#ode.Space(type=1)
+        self.space = ode.QuadTreeSpace((0,0,0),(1,1,0.1),8)
+        #self.space = ode.HashSpace()
+        #self.space.setLevels(1,20)
         self.contactgroup = ode.JointGroup()
         self.objects = []
         self.limboObjects = []
