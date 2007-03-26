@@ -17,7 +17,7 @@ def find(f, seq):
       return item
 
 class StaticObject(objects.StaticObject):    
-    def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.1, 0.1, 0.1), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
+    def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.5,0.5,0.5), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
         super(StaticObject, self).__init__(gameworld, name, size, geomFunc)   
 
         self._entity = gameworld.sceneManager.createEntity('e' + name, mesh)
@@ -283,7 +283,8 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
 
         self.light = gameworld.sceneManager.createLight("light" + name)
         self.light.setAttenuation(range = 200, constant = 0.0, linear = 0.0, quadratic = 0.01)
-        self.light.setDiffuseColour ((0.5,0.5,0.3))
+        self.light.setDiffuseColour ((1.0,1.0,0.5))
+        self.light.setSpecularColour((0.1,0.1,0.01))
         self.light.setType(ogre.Light.LT_POINT)
         self._node.attachObject(self.light)
 
@@ -323,23 +324,41 @@ class Person(objects.Person, SphereObject):
         
         # Entity
         self._entity = gameworld.sceneManager.createEntity('e' + name, 'ninja.mesh')
-        self._entity.setMaterialName(random.choice(["white-ninja",
-                                                    "grey-ninja",
-                                                    "green-ninja",
-                                                    "red-ninja",
-                                                    "blue-ninja",
-                                                    "yellow-ninja"]))
+        self._entity.setMaterialName("white-ninja")
+        colours = [[1,0,0,1],
+                   [0,1,0,1],
+                   [0,0,1,1],
+                   [1,1,0,1],
+                   [1,0,1,1],
+                   [0,1,1,1],
+                   [1,1,1,1]]
+        self.playerColour = random.choice(colours)
+        self.swordColour = random.choice(colours)
 
         # Scene -> Node
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.setScale(scale,scale,scale)
+        
+        body = self._entity.getSubEntity(0).getMaterial().clone("bodyskin-" + name)
+        self._entity.getSubEntity(0).setMaterialName("bodyskin-" + name)
+        body.setDiffuse([float(x)/150 for x in self.playerColour])
+        
+        sword = self._entity.getSubEntity(1).getMaterial().clone("swordskin-" + name)
+        self._entity.getSubEntity(1).setMaterialName("swordskin-" + name)
+        sword.setDiffuse([float(x)/50 for x in self.playerColour])
+
+
+        
+##        self._entity.getSubEntity(0).getMaterial().setAmbient((1.0,0.0,0.0,0.5))
+##        self._entity.getSubEntity(0).getMaterial().setSpecular((1.0,1.0,1.0,0.5))
         # Node -> Entity
         self._node.attachObject(self._entity)
 
         self.light = gameworld.sceneManager.createLight("light" + name)
-        #self.light.setDiffuseColour ((1.0,1.0,1.0))
         self.light.setType(ogre.Light.LT_POINT)
-        self.light.setAttenuation(range = 100, constant = 0.0, linear = 0.0, quadratic = 0.05)
+##        self.light.setSpecularColour(0.0001,0.0001,0.0001)
+        self.light.setDiffuseColour(1.0, 1.0, 1.0)
+        self.light.setAttenuation(range = 1000, constant = 0.0, linear = 0.0, quadratic = 0.025)
         self.light.setCastShadows(True)     
         #self._node.attachObject(self.light)
 

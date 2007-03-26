@@ -438,25 +438,22 @@ class Client(Application, Engine):
     
     def _createScene(self):
         Engine._createWorld(self)
-        self.sceneManager.setAmbientLight((0.0, 0.0, 0.0, 0.0))
+        self.sceneManager.setAmbientLight((0.01, 0.01, 0.01, 0.01))
         self.sceneManager.setShadowTechnique(ogre.SHADOWTYPE_STENCIL_ADDITIVE)
 
         light = self.sceneManager.createLight("sunlight")
         light.setType(ogre.Light.LT_DIRECTIONAL)   # or .type
-        light.setDirection((-0.4,-0.4,-1))
-        light.setDiffuseColour(0.1,0.1,0.1)
-
-##        entity = self.sceneManager.createEntity('bgE', 'game.mesh')
+        light.setDirection((0.4,-0.4,-1))
+        light.setDiffuseColour(0.85,0.85,0.85)
+        
+        entity = self.sceneManager.createEntity('bgE', 'Scene.mesh')
 ##        entity.setNormaliseNormals(True)
-##        # Scene -> Node
-##        node = self.sceneManager.rootSceneNode.createChildSceneNode('bgN')
-##        node.setScale(scale*self._size[0],scale*self._size[1],scale*self._size[2])
-##        # Node -> Entity
-##        node.attachObject(entity)
-##        node.setPosition(0,0,0)
+        node = self.sceneManager.rootSceneNode.createChildSceneNode('bgN')
+        node.attachObject(entity)
+##        node.setPosition(0,0,)
+        node.setVisible(True)
 ##        node.setDirection(0,0,-1)
-##        node.setScale(0.5,0.5,0.5)
-##        node.setVisible(True)
+##        node.setScale(0.05,0.05,0.05)
 ##        tempWorld = OgreOde.World(self.sceneManager)
 ##        self.createStaticTriangleMesh(entity, self.space)
 ##        geom = self.createStaticTriangleMesh(entity, self.space) 
