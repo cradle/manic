@@ -241,7 +241,8 @@ if __name__ == "__main__":
 	user = raw_input("Login (user@host.com):")
 	u = jid.JID(user + "/AssaultVector")
 	password = raw_input("Password:")
-        n = NetCode(u.user, u.host, u.resource, password)
+        n = NetCode(u.user, u.host, u.resource, password, 'av-cradle.dyndns.org-10001')
+	n.setNickName(u.user)
         n.registerMessageListener(aMethod)
 	i = ""
 	while i != "exit":
@@ -252,10 +253,6 @@ if __name__ == "__main__":
 		if len(cmd) > 0:
 			if cmd[0] == "send" and len(cmd) > 1:
 				n.sendMessage(cmd[1])
-			if cmd[0] == "team" and len(cmd) > 1:
-				n.sendGroupMessage(cmd[1],"assaultvector-team1")
-			if cmd[0] == "all" and len(cmd) > 1:
-				n.sendGroupMessage(cmd[1],"assaultvector")
 			if cmd[0] == "run":
 				n.reactor.run()
 

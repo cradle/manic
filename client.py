@@ -165,6 +165,7 @@ class GameKeyListener(OIS.KeyListener):
         chat = CEGUI.WindowManager.getSingleton().getWindow("TextWindow")
         editBox = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
 
+
         if arg.key == OIS.KC_RETURN and editBox.hasInputFocus():
             self.game.sendText()
             editBox.deactivate() # Remove focus from editbox
