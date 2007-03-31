@@ -21,6 +21,8 @@ class StaticObject(objects.StaticObject):
         super(StaticObject, self).__init__(gameworld, name, size, geomFunc)   
 
         self._entity = gameworld.sceneManager.createEntity('e' + name, mesh)
+        self._entity.setCastShadows(True)
+        self._entity.setNormaliseNormals(True)
         self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
         self._node.attachObject(self._entity)
         
@@ -286,6 +288,7 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         self.light.setDiffuseColour ((1.0,1.0,0.5))
         self.light.setSpecularColour((0.1,0.1,0.01))
         self.light.setType(ogre.Light.LT_POINT)
+        self.light.setCastShadows(True)
         self._node.attachObject(self.light)
 
     def frameEnded(self, time):
@@ -325,6 +328,7 @@ class Person(objects.Person, SphereObject):
         # Entity
         self._entity = gameworld.sceneManager.createEntity('e' + name, 'ninja.mesh')
         self._entity.setMaterialName("white-ninja")
+        self._entity.setNormaliseNormals(True)
         colours = [[1,0,0,1],
                    [0,1,0,1],
                    [0,0,1,1],
@@ -341,11 +345,11 @@ class Person(objects.Person, SphereObject):
         
         body = self._entity.getSubEntity(0).getMaterial().clone("bodyskin-" + name)
         self._entity.getSubEntity(0).setMaterialName("bodyskin-" + name)
-        body.setDiffuse([float(x)/150 for x in self.playerColour])
+        body.setDiffuse(self.playerColour)
         
         sword = self._entity.getSubEntity(1).getMaterial().clone("swordskin-" + name)
         self._entity.getSubEntity(1).setMaterialName("swordskin-" + name)
-        sword.setDiffuse([float(x)/50 for x in self.playerColour])
+        sword.setDiffuse(self.swordColour)
 
 
         
