@@ -540,7 +540,7 @@ class Client(Application, Engine):
 
         sheet = winMgr.getWindow("Background")
         #self.GUIsystem.setGUISheet(winMgr.getWindow("Menu"))
-        #self.GUIsystem.setGUISheet(sheet)
+        self.GUIsystem.setGUISheet(sheet)
         
         font = CEGUI.FontManager.getSingleton().createFont("tuffy.font")
             

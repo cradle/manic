@@ -15,7 +15,7 @@ class MenuItem(object):
         self.node = sceneManager.rootSceneNode.createChildSceneNode('option-' + str(self.itemNumber))
         self.entity = sceneManager.createEntity("option-e-" + str(self.itemNumber),"option.mesh")
         self.node.attachObject(self.entity)
-        self.position = (0, 10-self.itemNumber*self.height, -5)
+        self.position = (0, 12.5-self.itemNumber*self.height, -5)
         self.node.setPosition(self.position)
 
     def update(self, x, y, frameTime):
@@ -28,7 +28,7 @@ class MenuItem(object):
 class Menu(object):
     def __init__(self, sceneManager):
         self.items = []
-        for option in ["Start", "Quit", "Options", "1", "2", "3","4"]:
+        for option in ["Start", "Quit", "Options", "1", "2", "3","4","5"]:
             self.items.append(MenuItem(option, sceneManager))
 
     def update(self, x,y, frameTime):
