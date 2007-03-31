@@ -81,14 +81,14 @@ material LogoA
 		pass
 		{
 			shading gouraud
-			ambient 0.500000 0.000000 0.000000 1.000000
-			diffuse 1.000000 0.000000 0.000000 1.000000
-			specular 1.500000 1.500000 1.500000 1.000000 12.500000
-			emissive 0.000000 0.000000 0.000000 1.000000
+			ambient 0.000000 0.000000 0.500000 1.000000
+			diffuse 1.000000 1.000000 1.00000 1.000000
+			specular 1.500000 1.500000 1.500000 1.500000 12.500000
+			emissive 0.850000 0.8500000 0.900000 1.000000
 
 			texture_unit
 			{
-				texture test.png
+				texture Jamesmap3.png
 				env_map planar
 			}
 		}
@@ -103,13 +103,13 @@ material LogoV
 		{
 			shading gouraud
 			ambient 0.000000 0.000000 0.500000 1.000000
-			diffuse 0.000000 0.000000 1.000000 1.000000
-			specular 1.500000 1.500000 1.500000 1.000000 12.500000
-			emissive 0.000000 0.000000 0.000000 1.000000
+			diffuse 0.800000 0.000000 1.00000 1.000000
+			specular 1.500000 1.500000 1.500000 1.500000 12.500000
+			emissive 0.000000 0.000000 1.000000 1.000000
 
 			texture_unit
 			{
-				texture test.png
+				texture Jamesmap3.png
 				env_map planar
 			}
 		}
