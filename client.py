@@ -165,6 +165,15 @@ class GameKeyListener(OIS.KeyListener):
         chat = CEGUI.WindowManager.getSingleton().getWindow("TextWindow")
         editBox = CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1")
 
+        if arg.key == OIS.KC_F1:
+            print "Technique:", self.game.sceneManager.getShadowTechnique()
+            if self.game.sceneManager.getShadowTechnique() == ogre.SHADOWTYPE_STENCIL_ADDITIVE:
+                self.game.sceneManager.setShadowTechnique(ogre.SHADOWTYPE_NONE)
+            else:
+                self.game.sceneManager.setShadowTechnique(ogre.SHADOWTYPE_STENCIL_ADDITIVE)
+
+        if arg.key == OIS.KC_F2:
+            self.game.sceneManager.setShowDebugShadows(not self.game.sceneManager.getShowDebugShadows())
 
         if arg.key == OIS.KC_RETURN and editBox.hasInputFocus():
             self.game.sendText()
@@ -338,6 +347,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         return True
 
     def frameEnded(self, frameEvent):
+        ogre.WindowEventUtilities.messagePump()
         keepGoing = True
         curTime = time.time()
         frameTime = (curTime - self.lastUpdate)
@@ -436,22 +446,52 @@ class Client(Application, Engine):
         del vertdata
         del facedata
         return geom
+
+    def createLogo(self):
+        logoa = self.sceneManager.rootSceneNode.createChildSceneNode('logo-a')
+        elogoa = self.sceneManager.createEntity("m-logo-a","logo-a.mesh")
+        logoa.attachObject(elogoa)
+        
+        logov = self.sceneManager.rootSceneNode.createChildSceneNode('logo-v')
+        elogov = self.sceneManager.createEntity("m-logo-v","logo-v.mesh")
+        logoa.attachObject(elogov)
+
+        logoPos = (0, 25, -35)
+        logoa.setPosition(logoPos)
+        logov.setPosition(logoPos)
+        
+        logoScale = (5,5,5)
+        logoa.setScale(logoScale)
+        elogoa.setNormaliseNormals(True)
+        logov.setScale(logoScale)
+        elogov.setNormaliseNormals(True)
+        self.logoa = logoa
+        self.logov = logov
+
+    def updateLogo(self, frameTime):
+        rotateSpeed = 10
+        self.logoa.yaw(rotateSpeed*frameTime)
+        self.logov.yaw(rotateSpeed*frameTime)
     
     def _createScene(self):
         Engine._createWorld(self)
         self.sceneManager.setAmbientLight((0.01, 0.01, 0.01, 0.01))
-        self.sceneManager.setShadowTechnique(ogre.SHADOWTYPE_STENCIL_ADDITIVE)
+        self.sceneManager.setShadowTechnique(ogre.SHADOWTYPE_NONE)
+        self.sceneManager.setShadowColour((0.5, 0.5, 0.5))
+        self.sceneManager.setShadowTextureSize(1024)
+        self.sceneManager.setShadowTextureCount(2)
 
         light = self.sceneManager.createLight("sunlight")
         light.setType(ogre.Light.LT_DIRECTIONAL)   # or .type
         light.setDirection((0.4,-0.4,-1))
         light.setDiffuseColour(0.85,0.85,0.85)
+        #light.setCastShadows(True)
         
         entity = self.sceneManager.createEntity('bgE', 'Scene.mesh')
+        #entity.setCastShadows(False)
 ##        entity.setNormaliseNormals(True)
         node = self.sceneManager.rootSceneNode.createChildSceneNode('bgN')
         node.attachObject(entity)
-##        node.setPosition(0,0,)
         node.setVisible(True)
 ##        node.setDirection(0,0,-1)
 ##        node.setScale(0.05,0.05,0.05)
@@ -460,6 +500,13 @@ class Client(Application, Engine):
 ##        geom = self.createStaticTriangleMesh(entity, self.space) 
 ##        print type(geom)
 
+        self.createLogo()
+
+        # Setup Audio 
+        self.soundManager  = OgreAL.SoundManager()
+        self.soundManager.getListener().setDirection((0,25,75))
+        self.sfx = SFX(self.soundManager)
+        
         ## setup GUI system
         self.GUIRenderer = CEGUI.OgreCEGUIRenderer(self.renderWindow, 
             ogre.RENDER_QUEUE_OVERLAY, False, 3000, self.sceneManager) 
@@ -471,77 +518,27 @@ class Client(Application, Engine):
 
         winMgr = CEGUI.WindowManager.getSingleton()
         ## load scheme and set up defaults
-        CEGUI.SchemeManager.getSingleton().loadScheme("TaharezLook.scheme") 
+        CEGUI.SchemeManager.getSingleton().loadScheme("TaharezLook.scheme")
+        
         self.GUIsystem.setDefaultMouseCursor("TaharezLook",  "MouseArrow")
         CEGUI.MouseCursor.getSingleton().setVisible(False)
+
+        CEGUI.ImagesetManager.getSingleton().createImageset("menu.imageset")
+        
+        winMgr.loadWindowLayout("menu.layout")
+        
+        winMgr.loadWindowLayout("hud.layout")
+
+        sheet = winMgr.getWindow("Background")
+        #self.GUIsystem.setGUISheet(winMgr.getWindow("Menu"))
+        #self.GUIsystem.setGUISheet(sheet)
+        
         font = CEGUI.FontManager.getSingleton().createFont("tuffy.font")
-        background = winMgr.createWindow("TaharezLook/StaticImage", "background_wnd")
-        background.setProperty("FrameEnabled", "false")
-        background.setProperty("BackgroundEnabled", "false")
-        ## install this as the root GUI sheet
-        self.GUIsystem.setGUISheet(background)
-        sheet = winMgr.createWindow("DefaultWindow", "root_wnd")
-        ## attach this to the 'real' root
-        background.addChildWindow(sheet)
-        
-        self.soundManager  = OgreAL.SoundManager()
-        self.soundManager.getListener().setDirection((0,25,75))
-
-        self.sfx = SFX(self.soundManager)
             
-        ##
-        ## Build a window with some text and formatting options via radio buttons etc
-        ##
-        textwnd = winMgr.createWindow("TaharezLook/FrameWindow", "TextWindow")
-        sheet.addChildWindow(textwnd)
-        textwnd.setPosition(CEGUI.UVector2(CEGUI.UDim(0.2, 0), CEGUI.UDim(0.8, 0)))
-        textwnd.setSize(CEGUI.UVector2(cegui_reldim(0.55), cegui_reldim( 0.2)))
-        textwnd.setCloseButtonEnabled(False)
-        textwnd.setText("Chat:'t', Team chat:'y', Send:'Enter', Cancel:'ESC', Hide:'F12')")
-        textwnd.setEnabled(False)
-        textwnd.setAlpha(0.3)
-        
-        st = winMgr.createWindow("TaharezLook/StaticText", "TextWindow/Static")
-        st.setProperty("HorzFormatting","WordWrapLeftAligned")
-        st.setProperty("VertFormatting", "BottomAligned")
-        textwnd.addChildWindow(st)
-        st.setPosition(CEGUI.UVector2(CEGUI.UDim(0.0,5.0), CEGUI.UDim(0.0,5.0)))
-        st.setSize(CEGUI.UVector2(CEGUI.UDim(1.0,-10.0), CEGUI.UDim(1.0,-30.0)))
-        
-        ## Edit box for text entry
-        eb = winMgr.createWindow("TaharezLook/Editbox", "TextWindow/Editbox1")
-        textwnd.addChildWindow(eb)
-        eb.setPosition(CEGUI.UVector2(cegui_reldim(0.0), CEGUI.UDim(1.0,-30.0)))
-        eb.setMaxSize(CEGUI.UVector2(cegui_reldim(1.0), CEGUI.UDim(0.0,30.0)))
-        eb.setSize(CEGUI.UVector2(cegui_reldim(1.0), CEGUI.UDim(0.0,30.0)))
-        ## subscribe a handler to listen for when the text changes
-
-        winMgr.getWindow("TextWindow/Editbox1").setText("")
-        #eb.subscribeEvent(CEGUI.Window.EventKeyDown, self.blah,"")
-
-        scores = winMgr.createWindow("TaharezLook/StaticText", "ScoreWindow")
-        scores.setPosition(CEGUI.UVector2(CEGUI.UDim(0,5), CEGUI.UDim(0,5)))
-        scores.setSize(CEGUI.UVector2(CEGUI.UDim(0,100), CEGUI.UDim(0,1)))
-        scores.setProperty("HorzFormatting","WordWrapLefteAligned")
-        scores.setProperty("VertFormatting", "TopAligned")
-        self._scoreWindow = scores
-        sheet.addChildWindow(scores)
-
-        debug = winMgr.createWindow("TaharezLook/StaticText", "DebugWindow")
-        debug.setPosition(CEGUI.UVector2(CEGUI.UDim(0.8,0), CEGUI.UDim(0.01,0)))
-        debug.setSize(CEGUI.UVector2(CEGUI.UDim(0.18,0), CEGUI.UDim(0.25,0)))
-        debug.setProperty("HorzFormatting","WordWrapLefteAligned")
-        debug.setProperty("VertFormatting", "TopAligned")
-        self._debugWindow = debug
-        sheet.addChildWindow(debug)
-
-        vitals = winMgr.createWindow("TaharezLook/StaticText", "VitalsWindow")
-        vitals.setPosition(CEGUI.UVector2(CEGUI.UDim(0.8,0), CEGUI.UDim(0.8,0)))
-        vitals.setSize(CEGUI.UVector2(CEGUI.UDim(0.2,0), CEGUI.UDim(0.2,0)))
-        vitals.setProperty("HorzFormatting","WordWrapLefteAligned")
-        vitals.setProperty("VertFormatting", "TopAligned")
-        self._vitalsWindow = vitals
-        sheet.addChildWindow(vitals)
+        textwnd = winMgr.getWindow("TextWindow")
+        self._scoreWindow = winMgr.getWindow("ScoreWindow")
+        self._debugWindow = winMgr.getWindow("DebugWindow")
+        self._vitalsWindow = winMgr.getWindow("VitalsWindow")
 
         # Materials
         myMaterial = ogre.MaterialManager.getSingleton().create("bullets","a")
@@ -608,7 +605,9 @@ class Client(Application, Engine):
     
     def frameEnded(self, frameTime, keyboard,  mouse):
         t = timer()
-            
+
+        self.updateLogo(frameTime)
+        
         Engine.frameEnded(self, frameTime)
         self.displayDebug()
 
