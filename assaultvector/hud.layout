@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<GUILayout >
+    <Window Type="DefaultWindow" Name="Background" >
+        <Property Name="InheritsAlpha" Value="False" />
+        <Property Name="UnifiedMaxSize" Value="{{1,0},{1,0}}" />
+        <Property Name="UnifiedAreaRect" Value="{{0,0},{0,0},{1,0},{1,0}}" />
+        <Window Type="TaharezLook/FrameWindow" Name="TextWindow" >
+            <Property Name="Text" Value="Chat:&apos;t&apos;, Team chat:&apos;y&apos;, Send:&apos;Enter&apos;, Cancel:&apos;ESC&apos;, Hide:&apos;F12&apos;" />
+            <Property Name="Alpha" Value="0.3" />
+            <Property Name="TitlebarFont" Value="Tuffy" />
+            <Property Name="UnifiedMaxSize" Value="{{1,0},{1,0}}" />
+            <Property Name="TitlebarEnabled" Value="True" />
+            <Property Name="UnifiedAreaRect" Value="{{0.0109374,0},{0.791667,0},{0.764064,0},{0.991667,0}}" />
+            <Property Name="CloseButtonEnabled" Value="False" />
+            <Window Type="TaharezLook/StaticText" Name="TextWindow/Static" >
+                <Property Name="HorzFormatting" Value="WordWrapLeftAligned" />
+                <Property Name="UnifiedMaxSize" Value="{{1,0},{1,0}}" />
+                <Property Name="VertFormatting" Value="BottomAligned" />
+                <Property Name="UnifiedAreaRect" Value="{{0,0},{0,0},{1,0},{0.8,0}}" />
+            </Window>
+            <Window Type="TaharezLook/Editbox" Name="TextWindow/Editbox1" >
+                <Property Name="MaxTextLength" Value="1073741823" />
+                <Property Name="UnifiedMaxSize" Value="{{1,0},{1,0}}" />
+                <Property Name="UnifiedAreaRect" Value="{{0,0},{0.8,0},{1,0},{1,0}}" />
+            </Window>
+        </Window>
+        <Window Type="TaharezLook/StaticText" Name="ScoreWindow" >
+            <Property Name="HorzFormatting" Value="WordWrapLeftAligned" />
+            <Property Name="UnifiedMaxSize" Value="{{1,0},{1,0}}" />
+            <Property Name="VertFormatting" Value="TopAligned" />
+            <Property Name="UnifiedAreaRect" Value="{{0.0021875,0},{0.00375,0},{0.185,0},{0.0725001,0}}" />
+        </Window>
+        <Window Type="TaharezLook/StaticText" Name="DebugWindow" >
+            <Property Name="HorzFormatting" Value="WordWrapLeftAligned" />
+            <Property Name="UnifiedMaxSize" Value="{{1,0},{1,0}}" />
+            <Property Name="VertFormatting" Value="TopAligned" />
+            <Property Name="UnifiedAreaRect" Value="{{0.81875,0},{0.00375,0},{0.99875,0},{0.25375,0}}" />
+        </Window>
+        <Window Type="TaharezLook/StaticText" Name="VitalsWindow" >
+            <Property Name="HorzFormatting" Value="WordWrapLeftAligned" />
+            <Property Name="UnifiedMaxSize" Value="{{1,0},{1,0}}" />
+            <Property Name="VertFormatting" Value="TopAligned" />
+            <Property Name="UnifiedAreaRect" Value="{{0.775,0},{0.804167,0},{0.990625,0},{0.991666,0}}" />
+        </Window>
+    </Window>
+</GUILayout>

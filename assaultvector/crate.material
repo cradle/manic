@@ -1,0 +1,15 @@
+material Material.001
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			shading flat
+			ambient 0.145861 0.145861 0.145861 1.000000
+			diffuse 0.233378 0.233378 0.233378 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}

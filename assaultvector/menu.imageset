@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Imageset Name="Menu" Imagefile="logo.png" >
+	<Image Name="Logo" XPos="0" YPos="0" Width="1220" Height="662" />
+</Imageset>
+

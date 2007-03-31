@@ -1,0 +1,108 @@
+material Material.003
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			shading gouraud
+			ambient 0.090721 0.000000 0.358874 1.000000
+			diffuse 0.145154 0.000000 0.574198 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+material Material.002
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			shading gouraud
+			ambient 0.500000 0.000000 0.000000 1.000000
+			diffuse 0.800000 0.000000 0.000000 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+material Material.004
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			shading gouraud
+			ambient 0.189039 0.500000 0.000000 1.000000
+			diffuse 0.302463 0.800000 0.000000 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+material Material.007
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			shading gouraud
+			ambient 0.500000 0.500000 0.500000 1.000000
+			diffuse 0.800000 0.800000 0.800000 1.000000
+			specular 0.488628 0.154532 0.154532 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+material Material.006
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			shading gouraud
+			ambient 0.466256 0.026459 0.026459 1.000000
+			diffuse 0.746010 0.042335 0.042335 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+material LogoA
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			shading gouraud
+			ambient 0.500000 0.000000 0.000000 1.000000
+			diffuse 1.000000 0.000000 0.000000 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+material LogoV
+{
+	receive_shadows on
+	technique
+	{
+		pass
+		{
+			shading gouraud
+			ambient 0.000000 0.000000 0.500000 1.000000
+			diffuse 0.000000 0.000000 1.000000 1.000000
+			specular 0.500000 0.500000 0.500000 1.000000 12.500000
+			emissive 0.000000 0.000000 0.000000 1.000000
+		}
+	}
+}
+
+
+
