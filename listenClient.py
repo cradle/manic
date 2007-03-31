@@ -24,11 +24,7 @@ class ListenClient(Client, Server):
         
     def frameEnded(self, frameTime, keyboard, mouse):            
         Server.frameEnded(self, frameTime)
-        self.updateChat(frameTime)
-        self.updateLogo(frameTime)
-        self.displayScores()
-        self.displayVitals()
-        self.displayDebug()
+        self.updateGUI(frameTime)
         self.player.inputPresses(self.player.input(keyboard, mouse))
         return True # Keep going
         

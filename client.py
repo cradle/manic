@@ -243,8 +243,7 @@ class GameMouseListener(OIS.MouseListener):
         self.game.camera.setDirection(d)
         CEGUI.System.getSingleton().injectMousePosition( \
             ((d.x + maxMouseLook)/(maxMouseLook*2))*arg.get_state().width, \
-            ((1.0 - ((d.y + maxMouseLook))/(maxMouseLook*2)))*arg.get_state().height )
-        
+            ((1.0 - ((d.y + maxMouseLook))/(maxMouseLook*2)))*arg.get_state().height )  
         
     def mousePressed(  self, arg, id ):
         pass
@@ -468,6 +467,15 @@ class Client(Application, Engine):
         self.logoa = logoa
         self.logov = logov
 
+    def createMenu(self):
+        from menu import Menu
+        self.menu = Menu(self.sceneManager)
+
+    def updateMenu(self, frameTime):
+        x = CEGUI.MouseCursor.getSingleton().getPosition().d_x
+        y = CEGUI.MouseCursor.getSingleton().getPosition().d_y
+        self.menu.update(x, y, frameTime)
+
     def updateLogo(self, frameTime):
         rotateSpeed = 10
         self.logoa.yaw(rotateSpeed*frameTime)
@@ -501,6 +509,7 @@ class Client(Application, Engine):
 ##        print type(geom)
 
         self.createLogo()
+        self.createMenu()
 
         # Setup Audio 
         self.soundManager  = OgreAL.SoundManager()
@@ -602,14 +611,20 @@ class Client(Application, Engine):
         if self.timeUntilNextChatUpdate <= 0.0:
             self.chat.update()
             self.timeUntilNextChatUpdate = self.timeBetweenChatUpdates
+
+    def updateGUI(self, frameTime):
+        self.updateLogo(frameTime)
+        self.updateMenu(frameTime)
+        self.displayDebug()
+        self.displayScores()
+        self.displayVitals()
     
     def frameEnded(self, frameTime, keyboard,  mouse):
         t = timer()
 
-        self.updateLogo(frameTime)
+        self.updateGUI(frameTime)
         
         Engine.frameEnded(self, frameTime)
-        self.displayDebug()
 
         t.start()
         self.updateChat(frameTime)
@@ -628,10 +643,6 @@ class Client(Application, Engine):
             u.start()
             self.network.update(frameTime)
             u.stop()
-            #if ("%0.6f" % u.time())  != "0.0000":
-            #    print "%0.6f" % u.time() 
-            self.displayScores()
-            self.displayVitals()
 
             for message in self.network._messages:
                 if message[1] > self.lastServerUpdate:
