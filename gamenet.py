@@ -4,16 +4,17 @@ from twisted.names.srvconnect import SRVConnector
 from twisted.internet import reactor
 import time
 
-class XMPPClientConnector(SRVConnector):
-    def __init__(self, reactor, domain, factory):        
-	SRVConnector.__init__(self, reactor, 'xmpp-client', domain, factory)
-
-    def pickServer(self):
-        host, port = SRVConnector.pickServer(self)
-        if not self.servers and not self.orderedServers:
-		# no SRV record, fall back..             
-		port = 5222
-        return host, port
+### (used for gmail accounts)
+##class XMPPClientConnector(SRVConnector):
+##    def __init__(self, reactor, domain, factory):        
+##	SRVConnector.__init__(self, reactor, 'xmpp-client', domain, factory)
+##
+##    def pickServer(self):
+##        host, port = SRVConnector.pickServer(self)
+##        if not self.servers and not self.orderedServers:
+##		# no SRV record, fall back..             
+##		port = 5222
+##        return host, port
 
 class NetCode:
         def __init__(self, name, server, resource, password, chatroom, updateInterval = 0.1):
