@@ -346,7 +346,6 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         return True
 
     def frameEnded(self, frameEvent):
-        ogre.WindowEventUtilities.messagePump()
         keepGoing = True
         curTime = time.time()
         frameTime = (curTime - self.lastUpdate)

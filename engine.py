@@ -94,7 +94,7 @@ class Engine:
         timer.start()
         self.timeUntilNextEngineUpdate -= frameTime
         self.step()     
-        self.debugFrameTime = self.timeUntilNextEngineUpdate
+        self.debugFrameTime = frameTime
 
         for object in self.objects:
             object.frameEnded(frameTime)
