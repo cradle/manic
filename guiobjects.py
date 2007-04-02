@@ -190,12 +190,17 @@ class BulletObject(objects.BulletObject, SphereObject):
 
     def setPosition(self, position):
         SphereObject.setPosition(self, position)
-        self._updateDisplay()
-        if not self.hasTrail:
+        self.createTrail()
+
+    def setAttributes(self, attributes):
+        objects.BulletObject.setAttributes(self, attributes)
+        self.createTrail()
+
+    def createTrail(self):
+        if not self.hasTrail:            
             self.hasTrail = True
+            self._updateDisplay()
             self.trail.addNode(self._node)
-            self._updateDisplay()
-            self._updateDisplay()
             self._updateDisplay()
 
     def close(self):
@@ -265,6 +270,10 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         self.light.setVisible(False)
         BulletObject.close(self)
         objects.GrenadeObject.close(self)
+
+    def setAttributes(self, attributes):
+        objects.GrenadeObject.setAttributes(self, attributes)
+        self.createTrail()
         
     def __del__(self):
         self._node.detachAllObjects()
