@@ -10,7 +10,11 @@ setup(
         {
             "script" : "server.py",
             "icon_resources" : [(1, "av.ico")]
-            },
+            }
+        ]
+    )
+setup(
+    windows=[
         {
             "script" : "listenClient.py",
             "icon_resources" : [(1, "av.ico")]
