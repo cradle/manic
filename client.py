@@ -1,9 +1,9 @@
-import ode, math, os, time
-import Ogre as ogre
-import CEGUI as CEGUI
-import OgreAL
-import OgreOde
-import OIS
+import math, os, time
+import ogre.renderer.OGRE as ogre
+import ogre.gui.CEGUI as CEGUI
+import ogre.sound.OgreAL as OgreAL
+import ode
+import ogre.io.OIS as OIS
 from engine import Engine
 from guiobjects import *
 import objects
@@ -222,8 +222,8 @@ class GameMouseListener(OIS.MouseListener):
         OIS.MouseListener.__init__( self)
 
     def mouseMoved( self, arg ):
-        self.game.camera.yaw(ogre.Radian(- arg.get_state().X.rel * 0.06))
-        self.game.camera.pitch(ogre.Radian(- arg.get_state().Y.rel * 0.11))
+        self.game.camera.yaw(- arg.get_state().X.rel * 0.0012)
+        self.game.camera.pitch(- arg.get_state().Y.rel * 0.0022)
         d = self.game.camera.getDirection()
         # TODO: Swing camera on circular path away from directly in front of character?
         maxMouseLook = 0.39
@@ -476,7 +476,7 @@ class Client(Application, Engine):
         self.menu.update(x, y, frameTime)
 
     def updateLogo(self, frameTime):
-        rotateSpeed = 10
+        rotateSpeed = 0.1
         self.logoa.yaw(rotateSpeed*frameTime)
         self.logov.yaw(rotateSpeed*frameTime)
     

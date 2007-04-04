@@ -1,9 +1,9 @@
 import objects
-import Ogre as ogre
+import ogre.renderer.OGRE as ogre
+import ogre.gui.CEGUI as CEGUI
+import ogre.sound.OgreAL as OgreAL
 import ode
-import OIS
-import CEGUI
-import OgreAL
+import ogre.io.OIS as OIS
 import math, random
 
 def add(a,b):
@@ -179,12 +179,12 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.trailNode = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('t' + self._name)
         self.trailNode.attachObject(self.trail)
 
-        self.trail.setMaxChainElements(4)
+        self.trail.setMaxChainElements(40)
         self.trail.setMaterialName('bullets')
-        self.trail.setTrailLength(2.0)
+        self.trail.setTrailLength(10)
                 
         self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + self._name)
-        self.trail.setColourChange(0, 0, 0, 0, 20)
+        self.trail.setColourChange(0, 0, 0, 0, 10)
         self.trail.setInitialWidth(0, 0.05)
         self.hasTrail = False
 
@@ -201,7 +201,6 @@ class BulletObject(objects.BulletObject, SphereObject):
             self.hasTrail = True
             self._updateDisplay()
             self.trail.addNode(self._node)
-            self._updateDisplay()
 
     def close(self):
         SphereObject.close(self)
@@ -210,6 +209,10 @@ class BulletObject(objects.BulletObject, SphereObject):
     def frameEnded(self, time):
         objects.BulletObject.frameEnded(self, time)
         SphereObject.frameEnded(self, time)
+
+    def postStep(self):
+        self.trail._timeUpdate(self._gameworld.stepSize)
+        self.trail.nodeUpdated(self._node)
         
     def __del__(self):
         self._gameworld.sceneManager.destroyRibbonTrail("bb" + self._name)

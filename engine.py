@@ -1,4 +1,4 @@
-import ode
+import ogre.physics.ODE as ode
 from objects import *
 import time
 import encode
