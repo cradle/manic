@@ -409,6 +409,7 @@ class Client(Application, Engine):
     def _createViewports(self):
         self.viewPort = self.renderWindow.addViewport(self.camera,1)
         self.viewPort.setDimensions(0.0, 0.0, 1.0, 1.0)
+        self.viewPort.setBackgroundColour((0.0, 0.0, 0.0, 1.0))
         self.camera.aspectRatio = self.viewPort.actualWidth / self.viewPort.actualHeight
         self.viewPort.setOverlaysEnabled(True)             
 
@@ -482,16 +483,16 @@ class Client(Application, Engine):
     
     def _createScene(self):
         Engine._createWorld(self)
-        self.sceneManager.setAmbientLight((0.01, 0.01, 0.01, 0.01))
-        self.sceneManager.setShadowTechnique(ogre.SHADOWTYPE_NONE)
-        self.sceneManager.setShadowColour((0.5, 0.5, 0.5))
-        self.sceneManager.setShadowTextureSize(1024)
-        self.sceneManager.setShadowTextureCount(2)
+        self.sceneManager.setAmbientLight((1.0, 1.0, 1.0, 1.0))
+##        self.sceneManager.setShadowTechnique(ogre.SHADOWTYPE_NONE)
+##        self.sceneManager.setShadowColour((0.5, 0.5, 0.5))
+##        self.sceneManager.setShadowTextureSize(1024)
+##        self.sceneManager.setShadowTextureCount(2)
 
-        light = self.sceneManager.createLight("sunlight")
-        light.setType(ogre.Light.LT_DIRECTIONAL)   # or .type
-        light.setDirection((0.4,-0.4,-1))
-        light.setDiffuseColour(0.85,0.85,0.85)
+##        light = self.sceneManager.createLight("sunlight")
+##        light.setType(ogre.Light.LT_DIRECTIONAL)   # or .type
+##        light.setDirection((0.4,-0.4,-1))
+##        light.setDiffuseColour(0.85,0.85,0.85)
         #light.setCastShadows(True)
         
         entity = self.sceneManager.createEntity('bgE', 'Scene.mesh')
@@ -508,7 +509,7 @@ class Client(Application, Engine):
 ##        print type(geom)
 
         self.createLogo()
-        self.createMenu()
+##        self.createMenu()
 
         # Setup Audio 
         self.soundManager  = OgreAL.SoundManager()
@@ -553,7 +554,7 @@ class Client(Application, Engine):
         myMaterial.setLightingEnabled(False)
         myMaterial.setDepthWriteEnabled(False)
         myMaterial.setSceneBlending(ogre.SBT_TRANSPARENT_ALPHA)
-        myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_DIFFUSE)
+##        myMaterial.getTechnique(0).getPass(0).setVertexColourTracking(ogre.TVC_DIFFUSE)
 
         myMaterial = ogre.MaterialManager.getSingleton().create("cursor","b")
         myMaterial.setLightingEnabled(False)
@@ -613,7 +614,7 @@ class Client(Application, Engine):
 
     def updateGUI(self, frameTime):
         self.updateLogo(frameTime)
-        self.updateMenu(frameTime)
+##        self.updateMenu(frameTime)
         self.displayDebug()
         self.displayScores()
         self.displayVitals()

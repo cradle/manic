@@ -179,13 +179,24 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.trailNode = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('t' + self._name)
         self.trailNode.attachObject(self.trail)
 
+        self.trail.setNumberOfChains(2)
         self.trail.setMaxChainElements(40)
         self.trail.setMaterialName('bullets')
         self.trail.setTrailLength(10)
                 
         self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + self._name)
-        self.trail.setColourChange(0, 0, 0, 0, 10)
-        self.trail.setInitialWidth(0, 0.05)
+        self._node2 = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n2' + self._name)
+
+        self.trail.setInitialColour(0, 0, 0, 0, 1)
+        self.trail.setColourChange(0, 0, 0, 0, 5)
+        self.trail.setInitialWidth(0, 0.075)
+        self.trail.setWidthChange(0, 0.005)
+        
+        self.trail.setInitialColour(1, 1, 1, 1, 1)
+        self.trail.setColourChange(1, 0, 0, 0, 5)
+        self.trail.setInitialWidth(1, 0.04)
+        self.trail.setWidthChange(1, 0.005)
+        
         self.hasTrail = False
 
     def setPosition(self, position):
@@ -199,8 +210,9 @@ class BulletObject(objects.BulletObject, SphereObject):
     def createTrail(self):
         if not self.hasTrail:            
             self.hasTrail = True
-            self._updateDisplay()
+            self._updateTrail()
             self.trail.addNode(self._node)
+            self.trail.addNode(self._node2)
 
     def close(self):
         SphereObject.close(self)
@@ -210,9 +222,19 @@ class BulletObject(objects.BulletObject, SphereObject):
         objects.BulletObject.frameEnded(self, time)
         SphereObject.frameEnded(self, time)
 
+    def _updateDisplay(self):
+        pass
+
+    def _updateTrail(self):
+        pos = self._body.getPosition()
+        self._node.setPosition(pos)
+        self._node2.setPosition(pos)
+
     def postStep(self):
         self.trail._timeUpdate(self._gameworld.stepSize)
+        self._updateTrail()
         self.trail.nodeUpdated(self._node)
+        self.trail.nodeUpdated(self._node2)
         
     def __del__(self):
         self._gameworld.sceneManager.destroyRibbonTrail("bb" + self._name)
@@ -250,11 +272,12 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         self.trail.setMaxChainElements(8)
         self.trail.setTrailLength(4.0)
                 
-        self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('g' + name)
-        self.trail.setInitialColour(0, 1, 1, 0, 1)
-        self.trail.setColourChange(0, 0,0,0,10)
-        self.trail.setInitialWidth(0, 0.15)
-        self.trail.setWidthChange(0, 0.5)
+##        self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('g' + name)
+
+##        self.trail.setInitialColour(0, 1, 1, 0, 1)
+##        self.trail.setColourChange(0, 0,0,0,10)
+##        self.trail.setInitialWidth(0, 0.15)
+##        self.trail.setWidthChange(0, 0.5)
 
         self.light = gameworld.sceneManager.createLight("light" + name)
         self.light.setAttenuation(range = 200, constant = 0.0, linear = 0.0, quadratic = 0.01)
@@ -263,6 +286,10 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
         self.light.setType(ogre.Light.LT_POINT)
         self.light.setCastShadows(True)
         self._node.attachObject(self.light)
+
+    def postStep(self):
+        objects.GrenadeObject.postStep(self)
+        BulletObject.postStep(self)
 
     def frameEnded(self, time):
         objects.GrenadeObject.frameEnded(self, time)
