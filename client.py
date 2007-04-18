@@ -216,6 +216,39 @@ class GameKeyListener(OIS.KeyListener):
             chat.disable()
             self.chatAlpha = 0.3
 
+class GameJoystickListener(OIS.JoyStickListener):
+    def __init__(self, game):
+        self.game = game
+        OIS.JoyStickListener.__init__( self)
+        
+    def povMoved( self, event, pov ):
+        pass
+        
+    def axisMoved( self, event, axis ):
+        if axis == 2 or axis == 3:
+            y = float(event.get_state().mAxes[2].abs)/32767
+            x = float(event.get_state().mAxes[3].abs)/32767
+            
+            print x, y
+
+            size = self.game.mouse.getMouseState()         
+                
+            CEGUI.System.getSingleton().injectMousePosition(
+                x*size.width/2 + size.width/2,
+                y*size.height/2 + size.height/2)
+
+            self.game.camera.setDirection(x*0.39,-y*0.39,-1)
+        
+    def sliderMoved( self, event, sliderID ):
+        pass
+        
+    def buttonPressed( self, event, button ):
+        print button
+        pass
+        
+    def buttonReleased( self, event, button ):
+        pass
+
 class GameMouseListener(OIS.MouseListener):
     def __init__(self, game):
         self.game = game
@@ -282,6 +315,10 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
 
         self.mouselistener = GameMouseListener(self.game)
         self.Mouse.setEventCallback(self.mouselistener)
+        
+        self.joysticklistener = GameJoystickListener(self.game)
+        self.Joy.setEventCallback(self.joysticklistener)
+        
         self.lastUpdate = time.time()
         
     def __del__ (self ):
@@ -350,7 +387,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         curTime = time.time()
         frameTime = (curTime - self.lastUpdate)
         keepGoing = keepGoing and self.keylistener.frameEnded(frameTime, self.BufferedKeyboard)
-        keepGoing = keepGoing and self.game.frameEnded(frameTime, self.Keyboard, self.Mouse)
+        keepGoing = keepGoing and self.game.frameEnded(frameTime, self.Keyboard, self.Mouse, self.Joy)
         self.lastUpdate = curTime
         return keepGoing
             
@@ -619,7 +656,7 @@ class Client(Application, Engine):
         self.displayScores()
         self.displayVitals()
     
-    def frameEnded(self, frameTime, keyboard,  mouse):
+    def frameEnded(self, frameTime, keyboard,  mouse, joystick):
         t = timer()
 
         self.updateGUI(frameTime)
@@ -633,6 +670,7 @@ class Client(Application, Engine):
         
         self.keyboard = keyboard
         self.mouse = mouse
+        self.joystick = joystick
         self.timeUntilNextNetworkUpdate -= frameTime
         t.start()
 
@@ -695,7 +733,7 @@ class Client(Application, Engine):
             self.network.clearMessages()
             
         if self.player != None:
-            self.network.send(self.player.input(self.keyboard,  self.mouse))
+            self.network.send(self.player.input(self.keyboard,  self.mouse, self.joystick))
 
         t.stop()
         self.debugNetworkTime = t.time()

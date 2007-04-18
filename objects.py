@@ -265,30 +265,30 @@ class DynamicObject(StaticObject):
     def _reload(self):
         pass
     
-    def _moveLeft(self):
+    def _moveLeft(self, amount = 1):
         if self._body.getLinearVel()[0] > -self.maxMoveVelocity:
-            self._motor.setXParam(ode.ParamVel, -self.maxMoveVelocity)
+            self._motor.setXParam(ode.ParamVel, -self.maxMoveVelocity*amount)
             self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
         
-    def _moveRight(self):
+    def _moveRight(self, amount = 1):
         if self._body.getLinearVel()[0] < self.maxMoveVelocity:
-            self._motor.setXParam(ode.ParamVel,  self.maxMoveVelocity)
+            self._motor.setXParam(ode.ParamVel,  self.maxMoveVelocity*amount)
             self._motor.setXParam(ode.ParamFMax, self.maxMoveForce)
 
-    def _rotateLeft(self):
+    def _rotateLeft(self, amount = 1):
         if self.isCrouching:
-            self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity/2)
+            self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity*amount/2)
             self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
         else:
-            self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity)
+            self._motor.setAngleParam(ode.ParamVel,  self.maxSpinVelocity*amount)
             self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
 
-    def _rotateRight(self):
+    def _rotateRight(self, amount = 1):
         if self.isCrouching:
-            self._motor.setAngleParam(ode.ParamVel,  -self.maxSpinVelocity/2)
+            self._motor.setAngleParam(ode.ParamVel,  -self.maxSpinVelocity*amount/2)
             self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
         else:
-            self._motor.setAngleParam(ode.ParamVel,  -self.maxSpinVelocity)
+            self._motor.setAngleParam(ode.ParamVel,  -self.maxSpinVelocity*amount)
             self._motor.setAngleParam(ode.ParamFMax, self.maxSpinForce)
         
     def _jump(self):

@@ -22,10 +22,11 @@ class ListenClient(Client, Server):
         bot.setPosition(self.spawnLocation())
         self.objects += [bot]
         
-    def frameEnded(self, frameTime, keyboard, mouse):            
+    def frameEnded(self, frameTime, keyboard, mouse, joystick):
+        self.mouse = mouse
         Server.frameEnded(self, frameTime)
         self.updateGUI(frameTime)
-        self.player.inputPresses(self.player.input(keyboard, mouse))
+        self.player.inputPresses(self.player.input(keyboard, mouse, joystick))
         return True # Keep going
         
     def networkUpdate(self):
