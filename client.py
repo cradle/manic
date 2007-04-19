@@ -504,7 +504,7 @@ class Client(Application, Engine):
         self.menu.update(x, y, frameTime)
 
     def updateLogo(self, frameTime):
-        rotateSpeed = 0.1
+        rotateSpeed = 0.2
         self.logoa.yaw(rotateSpeed*frameTime)
         self.logov.yaw(rotateSpeed*frameTime)
     
@@ -516,10 +516,10 @@ class Client(Application, Engine):
 ##        self.sceneManager.setShadowTextureSize(1024)
 ##        self.sceneManager.setShadowTextureCount(2)
 
-##        light = self.sceneManager.createLight("sunlight")
-##        light.setType(ogre.Light.LT_DIRECTIONAL)   # or .type
-##        light.setDirection((0.4,-0.4,-1))
-##        light.setDiffuseColour(0.85,0.85,0.85)
+        light = self.sceneManager.createLight("sunlight")
+        light.setType(ogre.Light.LT_DIRECTIONAL)   # or .type
+        light.setDirection((0.4,-0.4,-1))
+        light.setDiffuseColour(0.85,0.85,0.85)
         #light.setCastShadows(True)
         
         entity = self.sceneManager.createEntity('bgE', 'Scene.mesh')

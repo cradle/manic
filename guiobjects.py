@@ -9,13 +9,6 @@ import math, random
 def add(a,b):
     return a+b
 
-#http://tomayko.com/weblog/2004/09/13/cleanest-python-find-in-list-function
-def find(f, seq):
-  """Return first item in sequence where f(item) == True."""
-  for item in seq:
-    if f(item): 
-      return item
-
 class StaticObject(objects.StaticObject):    
     def __init__(self, gameworld, name, size = (1.0, 1.0, 1.0), scale = (0.5,0.5,0.5), mesh = 'crate.mesh', geomFunc = ode.GeomBox):
         super(StaticObject, self).__init__(gameworld, name, size, geomFunc)   
@@ -245,7 +238,7 @@ class BulletObject(objects.BulletObject, SphereObject):
 
     def _updateDisplay(self):
         pass
-
+        
     def _updateTrail(self):
         pos = self._body.getPosition()
         self._node.setPosition(pos)
@@ -289,16 +282,16 @@ class GrenadeObject(objects.GrenadeObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
         objects.GrenadeObject.__init__(self, gameworld, name, direction, velocity, damage)
         BulletObject.reset(self)
-
-        self.trail.setMaxChainElements(8)
-        self.trail.setTrailLength(4.0)
                 
-##        self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('g' + name)
-
-##        self.trail.setInitialColour(0, 1, 1, 0, 1)
-##        self.trail.setColourChange(0, 0,0,0,10)
-##        self.trail.setInitialWidth(0, 0.15)
-##        self.trail.setWidthChange(0, 0.5)
+        self.trail.setInitialColour(0, 1, 1, 0, 1)
+        self.trail.setColourChange(0, 0, 0, 0, 2.6)
+        self.trail.setInitialWidth(0, 0.15)
+        self.trail.setWidthChange(0, 0.0025)
+        
+        self.trail.setInitialColour(1, 1, 1, 1, 1)
+        self.trail.setColourChange(1, 0, 0, 0, 2.6)
+        self.trail.setInitialWidth(1, 0.075)
+        self.trail.setWidthChange(1, 0.0025)
 
         self.light = gameworld.sceneManager.createLight("light" + name)
         self.light.setAttenuation(range = 200, constant = 0.0, linear = 0.0, quadratic = 0.01)
@@ -710,6 +703,13 @@ class Player(Person):
             direction = (1.0,0.0,0)
             
         return direction
+
+#http://tomayko.com/weblog/2004/09/13/cleanest-python-find-in-list-function
+def find(f, seq):
+  """Return first item in sequence where f(item) == True."""
+  for item in seq:
+    if f(item): 
+      return item
 
 class SFX(object):
     def __init__(self, soundManager):
