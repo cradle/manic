@@ -90,6 +90,12 @@ class Server(Engine):
 
 
 if __name__ == "__main__":
+    try:
+        import psyco
+        psyco.full()
+        print "Psyco Enabled"
+    except ImportError:
+        print "No Psyco Support"
     engine = Server()
     import cProfile
     cProfile.run('engine.go()', 'server-profile.txt')

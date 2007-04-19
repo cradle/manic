@@ -32,8 +32,6 @@ class Application(object):
         "Starts the rendering loop."
         if not self._setUp():
             return
-        if self._isPsycoEnabled():
-            self._activatePsyco()
         self.root.startRendering()
 
     def _setUp(self):
@@ -98,15 +96,6 @@ class Application(object):
     def _chooseSceneManager(self):
         self.sceneManager = self.root.createSceneManager(ogre.ST_GENERIC,"ExampleSMInstance")
 
-    def _isPsycoEnabled(self):
-        return False
-
-    def _activatePsyco(self):        
-       try:
-           import psyco
-           psyco.full()
-       except ImportError:
-           pass
         
 def convertOISMouseButtonToCegui( buttonID):
     if buttonID ==0:
@@ -316,8 +305,9 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         self.mouselistener = GameMouseListener(self.game)
         self.Mouse.setEventCallback(self.mouselistener)
         
-        self.joysticklistener = GameJoystickListener(self.game)
-        self.Joy.setEventCallback(self.joysticklistener)
+        if self.Joy:
+            self.joysticklistener = GameJoystickListener(self.game)
+            self.Joy.setEventCallback(self.joysticklistener)
         
         self.lastUpdate = time.time()
         
@@ -740,6 +730,13 @@ class Client(Application, Engine):
         return True # Keep running
     
 if __name__ == "__main__":
+    try:
+        import psyco
+        psyco.full()
+        print "Psyco Enabled"
+    except ImportError:
+        print "No Psyco Support"
+        
     world = Client()
     import cProfile
     cProfile.run('world.go()', 'client-profile.txt')

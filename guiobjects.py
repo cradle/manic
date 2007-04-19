@@ -92,24 +92,25 @@ class DynamicObject(objects.DynamicObject, StaticObject):
         if CEGUI.WindowManager.getSingleton().getWindow("TextWindow/Editbox1").hasInputFocus():
             return presses
 
-        joy = joystick.getJoyStickState()
-        ## JOYSTICK
-        if joy.mAxes[6].abs < -2000:
-            presses[1] |= objects.LEFT
-            presses[1] |= objects.ROTATE_LEFT
-        if joy.mAxes[6].abs > 2000:
-            presses[1] |= objects.RIGHT
-            presses[1] |= objects.ROTATE_RIGHT
-        if joy.mAxes[5].abs < -10000:
-            presses[1] |= objects.UP
-        if joy.mAxes[5].abs > 10000:
-            presses[1] |= objects.DOWN
-        if joy.buttonDown(0):
-            presses[1] |= objects.UP
-        if joy.buttonDown(2):
-            presses[1] |= objects.RELOAD
-        if joy.buttonDown(11):
-            presses[1] |= objects.SHOOT
+        if joystick:
+            joy = joystick.getJoyStickState()
+            ## JOYSTICK
+            if joy.mAxes[6].abs < -2000:
+                presses[1] |= objects.LEFT
+                presses[1] |= objects.ROTATE_LEFT
+            if joy.mAxes[6].abs > 2000:
+                presses[1] |= objects.RIGHT
+                presses[1] |= objects.ROTATE_RIGHT
+            if joy.mAxes[5].abs < -10000:
+                presses[1] |= objects.UP
+            if joy.mAxes[5].abs > 10000:
+                presses[1] |= objects.DOWN
+            if joy.buttonDown(0):
+                presses[1] |= objects.UP
+            if joy.buttonDown(2):
+                presses[1] |= objects.RELOAD
+            if joy.buttonDown(11):
+                presses[1] |= objects.SHOOT
 
         ## KEYBOARD
         if keyboard.isKeyDown(self.keys['left']):
