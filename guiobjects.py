@@ -235,20 +235,22 @@ class BulletObject(objects.BulletObject, SphereObject):
     def frameEnded(self, time):
         objects.BulletObject.frameEnded(self, time)
         SphereObject.frameEnded(self, time)
+        self.trail._timeUpdate(self._gameworld.stepSize * self.numSteps)
+        self._updateTrail()
+        self.trail.nodeUpdated(self._node)
+        self.trail.nodeUpdated(self._node2)
 
     def _updateDisplay(self):
         pass
         
     def _updateTrail(self):
+        self.numSteps = 0
         pos = self._body.getPosition()
         self._node.setPosition(pos)
         self._node2.setPosition(pos)
 
     def postStep(self):
-        self.trail._timeUpdate(self._gameworld.stepSize)
-        self._updateTrail()
-        self.trail.nodeUpdated(self._node)
-        self.trail.nodeUpdated(self._node2)
+        self.numSteps += 1
         
     def __del__(self):
         self._gameworld.sceneManager.destroyRibbonTrail("bb" + self._name)
