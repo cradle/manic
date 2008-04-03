@@ -9,6 +9,7 @@ PERSON = 3
 BULLET = 4
 GRENADE = 5
 SHRAPNEL = 6
+LASER = 7
 
 #Keys
 LEFT = 1
@@ -99,6 +100,7 @@ class DynamicObject(StaticObject):
         self.maxMoveVelocity = 10
         self.maxSpinForce = 700
         self.maxSpinVelocity = 15
+
         
         self._body = ode.Body(gameworld.world)
         mass = ode.Mass()
@@ -116,6 +118,7 @@ class DynamicObject(StaticObject):
 
         self.isOnGround = False
         self.isJumping = False
+        self.hasWindResistance = True
         self.type = DYNAMIC
         self._body.name = name
 
@@ -230,7 +233,8 @@ class DynamicObject(StaticObject):
                 self._reload()
 
         # Apply wind friction
-        self._body.addForce([-0.05*abs(x)*x for x in self._body.getLinearVel()])
+        if self.hasWindResistance:
+            self._body.addForce([-0.05*abs(x)*x for x in self._body.getLinearVel()])
 
         #if self.isOnGround:
         #    # Apply rolling friction
@@ -385,7 +389,7 @@ class BulletObject(SphereObject):
         return not self.hasSentToClients and self.needToTellClient
 
     def clearEvents(self):
-        self.hasSentToClients = True  
+        self.hasSentToClients = True
 
 class ShrapnelObject(BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
@@ -400,6 +404,15 @@ class ShrapnelObject(BulletObject):
     def frameEnded(self, time):
         BulletObject.frameEnded(self, time)
         self.ricochetTime -= time
+
+class LaserObject(ShrapnelObject):
+    def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
+        BulletObject.__init__(self, gameworld, name, direction, velocity, damage, 1.0)
+        self.type = LASER
+        self.ricochetTime = 3.0
+        self.needToTellClient = True
+        self.hasWindResistance = False
+        self._body.setGravityMode(False)
 
 class GrenadeObject(BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
@@ -561,6 +574,7 @@ class Person(SphereObject):
              "Support": 6,
              "Sniper":  7,
              "GrenadeLauncher": 8,
+             "Laser": 9,
             }
 
         self.gunNames = {}
@@ -577,6 +591,8 @@ class Person(SphereObject):
         self._torsoTransform.setCollideBits(self.PROJECTILE | self.TERRAIN)
         self._headTransform.setCategoryBits(self.PLAYER)
         self._headTransform.setCollideBits(self.PROJECTILE | self.TERRAIN)
+
+        self.hasWindResistance = False
 
         self.gunName = "Assault"
         self.reset()
@@ -731,6 +747,19 @@ class Person(SphereObject):
                 'zoom':50,
                 'recoil':0.0,
                 'auto':False,
+                },
+            'Laser':{
+                'ammo':15,
+                'reloadTime':5.0,
+                'accuracy':0.80,
+                'timeBetweenShots':0.12,
+                'damage':60,
+                'velocity':70.0,
+                'type':'single',
+                'ammoType':LASER,
+                'zoom':60,
+                'recoil':0.0,
+                'auto':True,
                 }
             }
 
@@ -777,6 +806,8 @@ class Person(SphereObject):
                     self.setGun("Support")
                 if keys & WEAPON8:
                     self.setGun("Sniper")
+                if keys & WEAPON9:
+                    self.setGun("Laser")
 ##                if keys & WEAPON9:
 ##                    self.setGun(self.primaryGunName)
 ##                if 'md' in self.presses:

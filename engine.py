@@ -14,7 +14,7 @@ class Engine:
     NET_TIME_UNTIL_UPDATE = 2
     
     def __init__(self):
-        self.stepSize = 1.0/100.0
+        self.stepSize = 1.0/150.0
         self.timeUntilNextEngineUpdate = 0.0
         random.seed(time.time())
         self.debugStepTime = 1.0
@@ -64,6 +64,9 @@ class Engine:
     def createGrenadeObject(self, name, direction, velocity, damage):
         return GrenadeObject(self, name, direction, velocity, damage)
 
+    def createLaserObject(self, name, direction, velocity, damage):
+        return LaserObject(self, name, direction, velocity, damage)
+
     def createPerson(self, name):
         return Person(self, name)
     
@@ -80,6 +83,8 @@ class Engine:
                 b = self.createBulletObject(name, direction, velocity, damage)
             elif t == GRENADE:
                 b = self.createGrenadeObject(name, direction, velocity, damage)
+            elif t == LASER:
+                b = self.createLaserObject(name, direction, velocity, damage)
             else:
                 print "BUG: Unknown object type", t
             b.setPosition(position)
@@ -164,7 +169,7 @@ class Engine:
             
             for a,b,geom in [[o1,o2,geom2],[o2,o1,geom1]]:
                 a.hitObject(b, contact.getContactGeomParams()[0])
-                if a.type == GRENADE or a.type == BULLET:
+                if a.type == GRENADE or a.type == BULLET or a.type == LASER:
                     contact.setBounce(1.0)
                     contact.setMu(0.0)
                     if a.isDead() and b.type == PERSON:

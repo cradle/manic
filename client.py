@@ -386,10 +386,11 @@ class Client(Application, Engine):
     def __init__(self, autoConnect = False):
         Application.__init__(self)
         Engine.__init__(self)
-        ip, port = "cradle.dyndns.org", "10001"
+        #ip, port = "cradle.dyndns.org", "10001"
+        ip, port = "127.0.0.1", "10001"
 
         if not autoConnect:
-            address = raw_input("server ('cradle.dyndns.org:10001') :> ")
+            address = raw_input("server ('%s:%s') :> " % (ip, port))
             
             if address != "":
                 split = address.split(":")
@@ -451,6 +452,9 @@ class Client(Application, Engine):
 
     def createGrenadeObject(self, name, direction , velocity, damage):
         return GrenadeObject(self, name, direction, velocity, damage)
+
+    def createLaserObject(self, name, direction, velocity, damage):
+        return LaserObject(self, name, direction, velocity, damage)
 
     def createPerson(self, name):
         return Person(self, name)
@@ -705,6 +709,8 @@ class Client(Application, Engine):
                                     newObject = GrenadeObject(self, serverObject[Engine.NET_OBJECTS_NAME])
                                 elif serverObject[Engine.NET_OBJECTS_TYPE] == objects.SHRAPNEL:
                                     newObject = ShrapnelObject(self, serverObject[Engine.NET_OBJECTS_NAME])
+                                elif serverObject[Engine.NET_OBJECTS_TYPE] == objects.LASER:
+                                    newObject = LaserObject(self, serverObject[Engine.NET_OBJECTS_NAME])
                                 else:
                                     print "Unknown object to create", serverObject[Engine.NET_OBJECTS_TYPE], objects.PERSON
 

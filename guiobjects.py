@@ -264,7 +264,8 @@ class BulletObject(objects.BulletObject, SphereObject):
                                  self._body.getPosition(),
                                  maxDistance = 500,
                                  rolloffFactor = 1.5,
-                                 refDistance = 5)
+                                 refDistance = 5,
+                                 gain = 0.15)
 
 class ShrapnelObject(objects.ShrapnelObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
@@ -279,6 +280,25 @@ class ShrapnelObject(objects.ShrapnelObject, BulletObject):
     def frameEnded(self, time):
         objects.ShrapnelObject.frameEnded(self, time)
         BulletObject.frameEnded(self, time)
+
+class LaserObject(objects.LaserObject, ShrapnelObject):
+    def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
+        objects.LaserObject.__init__(self, gameworld, name, direction, velocity, damage)
+        ShrapnelObject.reset(self)
+
+        self.trail.setInitialColour(0, 0, 0, 1, 0)
+        self.trail.setColourChange(0, 0, 0, 0, 2.6)
+        self.trail.setInitialWidth(0, 0.15)
+        self.trail.setWidthChange(0, 0.0025)
+        
+        self.trail.setInitialColour(1, 0, 0, 1, 1)
+        self.trail.setColourChange(1, 0, 0, 0, 2.6)
+        self.trail.setInitialWidth(1, 0.075)
+        self.trail.setWidthChange(1, 0.0025)
+        
+    def frameEnded(self, time):
+        objects.LaserObject.frameEnded(self, time)
+        ShrapnelObject.frameEnded(self, time)
 
 class GrenadeObject(objects.GrenadeObject, BulletObject):
     def __init__(self, gameworld, name, direction = None, velocity = None, damage = 1):
@@ -470,7 +490,8 @@ class Person(objects.Person, SphereObject):
             self._node.getPosition(),
             maxDistance = 500,
             rolloffFactor = 1.0,
-            refDistance = 5)
+            refDistance = 5,
+            gain = 0.1)
 
     def _shoot(self):
         #TODO: Make server side
@@ -721,7 +742,7 @@ class SFX(object):
         self.maxSounds = soundManager.maxSources()
         print "Maximum Sound Sources:", self.maxSounds
 
-    def play(self, soundFile, position, refDistance = 2.0, rolloffFactor = 0.1, maxDistance = 200.0):
+    def play(self, soundFile, position, refDistance = 2.0, rolloffFactor = 0.1, maxDistance = 200.0, gain = 1.0):
         # You can't change the rolloff (etc) of a sound after playing it once
         if soundFile in self.sounds:
             s = self.sounds[soundFile]
@@ -741,6 +762,7 @@ class SFX(object):
                 s.setMaxDistance(maxDistance)
                 s.setRolloffFactor(rolloffFactor)
                 s.setReferenceDistance(refDistance)
+                s.setGain(gain)
                 s.play()
                 self.sounds[soundFile] = s
     
