@@ -409,7 +409,7 @@ class LaserObject(ShrapnelObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
         BulletObject.__init__(self, gameworld, name, direction, velocity, damage, 1.0)
         self.type = LASER
-        self.ricochetTime = 3.0
+        self.ricochetTime = 30.0
         self.needToTellClient = True
         self.hasWindResistance = False
         self._body.setGravityMode(False)
@@ -954,11 +954,13 @@ class Person(SphereObject):
         return [0,0.5,0]
 
     def _unShoot(self):
+        if self.gun['ammo'] == 0:
+            self._reload()
         self.canShoot = True
 
     def _shoot(self):
         while (self.timeLeftUntilMustShoot and self.timeLeftUntilMustShoot <= 0 and self.gun['ammo'] > 0) or\
-           self.gun['timeLeftUntilNextShot'] < 0.0 and self.gun['ammo'] > 0 and self.canShoot:
+            self.gun['timeLeftUntilNextShot'] < 0.0 and self.gun['ammo'] > 0 and self.canShoot:
             if not self.gun['auto']:
                 self.canShoot = False
             numShots = 1
