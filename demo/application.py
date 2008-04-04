@@ -12,7 +12,8 @@ class ExitListener(ogre.FrameListener):
  
     def frameStarted(self, evt):
         self.keyboard.capture()
-        return not self.keyboard.isKeyDown(OIS.KC_ESCAPE)
+        return True
+        #return not self.keyboard.isKeyDown(OIS.KC_ESCAPE)
  
 class Application(object):
     def __init__(self):
@@ -113,8 +114,8 @@ class Application(object):
         self.keyboardListener = buffered_handlers.KeyboardListener(self.keyboard)
 
     def setupConsole(self):
-        self.console = console.Console(self.root, self.keyboard)
-        self.console.setVisible(True)
+        self.console = console.Console(self.root, locals())
+        #self.console.setVisible(True)
         self.keyboardListener.addKeyListener(self.console)
  
     def startRenderLoop(self):
@@ -127,6 +128,8 @@ class Application(object):
         # self.inputManager.destroyInputObjectJoyStick(self.joystick)
         OIS.InputManager.destroyInputSystem(self.inputManager)
         self.inputManager = None
+
+        del self.console
 
         ## CEGUI
         del self.renderer
