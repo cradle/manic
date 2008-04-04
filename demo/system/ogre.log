@@ -1,0 +1,125 @@
+18:38:25: Creating resource group General
+18:38:25: Creating resource group Internal
+18:38:25: Creating resource group Autodetect
+18:38:25: SceneManagerFactory for type 'DefaultSceneManager' registered.
+18:38:25: Registering ResourceManager for type Material
+18:38:25: Registering ResourceManager for type Mesh
+18:38:25: Registering ResourceManager for type Skeleton
+18:38:25: MovableObjectFactory for type 'ParticleSystem' registered.
+18:38:25: OverlayElementFactory for type Panel registered.
+18:38:25: OverlayElementFactory for type BorderPanel registered.
+18:38:25: OverlayElementFactory for type TextArea registered.
+18:38:25: Registering ResourceManager for type Font
+18:38:25: ArchiveFactory for archive type FileSystem registered.
+18:38:25: ArchiveFactory for archive type Zip registered.
+18:38:25: FreeImage version: 3.9.2
+18:38:25: This program uses FreeImage, a free, open source image library supporting all common bitmap formats. See http://freeimage.sourceforge.net for details
+18:38:25: Supported formats: bmp,ico,jpg,jif,jpeg,jpe,jng,koa,iff,lbm,mng,pbm,pbm,pcd,pcx,pgm,pgm,png,ppm,ppm,ras,tga,targa,tif,tiff,wap,wbmp,wbm,psd,cut,xbm,xpm,gif,hdr,g3,sgi
+18:38:25: DDS codec registering
+18:38:25: Registering ResourceManager for type HighLevelGpuProgram
+18:38:25: Registering ResourceManager for type Compositor
+18:38:25: MovableObjectFactory for type 'Entity' registered.
+18:38:25: MovableObjectFactory for type 'Light' registered.
+18:38:25: MovableObjectFactory for type 'BillboardSet' registered.
+18:38:25: MovableObjectFactory for type 'ManualObject' registered.
+18:38:25: MovableObjectFactory for type 'BillboardChain' registered.
+18:38:25: MovableObjectFactory for type 'RibbonTrail' registered.
+18:38:25: Loading library system\RenderSystem_Direct3D9.dll
+18:38:25: Installing plugin: D3D9 RenderSystem
+18:38:25: D3D9 : Direct3D9 Rendering Subsystem created.
+18:38:25: D3D9: Driver Detection Starts
+18:38:25: D3D9: Driver Detection Ends
+18:38:25: Plugin successfully installed
+18:38:25: Loading library system\RenderSystem_GL.dll
+18:38:25: Installing plugin: GL RenderSystem
+18:38:25: OpenGL Rendering Subsystem created.
+18:38:26: Plugin successfully installed
+18:38:26: *-*-* OGRE Initialising
+18:38:26: *-*-* Version 1.4.5 (Eihort)
+18:38:26: Added resource location './media' of type 'FileSystem' to resource group 'General'
+18:38:26: D3D9 : RenderSystem Option: Allow NVPerfHUD = No
+18:38:26: D3D9 : RenderSystem Option: Anti aliasing = None
+18:38:26: D3D9 : RenderSystem Option: Floating-point mode = Fastest
+18:38:26: D3D9 : RenderSystem Option: Full Screen = No
+18:38:26: D3D9 : RenderSystem Option: Rendering Device = NVIDIA GeForce 6600 GT
+18:38:26: D3D9 : RenderSystem Option: VSync = No
+18:38:26: D3D9 : RenderSystem Option: Video Mode = 800 x 600 @ 32-bit colour
+18:38:26: CPU Identifier & Features
+18:38:26: -------------------------
+18:38:26:  *   CPU ID: AuthenticAMD: AMD Athlon(tm)
+18:38:26:  *      SSE: yes
+18:38:26:  *     SSE2: no
+18:38:26:  *     SSE3: no
+18:38:26:  *      MMX: yes
+18:38:26:  *   MMXEXT: yes
+18:38:26:  *    3DNOW: yes
+18:38:26:  * 3DNOWEXT: yes
+18:38:26:  *     CMOV: yes
+18:38:26:  *      TSC: yes
+18:38:26:  *      FPU: yes
+18:38:26:  *      PRO: yes
+18:38:26:  *       HT: no
+18:38:26: -------------------------
+18:38:26: D3D9 : Subsystem Initialising
+18:38:26: D3D9RenderSystem::createRenderWindow "Assault Vector", 800x600 windowed  miscParams: FSAA=0 FSAAQuality=0 colourDepth=32 useNVPerfHUD=false vsync=false 
+18:38:26: D3D9 : Created D3D9 Rendering Window 'Assault Vector' : 800x600, 32bpp
+18:38:26: D3D9 : WARNING - disabling VSync in windowed mode can cause timing issues at lower frame rates, turn VSync on if you observe this problem.
+18:38:26: Registering ResourceManager for type Texture
+18:38:26: Registering ResourceManager for type GpuProgram
+18:38:26: D3D9: Vertex texture format supported - PF_FLOAT32_RGB
+18:38:26: D3D9: Vertex texture format supported - PF_FLOAT32_RGBA
+18:38:26: D3D9: Vertex texture format supported - PF_FLOAT32_R
+18:38:26: RenderSystem capabilities
+18:38:26: -------------------------
+18:38:26:  * Hardware generation of mipmaps: yes
+18:38:26:  * Texture blending: yes
+18:38:26:  * Anisotropic texture filtering: yes
+18:38:26:  * Dot product texture operation: yes
+18:38:26:  * Cube mapping: yes
+18:38:26:  * Hardware stencil buffer: yes
+18:38:26:    - Stencil depth: 8
+18:38:26:    - Two sided stencil support: yes
+18:38:26:    - Wrap stencil values: yes
+18:38:26:  * Hardware vertex / index buffers: yes
+18:38:26:  * Vertex programs: yes
+18:38:26:    - Max vertex program version: vs_3_0
+18:38:26:  * Fragment programs: yes
+18:38:26:    - Max fragment program version: ps_3_0
+18:38:26:  * Texture Compression: yes
+18:38:26:    - DXT: yes
+18:38:26:    - VTC: no
+18:38:26:  * Scissor Rectangle: yes
+18:38:26:  * Hardware Occlusion Query: yes
+18:38:26:  * User clip planes: yes
+18:38:26:  * VET_UBYTE4 vertex element type: yes
+18:38:26:  * Infinite far plane projection: yes
+18:38:26:  * Hardware render-to-texture: yes
+18:38:26:  * Floating point textures: yes
+18:38:26:  * Non-power-of-two textures: yes
+18:38:26:  * Volume textures: yes
+18:38:26:  * Multiple Render Targets: 4
+18:38:26:  * Point Sprites: yes
+18:38:26:  * Extended point parameters: yes
+18:38:26:  * Max Point Size: 8192
+18:38:26:  * Vertex texture fetch: yes
+18:38:26:    - Max vertex textures: 4
+18:38:26:    - Vertex textures shared: no
+18:38:26: ***************************************
+18:38:26: *** D3D9 : Subsystem Initialised OK ***
+18:38:26: ***************************************
+18:38:26: ResourceBackgroundQueue - threading disabled
+18:38:26: Particle Renderer Type 'billboard' registered
+18:38:26: Parsing scripts for resource group Autodetect
+18:38:26: Finished parsing scripts for resource group Autodetect
+18:38:26: Parsing scripts for resource group General
+18:38:26: Parsing script console.material
+18:38:26: Parsing script console.fontdef
+18:38:26: Parsing script console.overlay
+18:38:26: Font Consoleusing texture size 512x256
+18:38:26: Info: Freetype returned null for character 141 in font Console
+18:38:26: Info: Freetype returned null for character 160 in font Console
+18:38:26: Texture: ConsoleTexture: Loading 1 faces(PF_BYTE_LA,512x256x1) with 0 generated mipmaps from Image. Internal format is PF_BYTE_LA,512x256x1.
+18:38:26: Finished parsing scripts for resource group General
+18:38:26: Parsing scripts for resource group Internal
+18:38:26: Finished parsing scripts for resource group Internal
+18:38:26: Creating viewport on target 'Assault Vector', rendering from camera 'Camera', relative dimensions L: 0.00 T: 0.00 W: 1.00 H: 1.00 ZOrder: 0

@@ -286,9 +286,14 @@ class LaserObject(objects.LaserObject, ShrapnelObject):
         objects.LaserObject.__init__(self, gameworld, name, direction, velocity, damage)
         ShrapnelObject.reset(self)
 
+        self.trail.setNumberOfChains(2)
+        self.trail.setMaxChainElements(60)
+        self.trail.setMaterialName('bullets')
+        self.trail.setTrailLength(20)
+
         self.trail.setInitialColour(0, 0, 0, 1, 0)
         self.trail.setColourChange(0, 0, 0, 0, 2.6)
-        self.trail.setInitialWidth(0, 0.15)
+        self.trail.setInitialWidth(0, 0.3)
         self.trail.setWidthChange(0, 0.0025)
         
         self.trail.setInitialColour(1, 0, 0, 1, 1)
@@ -462,7 +467,7 @@ class Person(objects.Person, SphereObject):
         self.animations = {}
         self.animations['dead'] = self._entity.getAnimationState('Death1')
         self.animations['dead'].setLoop(False)
-        self.animations['run'] = self._entity.getAnimationState('Stealth')
+        self.animations['run'] = self._entity.getAnimationState('Walk')
         self.animations['run'].setWeight(2)
         self.animations['idle'] = self._entity.getAnimationState('Idle1')
         self.animations['idle'].setWeight(0.25)

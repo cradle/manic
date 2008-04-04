@@ -409,7 +409,7 @@ class LaserObject(ShrapnelObject):
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
         BulletObject.__init__(self, gameworld, name, direction, velocity, damage, 1.0)
         self.type = LASER
-        self.ricochetTime = 30.0
+        self.ricochetTime = 3.0
         self.needToTellClient = True
         self.hasWindResistance = False
         self._body.setGravityMode(False)

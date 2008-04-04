@@ -1,0 +1,27 @@
+Application/ConsoleOverlay
+{
+	zorder 500
+	// Stats block
+	container BorderPanel(Application/ConsolePanel)
+	{
+		metrics_mode relative
+		left 0 
+		top 0
+		width 1
+		height 0.5
+		material console/background
+
+		element TextArea(Application/ConsoleText)
+		{
+			metrics_mode relative
+			left 0
+			top 0
+			width 1
+			height 1
+			font_name Console
+			char_height 0.03
+			colour_top 0 0 1
+			colour_bottom 0 0 1
+		}		
+	}
+}
