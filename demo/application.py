@@ -115,7 +115,7 @@ class Application(object):
 
     def setupConsole(self):
         self.console = console.Console(self.root, locals())
-        #self.console.setVisible(True)
+        self.console.show()
         self.keyboardListener.addKeyListener(self.console)
  
     def startRenderLoop(self):
