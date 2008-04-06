@@ -4,69 +4,113 @@ import array
 import code
 import sys
 
-class Console(ogre.FrameListener, ogre.LogListener):
+## PythonOgre Console
+# Usage:
+#   console = console.Console(self.root, locals())
+#   console.show()
+#   # Then inject the keys pressed in your keyboard handler
+#   console.keyPressed(evt)
+#
+## TODO
+# - Key repeating
+# - PGUP PGDOWN history viewing
+# - Linewrap if prompt too long
+# - Write history to file
+# - Read history from file
+
+class Console(ogre.FrameListener):
     CONSOLE_LINE_LENGTH = 85
     CONSOLE_LINE_COUNT = 15
     
     def __init__(self, root, consoleLocals = {}):
         ogre.FrameListener.__init__(self)
-        ogre.LogListener.__init__(self)
+        
         self.currentInputHistory = 0
-        self.currentOutputHistory = 0
         self.inputHistory = []
         self.outputHistory = []
         self.prompt = array.array('b')
-        self.hide()
-        self.updateOverlay = False
+        self.updateOverlay = True
+        self.multiLineInput = False
+
         consoleLocals['console'] = self
         self.interpreter = code.InteractiveConsole(consoleLocals)
-        self.multiLineInput = False
-        self.hideSpeed = 2
-        self.showSpeed = 2
 
-        if not root.getSceneManagerIterator().hasMoreElements():
-             raise("No scene manager found")
-
-        self.root = root
-        scene = root.getSceneManagerIterator().getNext()
         root.addFrameListener(self)
-
+        
         self.height = 0.0
+        self.hide()
 
         self.overlay = ogre.OverlayManager.getSingleton().getByName("Application/ConsoleOverlay")
         self.overlay.show()
         self.textbox = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsoleText")
+        self.textoverlay = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsoleTextOverlay")
         self.textpanel = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsolePanel")
-        ogre.LogManager.getSingleton().getDefaultLog().addListener(self)
-
-        self.textbox.setCaption("PythonOgre Console\nGlenn Murray 2008")
 
         self.keyBinds = {
             OIS.KC_RETURN: self._runPromptText,
-            OIS.KC_BACK: self._delCharPrompt,
+            OIS.KC_BACK: self._backspaceCharPrompt,
+            OIS.KC_DELETE: self._deleteCharPrompt,
             OIS.KC_UP: self._prevPromptText,
             OIS.KC_DOWN: self._nextPromptText,
-            OIS.KC_ESCAPE: self.hide
+            OIS.KC_ESCAPE: self.hide,
+            OIS.KC_LEFT: self._moveCursorLeft,
+            OIS.KC_RIGHT: self._moveCursorRight,
+            OIS.KC_HOME: self._moveCursorHome,
+            OIS.KC_END: self._moveCursorEnd
             }
 
-    def _delCharPrompt(self):
-        if len(self.prompt) > 0:
-            self.prompt.pop()
+    def _moveCursorEnd(self):
+        self.cursorPosition = len(self.prompt)
+        
+    def _moveCursorHome(self):
+        self.cursorPosition = 0
+
+    def _moveCursorLeft(self):
+        if self.cursorPosition > 0:
+            self.cursorPosition -= 1
+
+    def _moveCursorRight(self):
+        if self.cursorPosition < len(self.prompt):
+            self.cursorPosition += 1
+
+    def _deleteCharPrompt(self):
+        if len(self.prompt) > 0 and self.cursorPosition < len(self.prompt):
+            self.prompt.pop(self.cursorPosition)
+
+    def _backspaceCharPrompt(self):
+        if len(self.prompt) > 0 and self.cursorPosition > 0:
+            self.prompt.pop(self.cursorPosition-1)
+            self.cursorPosition -= 1
+
+    def setPrompt(self, byteArray):
+        self._prompt = byteArray
+        self.cursorPosition = len(self._prompt)
+
+    def getPrompt(self):
+        return self._prompt
+
+    prompt = property(getPrompt, setPrompt)
+
+    def _enableSysRedirect(self):
+        self._stderr, self._stdout = sys.stderr, sys.stdout
+        sys.stderr, sys.stdout = self, self
+
+    def _disableSysRedirect(self):
+        sys.stderr, sys.stdout = self._stderr, self._stdout
 
     def _runPromptText(self):
         if  len(self.prompt) > 0 or self.multiLineInput:
             self.outputHistory += [self.promptCursor + self.prompt.tostring()]
-            _stderr, _stdout = sys.stderr, sys.stdout
-            sys.stderr, sys.stdout = self, self
+            self._enableSysRedirect()
             self.multiLineInput = self.interpreter.push(self.prompt.tostring())
-            sys.stderr, sys.stdout = _stderr, _stdout
+            self._disableSysRedirect()
             self.inputHistory += [self.prompt]
             self.prompt = self.prompt[0:0]
             self.currentInputHistory = len(self.inputHistory)
 
     def _prevPromptText(self):
         if self.currentInputHistory > 0:
-            self.currentInputHistory -= 1 
+            self.currentInputHistory -= 1
             self.prompt = self.inputHistory[self.currentInputHistory][:]
 
     def _nextPromptText(self):
@@ -95,10 +139,25 @@ class Console(ogre.FrameListener, ogre.LogListener):
             self.keyBinds[evt.key]()
         except KeyError:
             if evt.text != 0:
-                self.prompt.append(evt.text)
+                self.prompt.insert(self.cursorPosition, evt.text)
+                self.cursorPosition += 1
                 self.currentInputHistory = len(self.inputHistory)
                
         self.updateOverlay = True
+
+    def _updateConsoleText(self):
+        lines = [""] * (Console.CONSOLE_LINE_COUNT - len(self.outputHistory))
+        lines += self.outputHistory[-1*Console.CONSOLE_LINE_COUNT:]
+        text = "\n".join(lines)
+        text += u"\n%s%s" % (self.promptCursor,
+                               self.prompt.tostring())
+        self.textbox.setCaption(text)
+
+        text = "\n".join([""] * (Console.CONSOLE_LINE_COUNT))
+        text += u"\n%s%s_" % (self.promptCursor,
+                               " " * self.cursorPosition)
+        
+        self.textoverlay.setCaption(text)
 
     def _appear(self, amt):
         self.height += amt
@@ -111,14 +170,6 @@ class Console(ogre.FrameListener, ogre.LogListener):
         if self.height < 0.0:
             self.height = 0.0
             self.overlay.hide()
-
-    def _updateConsoleText(self):
-        lines = []
-        lines += [""] * (Console.CONSOLE_LINE_COUNT - len(self.outputHistory))
-        lines += self.outputHistory[-1*Console.CONSOLE_LINE_COUNT:]
-        text = "\n".join(lines)
-        text += "\n" + self.promptCursor + self.prompt.tostring() + "_"
-        self.textbox.setCaption(text)
 
     def _updateConsolePosition(self, time):
         if self.visible and self.height < 1.0:
@@ -144,9 +195,8 @@ class Console(ogre.FrameListener, ogre.LogListener):
 
     def write(self, text):
         for line in text.split("\n"):
-            if len(line) > 0:
-                self.outputHistory += [line]
-
-        #TODO linewrap CONSOLE_LINE_LENGTH (eg dir(''))
+            while len(line) > 0:
+                self.outputHistory += [line[:Console.CONSOLE_LINE_LENGTH]]
+                line = line[Console.CONSOLE_LINE_LENGTH:]
                 
         self.updateOverlay = True

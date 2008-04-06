@@ -19,9 +19,22 @@ Application/ConsoleOverlay
 			width 1
 			height 1
 			font_name Console
-			char_height 0.03
+			char_height 0.031
 			colour_top 0 0 0
 			colour_bottom 0 0 0
-		}		
+		}
+
+		element TextArea(Application/ConsoleTextOverlay)
+		{
+			metrics_mode relative
+			left 0
+			top 0
+			width 1
+			height 1
+			font_name Console
+			char_height 0.031
+			colour_top 0 0 0
+			colour_bottom 0 0 0
+		}			
 	}
 }
