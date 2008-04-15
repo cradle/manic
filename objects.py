@@ -392,9 +392,11 @@ class BulletObject(SphereObject):
         self.hasSentToClients = True
 
 class ShrapnelObject(BulletObject):
+    ricochetTime = 0.15
+    
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
         BulletObject.__init__(self, gameworld, name, direction, velocity, damage, 1.0)
-        self.ricochetTime = 0.15
+        self.ricochetTime = self.ricochetTime
         self.needToTellClient = False
 
     def hitObject(self, other, position):
@@ -406,11 +408,13 @@ class ShrapnelObject(BulletObject):
         self.ricochetTime -= time
 
 class LaserObject(ShrapnelObject):
+    ricochetTime = 3
+    
     def __init__(self, gameworld, name, direction = None, velocity = [0.0,0.0], damage = 2.0):
         BulletObject.__init__(self, gameworld, name, direction, velocity, damage, 1.0)
         self.type = LASER
-        self.ricochetTime = 3.0
         self.needToTellClient = True
+        self.richochetTime = self.ricochetTime
         self.hasWindResistance = False
         self._body.setGravityMode(False)
 

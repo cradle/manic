@@ -10,6 +10,7 @@ import objects
 import networkclient
 import gamenet
 from encode import timer
+import console
 
 def cegui_reldim ( x ) :
     return CEGUI.UDim((x),0)
@@ -57,8 +58,13 @@ class Application(object):
 
         self._createScene()
         self._createFrameListener()
+        self._createConsole()
         return True
 
+    def _createConsole(self):
+        self.console = console.Console(self.root)
+        self.console.show()
+        
     def _setUpResources(self):
         """This sets up Ogre's resources, which are required to be in
         resources.cfg."""
@@ -118,6 +124,7 @@ class GameKeyListener(OIS.KeyListener):
         self.timeBetweenRepeats = 0.03
         self.chatAlpha = 0.3
         self.chatPosition = CEGUI.UDim(0.8, 0)
+        self.console = console.Console()
 
     def frameEnded(self, time, keyboard):
         chat = CEGUI.WindowManager.getSingleton().getWindow("TextWindow")
@@ -140,9 +147,11 @@ class GameKeyListener(OIS.KeyListener):
         return True # Keep running
 
     def keyPressed(self, arg):
+        print "key pressed", arg.text
         self.keyToRepeat = {'mode':'waiting', 'time':0.0, 'text':arg.text, 'key':arg.key}
         CEGUI.System.getSingleton().injectKeyDown( arg.key )
         CEGUI.System.getSingleton().injectChar( arg.text )
+        self.console.keyPressed(arg)
     
     def keyReleased(self, arg):
         if len(self.keyToRepeat) != 0 and arg.key == self.keyToRepeat['key']:
@@ -321,7 +330,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
              OIS.createPythonInputSystem([("WINDOW",str(windowHnd))])
          
          #Create all devices (We only catch joystick exceptions here, as, most people have Key/Mouse)
-         self.Keyboard = self.InputManager.createInputObjectKeyboard( OIS.OISKeyboard, False )
+         #self.Keyboard = self.InputManager.createInputObjectKeyboard( OIS.OISKeyboard, False )
          self.BufferedKeyboard = self.InputManager.createInputObjectKeyboard( OIS.OISKeyboard, True )
          self.Mouse = self.InputManager.createInputObjectMouse( OIS.OISMouse, True )
          try :
@@ -353,7 +362,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
       if( rw == self.renderWindow ):
          if( self.InputManager ):
             self.InputManager.destroyInputObjectMouse( self.Mouse )
-            self.InputManager.destroyInputObjectKeyboard( self.Keyboard )
+            self.InputManager.destroyInputObjectKeyboard( self.BufferedKeyboard )
             if self.Joy:
                 self.InputManager.destroyInputObjectJoyStick( self.Joy )
             OIS.InputManager.destroyInputSystem(self.InputManager)
@@ -365,7 +374,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         
         ##Need to capture/update each device - this will also trigger any listeners
         self.BufferedKeyboard.capture()
-        self.Keyboard.capture()
+        #self.Keyboard.capture()
         self.Mouse.capture()
         if( self.Joy ):
             self.Joy.capture()
@@ -377,7 +386,7 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         curTime = time.time()
         frameTime = (curTime - self.lastUpdate)
         keepGoing = keepGoing and self.keylistener.frameEnded(frameTime, self.BufferedKeyboard)
-        keepGoing = keepGoing and self.game.frameEnded(frameTime, self.Keyboard, self.Mouse, self.Joy)
+        keepGoing = keepGoing and self.game.frameEnded(frameTime, self.BufferedKeyboard, self.Mouse, self.Joy)
         self.lastUpdate = curTime
         return keepGoing
             
@@ -634,7 +643,6 @@ class Client(Application, Engine):
     def _createFrameListener(self):
         ## note we pass ourselves as the demo to the framelistener
         self.frameListener = FrameListener(self, self.renderWindow, self.camera)
-        self.keylistener = GameKeyListener(self)
         self.root.addFrameListener(self.frameListener)
 
     def updateChat(self, frameTime):
@@ -662,7 +670,7 @@ class Client(Application, Engine):
         t.stop()
         t.debugChatTime = t.time()
         
-        self.keyboard = keyboard
+        keyboard = keyboard
         self.mouse = mouse
         self.joystick = joystick
         self.timeUntilNextNetworkUpdate -= frameTime
@@ -729,7 +737,7 @@ class Client(Application, Engine):
             self.network.clearMessages()
             
         if self.player != None:
-            self.network.send(self.player.input(self.keyboard,  self.mouse, self.joystick))
+            self.network.send(self.player.input(keyboard,  self.mouse, self.joystick))
 
         t.stop()
         self.debugNetworkTime = t.time()

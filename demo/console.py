@@ -6,10 +6,14 @@ import sys
 
 ## PythonOgre Console
 # Usage:
-#   console = console.Console(self.root, locals())
+#   console = console.Console(self.root)
 #   console.show()
 #   # Then inject the keys pressed in your keyboard handler
 #   console.keyPressed(evt)
+#
+# PythonOgre Console is sort of singleton. All instances of Console objects
+# share the same state. So simply create a console object anywhere you wish
+# to use it and they will all point to whichever one was created first.
 #
 ## TODO
 # - Key repeating
@@ -17,13 +21,25 @@ import sys
 # - Linewrap if prompt too long
 # - Write history to file
 # - Read history from file
+# - Make font look better
 
 class Console(ogre.FrameListener):
     CONSOLE_LINE_LENGTH = 85
     CONSOLE_LINE_COUNT = 15
+    __shared_state = {}
     
-    def __init__(self, root, consoleLocals = {}):
+    def __init__(self, root = None):
+        self.__dict__ = self.__shared_state
+
         ogre.FrameListener.__init__(self)
+
+        if root:
+            root.addFrameListener(self)
+
+        if 'isSetup' not in self.__dict__:
+            self.isSetup = True
+        else:
+            return
         
         self.currentInputHistory = 0
         self.inputHistory = []
@@ -32,19 +48,7 @@ class Console(ogre.FrameListener):
         self.updateOverlay = True
         self.multiLineInput = False
 
-        consoleLocals['console'] = self
-        self.interpreter = code.InteractiveConsole(consoleLocals)
-
-        root.addFrameListener(self)
-        
-        self.height = 0.0
-        self.hide()
-
-        self.overlay = ogre.OverlayManager.getSingleton().getByName("Application/ConsoleOverlay")
-        self.overlay.show()
-        self.textbox = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsoleText")
-        self.textoverlay = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsoleTextOverlay")
-        self.textpanel = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsolePanel")
+        self.interpreter = code.InteractiveConsole({'console':self})
 
         self.keyBinds = {
             OIS.KC_RETURN: self._runPromptText,
@@ -56,8 +60,28 @@ class Console(ogre.FrameListener):
             OIS.KC_LEFT: self._moveCursorLeft,
             OIS.KC_RIGHT: self._moveCursorRight,
             OIS.KC_HOME: self._moveCursorHome,
-            OIS.KC_END: self._moveCursorEnd
+            OIS.KC_END: self._moveCursorEnd,
+            OIS.KC_TAB: self._tab,
             }
+        
+        self.height = 0.0
+        self.hide()
+
+        self.overlay = ogre.OverlayManager.getSingleton().getByName("Application/ConsoleOverlay")
+        self.overlay.show()
+        self.textbox = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsoleText")
+        self.textoverlay = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsoleTextOverlay")
+        self.textpanel = ogre.OverlayManager.getSingleton().getOverlayElement("Application/ConsolePanel")
+        self.textpanel.getMaterial().setLightingEnabled(True)
+        self.textpanel.getMaterial().setSceneBlending(ogre.SBT_TRANSPARENT_ALPHA)
+
+    def addLocals(self, localsDict):
+        for var in localsDict:
+            self.interpreter.locals[var] = localsDict[var]
+            
+    def _tab(self):
+        self.prompt.insert(self.cursorPosition, 32) # WhiteSpace
+        self.cursorPosition += 1
 
     def _moveCursorEnd(self):
         self.cursorPosition = len(self.prompt)
@@ -173,7 +197,7 @@ class Console(ogre.FrameListener):
 
     def _updateConsolePosition(self, time):
         if self.visible and self.height < 1.0:
-            self._appear((1.005-self.height)/0.15*time)
+            self._appear(3.5*time)
         elif not self.visible and self.height > 0.0:
             self._dissapear(3.5*time)
 

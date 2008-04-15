@@ -4,8 +4,8 @@ material console/background
 	{
 		pass
 		{
-			scene_blend alpha_blend
 			diffuse 1 0 1 0.5
+			ambient 0.4 0.4 0.4
 		}
 
 	}

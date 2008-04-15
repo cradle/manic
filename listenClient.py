@@ -1,6 +1,7 @@
 from client import Client
 from server import Server
 import guiobjects, time
+import console
 
 class ListenClient(Client, Server):
     def __init__(self):
@@ -21,6 +22,13 @@ class ListenClient(Client, Server):
         bot = guiobjects.Person(self, "b1")
         bot.setPosition(self.spawnLocation())
         self.objects += [bot]
+
+        console.Console().addLocals({
+            'player':self.player,
+            'bot':bot,
+            'objects':self.objects,
+            'chat':self.chat
+            })
         
     def frameEnded(self, frameTime, keyboard, mouse, joystick):
         self.mouse = mouse

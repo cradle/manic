@@ -114,7 +114,8 @@ class Application(object):
         self.keyboardListener = buffered_handlers.KeyboardListener(self.keyboard)
 
     def setupConsole(self):
-        self.console = console.Console(self.root, locals())
+        self.console = console.Console(self.root)
+        self.console.addLocals(locals())
         self.console.show()
         self.keyboardListener.addKeyListener(self.console)
  

@@ -16,6 +16,19 @@ class Client():
         self.player = None
         self.packetNumber = 0
 
+    def __str__(self):
+        return "%s:%i" % self.address
+
+    def debug(self):
+        output = ""
+        output += "Address: %s:%i\n" % self.address
+        output += "Messages...\n"
+        for message in self.messages:
+            output += "    %s\n" % message
+        output += "Ping: %s\n" % self.ping
+        output += "PacketNumber: %s\n\n" % self.packetNumber
+        return output
+
     def __eq__(self, other):
         return self.address == other.address
 
@@ -49,28 +62,43 @@ class Client():
 class NetworkServer(DatagramProtocol):
     debugSendPacketLength = 0
     
-    def __init__(self, connectedCallback, port = 10001):
+    def __init__(self, connectedCallback, port = 10001, debug = False):
         self.clients = []
+        self.debug = debug
         self.reactor = reactor
         self.reactor.startRunning()
         self.reactor.listenUDP(port, self)
         self.connectedCallback = connectedCallback
         self.debugSendPacketLength = 0
         self.debugReceivePacketLength = 0
+        if self.debug: print "Started"
         
     def datagramReceived(self, data, address):
+        if self.debug: print "Received Packet"
         self.debugReceivePacketLength = len(data)
         # Allocate the received datagram to the correct client
         client = Client(address, self.transport)
         if client not in self.clients:
+            if self.debug: print "New Client"
             self.clients.append(client)
             self.connectedCallback(client)
         else:
+            if self.debug: print "Old Client"
             client = self.clients[self.clients.index(client)]
 
+        if self.debug: print "Data", client.debug()
         client.push(banana.decode(zlib.decompress(data)))
 
     def update(self, time = 0):
         self.debugSendPacketLength = NetworkServer.debugSendPacketLength
         self.reactor.runUntilCurrent()
         self.reactor.doIteration(0)
+
+if __name__ == "__main__":
+    def testCallback(client):
+        print client
+    
+    server = NetworkServer(testCallback, debug = True)
+    while(1):
+        server.update(0.1)
+        time.sleep(0.1)

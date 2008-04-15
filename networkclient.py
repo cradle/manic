@@ -61,8 +61,7 @@ class NetworkClient(DatagramProtocol):
                     self.pings = [p for p in self.pings if p.number <= ping.number]
         else:
             self._messages.append(message)
-    #    if ("%0.6f" % t.time())  != "0.0000":
-    #        print "%0.6f" % t.time() 
+
     # Possibly invoked if there is no server listening on the
     # address to which we are sending.
     def connectionRefused(self):
@@ -87,8 +86,8 @@ class NetworkClient(DatagramProtocol):
         self._messages.clear()
 
 if __name__ == "__main__":
-    # 0 means any port, we don’t care in this case
-    client = NetworkClient("cradle.dyndns.org")
+    client = NetworkClient()
     while(True):
-        client.update(0.1)
+        client.update(5)
+        time.sleep(5)
     
