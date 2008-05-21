@@ -4,6 +4,27 @@ from twisted.spread import banana
 import time
 import zlib
 
+class Ping(object):
+    _numberOfPings = 0
+
+    def __init__(self):
+        self._number = Ping._numberOfPings
+        Ping._numberOfPings += 1
+        self._time = time.time()
+        self._roundTripTime = None
+
+    def received(self):
+        self._roundTripTime = time.time() - self._time
+
+    def __eq__(self, other):
+        return self._number == other._number
+
+    def __repr__(self):
+        if self._roundTripTime:
+            return "%s (%.3f)" % (self._number, self._roundTripTime)
+        else:
+            return "%s" % self._number
+
 class Client():
     def __init__(self, address, transport):
         self.address = address
@@ -11,7 +32,7 @@ class Client():
         self.transport = transport
         self.lastMessageTime = time.time()
         self.timeout = 10.0
-        self.ping = 0
+        self.pings = []
         self.player = None
         self.packetNumber = 0
 
@@ -54,6 +75,11 @@ class Client():
         toSend = zlib.compress(banana.encode(data),4)
         self.transport.write(toSend, self.address)
         NetworkServer.debugSendPacketLength = len(toSend)
+
+    def ping(self):
+        p = Ping()
+        self.send(["p", p.number])
+        self.pings.append(p)
     
 class NetworkServer(DatagramProtocol):
     debugSendPacketLength = 0
@@ -70,7 +96,7 @@ class NetworkServer(DatagramProtocol):
         if self.debug: print "Started"
         
     def datagramReceived(self, data, address):
-        if self.debug: print "Received Packet",
+        if self.debug: print "RCV",
         self.debugReceivePacketLength = len(data)
         # Allocate the received datagram to the correct client
         client = Client(address, self.transport)
@@ -81,7 +107,7 @@ class NetworkServer(DatagramProtocol):
         else:
             client = self.clients[self.clients.index(client)]
 
-        if self.debug: print "Data", client.debug()
+        if self.debug: print client.debug()
         client.push(banana.decode(zlib.decompress(data)))
 
     def update(self, time = 0):

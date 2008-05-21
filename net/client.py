@@ -5,11 +5,6 @@ from collections import deque
 import zlib
 import time
 
-class ping(object):
-    def __init__(self, number, time):
-        self.number = number
-        self.time = time
-
 class NetworkClient(DatagramProtocol):
     def __init__(self, host = "127.0.0.1", port = 10001):
         self._messages = deque()
@@ -33,12 +28,6 @@ class NetworkClient(DatagramProtocol):
         print "Got IP", ip
         self.serverIP = ip
         self.reactor.listenUDP(0, self)
-
-    def ping(self):
-        if self.serverIP != None:
-            self.pingNumber += 1
-            self.send(["p", self.pingNumber, int(self.roundTripTime*100)])
-            self.pings.append(ping(self.pingNumber, time.time()))
         
     def startProtocol(self):
         self.transport.connect(self.serverIP, self.port)
@@ -52,6 +41,7 @@ class NetworkClient(DatagramProtocol):
                     self.roundTripTime = time.time() - ping.time;
                     self.serverOffset = time.time() - (message[2] + self.roundTripTime/2)
                     self.pings = [p for p in self.pings if p.number <= ping.number]
+                    print self.pings
         else:
             self._messages.append(message)
 
@@ -81,6 +71,7 @@ class NetworkClient(DatagramProtocol):
 if __name__ == "__main__":
     client = NetworkClient()
     while(reactor.running):
-        client.update(0.1)
-        time.sleep(0.1)
+        client.update(0.01)
+        time.sleep(0.01)
+        #client.send(eval(raw_input(":")))
     

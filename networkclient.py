@@ -1,4 +1,3 @@
-# -*- coding: cp1252 -*-
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 from twisted.spread import banana
