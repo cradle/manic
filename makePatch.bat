@@ -1,0 +1,1 @@
+"c:\Program Files\7-Zip\7z.exe" a assaultvector-patch.7z dist\client.exe dist\server.exe dist\listenClient.exe dist\library.zip

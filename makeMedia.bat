@@ -1,0 +1,1 @@
+"c:\Program Files\7-Zip\7z.exe" a assaultvector-media.exe dist\sounds
