@@ -606,6 +606,11 @@ class Person(SphereObject):
         self._torsoTransform.object = None
         self._headTransform.object = None
 
+    def input(self):
+        #TODO: This is where a bot would do send to the server 
+        # the result of his thinking
+        return [self.getDirection(), 0]
+
     def setPosition(self, position):
         SphereObject.setPosition(self, position)
         if position:
@@ -898,19 +903,19 @@ class Person(SphereObject):
         self.spawnPosition = position
 
     def vitals(self):
-        text = " Health: %i/%i\n Weapon: %s" % \
+        text = "%i/%i, %s" % \
                (self.health,
                 self.maxHealth,
                 self.gunName)
 
         if self.gun['reloading']:
-            text += "\n Reloading: %3i%%" % (100 - self.gun['timeLeftUntilNextShot'] * 100 / self.gun['reloadTime'])
+            text += " Reloading: %3i%%" % (100 - self.gun['timeLeftUntilNextShot'] * 100 / self.gun['reloadTime'])
         else:
-            text += "\n Ammo: %i/%i" % (self.gun['ammo'], self.gun['maxAmmo'])
+            text += " Ammo: %i/%i" % (self.gun['ammo'], self.gun['maxAmmo'])
             if self.gun['timeLeftUntilNextShot'] > 0:
                 text += " (%3i%%)" % (100 - self.gun['timeLeftUntilNextShot'] * 100 / self.gun['timeBetweenShots'])
             if float(self.gun['ammo'])/self.gun['maxAmmo'] <= 0.2:
-                text += "\n Press R to reload"
+                text += " Press R to reload"
 
         return text
 

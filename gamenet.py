@@ -233,7 +233,6 @@ class NetCode:
         def setNickName(self, nick):
                 self.nickName = nick
                 self.reactor.connectTCP(self.server, 5222, self.factory)
-                self.reactor.startRunning()
 
 def aMethod(a,b):
         print a,"=>",b
