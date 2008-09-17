@@ -1,0 +1,13 @@
+material console/background
+{
+	technique
+	{
+		pass
+		{
+			diffuse 1 0 1 0.5
+			ambient 0.4 0.4 0.4
+		}
+
+	}
+
+}

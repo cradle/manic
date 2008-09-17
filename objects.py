@@ -606,10 +606,10 @@ class Person(SphereObject):
         self._torsoTransform.object = None
         self._headTransform.object = None
 
-    def input(self):
-        #TODO: This is where a bot would do send to the server 
-        # the result of his thinking
-        return [self.getDirection(), 0]
+   # def input(self, keyboard=None, mouse=None, joystick=None):
+   #     #TODO: This is where a bot would do send to the server 
+   #     # the result of his thinking
+   #     return [self.getDirection(), 0]
 
     def setPosition(self, position):
         SphereObject.setPosition(self, position)

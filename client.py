@@ -1,6 +1,13 @@
 import math, os, time
 import ogre.renderer.OGRE as ogre
 import ogre.gui.CEGUI as CEGUI
+
+# Another fix for CEGUI to ensure we get a working parser..
+if os.name == 'nt':
+    CEGUI.System.setDefaultXMLParserName("ExpatParser")
+else:
+    CEGUI.System.setDefaultXMLParserName("TinyXMLParser")
+    
 import ogre.sound.OgreAL as OgreAL
 import ode
 import ogre.io.OIS as OIS
@@ -352,10 +359,10 @@ class FrameListener(ogre.FrameListener, ogre.WindowEventListener):
         pass 
            
     def windowResized (self, rw):
-         [width, height, depth, left, top] = rw.getMetrics()  # Note the wrapped function as default needs unsigned int's
+         #[width, height, depth, left, top] = rw.getMetrics()  # Note the wrapped function as default needs unsigned int's
          ms = self.Mouse.getMouseState()
-         ms.width = width
-         ms.height = height
+         ms.width = rw.getWidth()
+         ms.height = rw.getHeight()
          
     def windowClosed(self, rw):
       #Only close for window that created OIS (mWindow)
@@ -487,11 +494,11 @@ class Client(Application, Engine):
         return geom
 
     def createLogo(self):
-        logoa = self.sceneManager.rootSceneNode.createChildSceneNode('logo-a')
+        logoa = self.sceneManager.getRootSceneNode().createChildSceneNode('logo-a')
         elogoa = self.sceneManager.createEntity("m-logo-a","logo-a.mesh")
         logoa.attachObject(elogoa)
         
-        logov = self.sceneManager.rootSceneNode.createChildSceneNode('logo-v')
+        logov = self.sceneManager.getRootSceneNode().createChildSceneNode('logo-v')
         elogov = self.sceneManager.createEntity("m-logo-v","logo-v.mesh")
         logoa.attachObject(elogov)
 
@@ -501,9 +508,7 @@ class Client(Application, Engine):
         
         logoScale = (5,5,5)
         logoa.setScale(logoScale)
-        elogoa.setNormaliseNormals(True)
         logov.setScale(logoScale)
-        elogov.setNormaliseNormals(True)
         self.logoa = logoa
         self.logov = logov
 
@@ -537,8 +542,7 @@ class Client(Application, Engine):
         
         entity = self.sceneManager.createEntity('bgE', 'Scene.mesh')
         #entity.setCastShadows(False)
-##        entity.setNormaliseNormals(True)
-        node = self.sceneManager.rootSceneNode.createChildSceneNode('bgN')
+        node = self.sceneManager.getRootSceneNode().createChildSceneNode('bgN')
         node.attachObject(entity)
         node.setVisible(True)
 ##        node.setDirection(0,0,-1)

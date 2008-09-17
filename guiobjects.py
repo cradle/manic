@@ -15,8 +15,7 @@ class StaticObject(objects.StaticObject):
 
         self._entity = gameworld.sceneManager.createEntity('e' + name, mesh)
         self._entity.setCastShadows(True)
-        self._entity.setNormaliseNormals(True)
-        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
+        self._node = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('n' + name)
         self._node.attachObject(self._entity)
         
         if hasattr(size, "__getitem__"):
@@ -27,7 +26,7 @@ class StaticObject(objects.StaticObject):
         self._updateDisplay()
 
     def __del__(self):
-        self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('n' + self._name)
+        self._gameworld.sceneManager.getRootSceneNode().removeAndDestroyChild('n' + self._name)
         objects.StaticObject.__del__(self)
         
     def setPosition(self, position):
@@ -190,7 +189,7 @@ class BulletObject(objects.BulletObject, SphereObject):
 
     def reset(self):        
         self.trail = self._gameworld.sceneManager.createRibbonTrail("bb" + self._name)
-        self.trailNode = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('t' + self._name)
+        self.trailNode = self._gameworld.sceneManager.getRootSceneNode().createChildSceneNode('t' + self._name)
         self.trailNode.attachObject(self.trail)
 
         self.trail.setNumberOfChains(2)
@@ -198,8 +197,8 @@ class BulletObject(objects.BulletObject, SphereObject):
         self.trail.setMaterialName('bullets')
         self.trail.setTrailLength(10)
                 
-        self._node = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + self._name)
-        self._node2 = self._gameworld.sceneManager.rootSceneNode.createChildSceneNode('n2' + self._name)
+        self._node = self._gameworld.sceneManager.getRootSceneNode().createChildSceneNode('n' + self._name)
+        self._node2 = self._gameworld.sceneManager.getRootSceneNode().createChildSceneNode('n2' + self._name)
 
         self.trail.setInitialColour(0, 0, 0, 0, 1)
         self.trail.setColourChange(0, 0, 0, 0, 5)
@@ -254,7 +253,7 @@ class BulletObject(objects.BulletObject, SphereObject):
         
     def __del__(self):
         self._gameworld.sceneManager.destroyRibbonTrail("bb" + self._name)
-        self._gameworld.sceneManager.rootSceneNode.removeAndDestroyChild('t' + self._name)
+        self._gameworld.sceneManager.getRootSceneNode().removeAndDestroyChild('t' + self._name)
         SphereObject.__del__(self)
         objects.BulletObject.__del__(self)
 
@@ -373,7 +372,6 @@ class Person(objects.Person, SphereObject):
         # Entity
         self._entity = gameworld.sceneManager.createEntity('e' + name, 'ninja.mesh')
         self._entity.setMaterialName("white-ninja")
-        self._entity.setNormaliseNormals(True)
         colours = [[1,0,0,1],
                    [0,1,0,1],
                    [0,0,1,1],
@@ -385,7 +383,7 @@ class Person(objects.Person, SphereObject):
         self.swordColour = random.choice(colours)
 
         # Scene -> Node
-        self._node = gameworld.sceneManager.rootSceneNode.createChildSceneNode('n' + name)
+        self._node = gameworld.sceneManager.getRootSceneNode().createChildSceneNode('n' + name)
         self._node.setScale(scale,scale,scale)
         
         body = self._entity.getSubEntity(0).getMaterial().clone("bodyskin-" + name)
